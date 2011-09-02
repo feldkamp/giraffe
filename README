@@ -1,0 +1,17 @@
+giraffe
+
+  provides functionality for angular cross-correlation analysis
+  the underlying classes may also be used for more general purposes
+
+
+
+*** main contributors ***
+  Jan M. Feldkamp, SLAC
+  Jonas Sellberg, SLAC
+
+
+*** note on edf support ***
+  the code in edf_support is borrowed and slightly altered for this package
+  origin: 'matlib' package, hosted at ISP/TUD
+  for more information, contact Prof. C. Schroer at the Institute of Structural Physics, TU Dresden, Germany
+
