@@ -1,0 +1,8 @@
+The files needed for arraydataIO's edf and tiff support borrowed from matlib
+
+edf.h, cpp
+edfkeywords.h, cpp
+timer.h, cpp
+util.h, cpp
+
+are modified versions based on matlib's development state in August 2011.
