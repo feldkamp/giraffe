@@ -1,0 +1,15 @@
+*~
+*.o
+*.os
+*.dylib
+*.a
+*.so
+libgiraffe*
+xcca
+testsuite
+.DS_Store
+.sconsign.dblite
+.git
+
+giraffe.xcodeproj
+xcode
