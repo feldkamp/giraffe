@@ -9,6 +9,9 @@ giraffe
     array1D --- derived class for one-dimensional arrays
     array2D --- derived class for two-dimensional arrays
     array3D --- derived class for three-dimensional arrays
+    arraydataIO --- functionality to get HDF5, EDF, TIFF in and out of arraydata objects
+    FourierTransformer --- wrapper for the Fourier tranforms of the fft library
+
 
   The giraffe library can be used, for example in Anton Barty's cheetah
   found at https://github.com/antonbarty/cheetah
