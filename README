@@ -4,6 +4,9 @@ giraffe
   the underlying classes may also be used for more general purposes
 
 
+  the giraffe library can be used, for example in Anton Barty's cheetah
+  found at https://github.com/antonbarty/cheetah
+
 
 *** main contributors ***
   Jan M. Feldkamp, SLAC
