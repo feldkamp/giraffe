@@ -3,10 +3,22 @@ giraffe
   provides functionality for angular cross-correlation analysis
   the underlying classes may also be used for more general purposes
 
+  The classes in this package are the following
+    CrossCorrelator --- a class to compute angular auto- and cross-correlations
+    arraydata --- a general class for dynamically allocated array (parent class)
+    array1D --- derived class for one-dimensional arrays
+    array2D --- derived class for two-dimensional arrays
+    array3D --- derived class for three-dimensional arrays
 
-  the giraffe library can be used, for example in Anton Barty's cheetah
+  The giraffe library can be used, for example in Anton Barty's cheetah
   found at https://github.com/antonbarty/cheetah
 
+*** building ***
+  This package can be built using the SCons software construction tool (http://www.scons.org/) to yield
+    libgiraffe_static.a --- static library
+    libgiraffe_dynamic.so/dylib --- dynamic library (extension is platform dependent)
+    xcca --- stand-alone tool for X-ray Cross Correlation Analysis
+    testsuite --- a bunch of test functions for the classes contained 
 
 *** main contributors ***
   Jan M. Feldkamp, SLAC
