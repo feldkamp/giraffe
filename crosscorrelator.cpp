@@ -441,12 +441,10 @@ void CrossCorrelator::setLookupTable( array2D *LUT ){
 	p_table->copy(*LUT);								//store a copy locally
 }
 
-void CrossCorrelator::setLookupTable( const int *cLUT, unsigned int LUT_dim1, unsigned int LUT_dim2 ){
+void CrossCorrelator::setLookupTable( int *cLUT, unsigned int LUT_dim1, unsigned int LUT_dim2 ){
 	calcLookupTableVariables( LUT_dim1, LUT_dim2 );	
-	unsigned int tablelength = LUT_dim1*LUT_dim2;
-	p_table->setDim1(LUT_dim1);						//set dimensions
-	p_table->setDim2(LUT_dim2);
-	p_table->arraydata::copy(cLUT, tablelength);		//store a copy in 'table' locally
+	delete p_table;
+	p_table = new array2D(cLUT, LUT_dim1, LUT_dim2);
 }
 
 

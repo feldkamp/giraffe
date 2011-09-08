@@ -17,6 +17,7 @@
 class array1D;
 class array2D;
 class array3D;
+class array4D;
 
 
 //=================================================================================
@@ -93,7 +94,11 @@ class array1D : public arraydata{
 	
 private:
 	int p_dim1;
-	
+
+	//private setters for dimensions
+	//not (yet) safe to resize this class by changing dimensions after instatiation
+	void setDim1( unsigned int size_dim1 );	
+			
 public:
 	array1D( unsigned int size_dim1 = 1);                          
     array1D( int16_t *CArray, unsigned int size_val );          //init with C-style array of ints
@@ -104,7 +109,6 @@ public:
     void copy( const array1D& src );
 	
 	unsigned int dim1() const;
-	void setDim1( unsigned int size_dim1 );
 	
 	double get( unsigned int i ) const;
 	void set( unsigned int i, double value );
@@ -127,18 +131,23 @@ class array2D : public arraydata{
 private:
 	int p_dim1;
 	int p_dim2;
-	
+
+
+	//private setters for dimensions
+	//not (yet) safe to resize this class by changing dimensions after instatiation
+	void setDim1( unsigned int size_dim1 );	
+	void setDim2( unsigned int size_dim2 );	
+			
 public:
 	array2D( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1 );              //default constructor
-    array2D( array1D* dataOneD, unsigned int size_dim1, unsigned int size_dim2);   // use 1D data to initialize
+    array2D( array1D* dataOneD, unsigned int size_dim1, unsigned int size_dim2);	// use 1D data to initialize
+	array2D( int *CArray, unsigned int size_dim1, unsigned int size_dim2 );			// use c-array
 	~array2D();
 
     void copy( const array2D& src );
         
 	unsigned int dim1() const;
-	void setDim1( unsigned int size_dim1 );
 	unsigned int dim2() const;
-	void setDim2( unsigned int size_dim2 );
 	
 	double get( unsigned int i, unsigned int j ) const;                 //returns single pixel value
 	void set( unsigned int i, unsigned int j, double value );
@@ -177,23 +186,69 @@ private:
 	int p_dim1;
 	int p_dim2;
 	int p_dim3;
-	
+
+	//private setters for dimensions
+	//not (yet) safe to resize this class by changing dimensions after instatiation
+	void setDim1( unsigned int size_dim1 );	
+	void setDim2( unsigned int size_dim2 );	
+	void setDim3( unsigned int size_dim3 );	
+		
 public:
-//    array3D();
 	array3D( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1, unsigned int size_dim3 = 1 );  //default constructor
 	~array3D();
     
     void copy( const array3D& src );
 	
 	unsigned int dim1() const;
-	void setDim1( unsigned int size_dim1 );
 	unsigned int dim2() const;
-	void setDim2( unsigned int size_dim2 );
 	unsigned int dim3() const;
-	void setDim3( unsigned int size_dim3 );
 	
 	double get( unsigned int i, unsigned int j, unsigned int k ) const;
 	void set( unsigned int i, unsigned int j, unsigned int k, double value );
+
+    std::string getASCIIdata() const;
+    int writeToASCII( std::string filename ) const;
+};
+
+
+
+
+//=================================================================================
+//
+// array4D
+//
+//=================================================================================
+class array4D : public arraydata{
+	
+private:
+	int p_dim1;
+	int p_dim2;
+	int p_dim3;
+	int p_dim4;
+	
+
+	//private setters for dimensions
+	//not (yet) safe to resize this class by changing dimensions after instatiation
+	void setDim1( unsigned int size_dim1 );	
+	void setDim2( unsigned int size_dim2 );	
+	void setDim3( unsigned int size_dim3 );	
+	void setDim4( unsigned int size_dim4 );
+
+public:
+	array4D( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1, unsigned int size_dim3 = 1, unsigned int size_dim4 = 1 );  //default constructor
+	~array4D();
+    
+    void copy( const array4D& src );
+	
+	unsigned int dim1() const;
+	unsigned int dim2() const;
+	unsigned int dim3() const;
+	unsigned int dim4() const;
+	
+	double get( unsigned int i, unsigned int j, unsigned int k, unsigned int l ) const;
+	void set( unsigned int i, unsigned int j, unsigned int k, unsigned int l, double value );
+
+	void getRepresentationIn2D( array2D *&img );
 
     std::string getASCIIdata() const;
     int writeToASCII( std::string filename ) const;

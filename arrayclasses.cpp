@@ -511,7 +511,6 @@ array2D::array2D( unsigned int size_dim1, unsigned int size_dim2 )
 //constructor to generate a 2D array from a 1D array, given the desired dimensions
 array2D::array2D( array1D* dataOneD, unsigned int size_dim1, unsigned int size_dim2) 
         : arraydata( size_dim1*size_dim2 ){
-    
     if (!dataOneD) {
         cerr << "WARNING in array2D::array2D. Input array1D was not allocated! Nothing copied!" << endl;
         return;
@@ -521,7 +520,6 @@ array2D::array2D( array1D* dataOneD, unsigned int size_dim1, unsigned int size_d
         cerr << "size1D=" << dataOneD->size() << ", size2D=" << size_dim1*size_dim2 
 			<< "=" << size_dim1 << "*" << size_dim2 << "" << endl;
     }
-    
  	setDim1( size_dim1 );
 	setDim2( size_dim2 );
 
@@ -536,6 +534,24 @@ array2D::array2D( array1D* dataOneD, unsigned int size_dim1, unsigned int size_d
     }
 }
 
+array2D::array2D( int *dataCArray, unsigned int size_dim1, unsigned int size_dim2 )
+		: arraydata( size_dim1*size_dim2 ){
+    if (!dataCArray) {
+        cerr << "WARNING in array2D::array2D. Input array1D was not allocated! Nothing copied!" << endl;
+        return;
+    }    
+ 	setDim1( size_dim1 );
+	setDim2( size_dim2 );	
+	
+    //copy contents of dataOneD to this array2D
+    if (p_size > 0){
+        for (int i = 0; i < p_size; i++) {
+            p_data[i] = dataCArray[i];
+        }
+    }else{
+        p_data = NULL;
+    }
+}
 
 array2D::~array2D(){
 }
@@ -995,4 +1011,146 @@ int array3D::writeToASCII( std::string filename ) const{
 
 
 
+//=================================================================================
+//
+// CLASS IMPLEMENTATION OF array4D
+//
+//=================================================================================
+//-----------------------------------------------------constructors & destructors
+array4D::array4D( unsigned int size_dim1, unsigned int size_dim2, unsigned int size_dim3, unsigned int size_dim4 )
+		: arraydata(size_dim1*size_dim2*size_dim3){
+ 	setDim1( size_dim1 );
+	setDim2( size_dim2 );
+	setDim3( size_dim3 );
+	setDim4( size_dim4 );
+}
+
+array4D::~array4D(){
+}
+
+
+
+//-----------------------------------------------------copy
+void array4D::copy( const array4D& src ){
+    setDim1( src.dim1() );
+    setDim2( src.dim2() );
+    setDim3( src.dim3() );
+	setDim4( src.dim4() );
+    this->arraydata::copy( src.data(), src.size() );
+}
+
+
+//-----------------------------------------------------get
+//time-critical function, check with assert is disabled in release configuration
+double array4D::get( unsigned int i, unsigned int j, unsigned int k, unsigned int l ) const{
+	assert(i < dim1());
+	assert(j < dim2());
+	assert(k < dim3());
+	assert(l < dim4());
+	return arraydata::get_atIndex( l*dim1()*dim2()*dim3() + k*dim1()*dim2() + j*dim1() + i );
+}
+
+//-----------------------------------------------------set
+//time-critical function, check with assert is disabled in release configuration
+void array4D::set( unsigned int i, unsigned int j, unsigned int k, unsigned int l, double value ){
+	assert(i < dim1());
+	assert(j < dim2());
+	assert(k < dim3());
+	assert(l < dim4());
+	arraydata::set_atIndex( l*dim1()*dim2()*dim3() + k*dim1()*dim2() + j*dim1() + i, value);
+}
+
+
+//-----------------------------------------------------setters & getters
+unsigned int array4D::dim1() const{
+	return p_dim1;
+}
+
+void array4D::setDim1( unsigned int size_dim1 ){
+	p_dim1 = size_dim1;
+}
+
+unsigned int array4D::dim2() const{
+	return p_dim2;
+}
+
+void array4D::setDim2( unsigned int size_dim2 ){
+	p_dim2 = size_dim2;
+}
+
+unsigned int array4D::dim3() const{
+	return p_dim3;
+}
+
+void array4D::setDim3( unsigned int size_dim3 ){
+	p_dim3 = size_dim3;
+}
+
+unsigned int array4D::dim4() const{
+	return p_dim4;
+}
+
+void array4D::setDim4( unsigned int size_dim4 ){
+	p_dim4 = size_dim4;
+}
+
+
+//------------------------------------------------------------- getASCIIdata
+string array4D::getASCIIdata() const{
+    ostringstream osst;
+	if (size() == 0) {
+  		osst << "4D data has size zero." << endl;
+	}else{
+		osst << "4D data, dim1=" << dim1() << ", dim2=" << dim2() << ", dim3=" << dim3() << ", dim4=" << dim4() << ", size=" << size() << endl;
+		for (int l = 0; l<dim4(); l++){
+			for (int k = 0; k<dim3(); k++){
+				osst << " [[" << endl;
+				for (int j = 0; j<dim2(); j++){
+					osst << "  [";
+					for (int i = 0; i<dim1(); i++) {
+						osst << " " << get(i, j, k, l);
+					}//i
+					osst << "]" << endl;
+				}//j
+				osst << "]]" << endl;
+			}//k
+		}//l
+	}
+    return osst.str();
+}
+
+
+
+//------------------------------------------------------------- writeToASCII
+int array4D::writeToASCII( std::string filename ) const{
+	ofstream fout( filename.c_str() );
+	fout << arraydata::getASCIIdataAsColumn();
+	fout.close();
+    return 0;
+}
+
+
+
+//------------------------------------------------------------- 
+// mainly for creating 'raw' CSPAD images right now, where
+// dim1 : rows of a 2x1
+// dim2 : columns of a 2x1
+// dim3 : 2x1s in a quadrant (align as super-rows)
+// dim4 : quadrants (align as super-columns)
+//
+void array4D::getRepresentationIn2D( array2D *&img ){
+	delete img;
+	img = new array2D(dim1()*dim3(), dim2()*dim4());
+	for (int l = 0; l<dim4(); l++){
+		for (int k = 0; k<dim3(); k++){
+			for (int j = 0; j<dim2(); j++){
+				for (int i = 0; i<dim1(); i++) {
+					int row = k*dim1() + i;
+					int col = l*dim2() + j;
+					img->set( row, col, get(i, j, k, l) );
+				}//i
+			}//j
+		}//k
+	}//l	
+}
 

@@ -134,6 +134,7 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 				if ( flag_single_correlation_output ){
 					io->writeToEDF( cc->outputdir()+"polar"+single_desc+".edf", cc->polar() );           		
 				}
+				break;
 			case 3:
 				cout << "DIRECT COORDINATES, FAST XCCA (algorithm 3)" << endl;
 				cc->setLookupTable( LUT );
@@ -144,6 +145,7 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 				if ( flag_single_correlation_output ){
 					io->writeToEDF( cc->outputdir()+"polar"+single_desc+".edf", cc->polar() );           		
 				}
+				break;
 			case 4:
 				cout << "FAST COORDINATES, DIRECT XCCA (algorithm 4)" << endl;
 				cc->setLookupTable( LUT );
@@ -154,7 +156,10 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 				if ( flag_single_correlation_output ){
 					io->writeToEDF( cc->outputdir()+"polar"+single_desc+".edf", cc->polar() );           		
 				}
-			break;
+				break;
+			default:
+				std::cerr << "Choice of algorithm is invalid. Aborting." << endl;
+				return 1; 
 		}
 		
 		corravg->addArrayElementwise( cc->autoCorr() );

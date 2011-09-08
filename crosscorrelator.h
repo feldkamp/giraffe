@@ -57,7 +57,7 @@ public:
 	void calcLookupTableVariables( int lutNy, int lutNx );
 	array2D *lookupTable() const;  
 	void setLookupTable( array2D *LUT );
-	void setLookupTable( const int *cLUT, unsigned int LUT_dim1, unsigned int LUT_dim2 );
+	void setLookupTable( int *cLUT, unsigned int LUT_dim1, unsigned int LUT_dim2 );
 		
     // looks up the value closest to xcoord, ycoord in the data
     double lookup( double xcoord, double ycoord, array1D *dataArray ) const;
