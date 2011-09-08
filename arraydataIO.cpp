@@ -162,8 +162,6 @@ arraydataIO::~arraydataIO(){
 			raster = (uint32*) _TIFFmalloc( npixels * sizeof(uint32) );
 			if (raster != NULL){
 				if ( TIFFReadRGBAImage(tiff, width, height, raster, 0) ){
-					dest->setDim1(width);
-					dest->setDim2(height);
 					for(unsigned int j= 0; j < height; j++){		//y
 						for(unsigned int i= 0; i < width; i++){		//x	
 //							dest->set( i, j, 1.* (raster[j*width+i] & 0x000000ff));			// max value 255
