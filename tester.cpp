@@ -244,8 +244,8 @@ int Tester::testFourierTrafo(){
     
 	//another model
 	for (int i = 0; i < size; i++){
-		int amp = 10.;
-		int steps = 20.;	//degrees per 'i'
+		double amp = 10.;
+		double steps = 20.;	//degrees per 'i'
 	    model->set(i , amp*sin( i*steps * (M_PI/180) ) );
 	}
 	
