@@ -46,41 +46,42 @@ arraydata::arraydata( unsigned int size_val ){
 	p_data = new double[size_val];
     if (p_data == 0)
         cerr << "Error in arraydata constructor: could not allocate memory." << endl;
-
 	zeros();					// set all elements to zero initially
 }
 
-arraydata::arraydata( const int16_t *CArray, const unsigned int size_val ){
-    init();
-    p_size = size_val;
-    p_data = new double[size_val];
-    if (p_data == 0)
-        cerr << "Error in arraydata constructor: could not allocate memory." << endl;
-    
-    //fill array with data, convert int to double before
-    for (int i = 0; i < size_val; i++) {
-        p_data[i] = (double)CArray[i];
-    }
+arraydata::arraydata( const arraydata *array ){
+	init();
+	this->copy( array );
 }
 
-arraydata::arraydata( const float *CArray, const unsigned int size_val ) {
-    init();
-    p_size = size_val;
-    p_data = new double[size_val];
-    if (p_data == 0)
-        cerr << "Error in arraydata constructor: could not allocate memory." << endl;
-    
-    //fill array with data, convert float to double before
-    for (int i = 0; i < size_val; i++) {
-        p_data[i] = (double)CArray[i];
-    }
+arraydata::arraydata( const array1D *array ){
+	init();
+	this->copy( array );
 }
 
-arraydata::arraydata( const arraydata &src ){                       //copy constructor
+arraydata::arraydata( const array2D *array ){
+	init();
+	this->copy( array );
+}
+
+arraydata::arraydata( const array3D *array ){
+	init();
+	this->copy( array );
+}
+
+arraydata::arraydata( const array4D *array ){
+	init();
+	this->copy( array );
+}
+
+
+//copy constructor
+arraydata::arraydata( const arraydata &src ){                       
     init();
     copy( src );
 }
 
+//assignment operator
 arraydata & arraydata::operator=(const arraydata & src){
     if ( this != &src ){
 		cout << "DEBUG: ASSIGNMENT OPERATOR FOR arraydata" << endl;
@@ -106,55 +107,36 @@ void arraydata::destroy(){
 	p_data = NULL;
 }
 
-//-----------------------------------------------------copy
-void arraydata::copy( const double* src_data, const unsigned int arraysize ){		//src type: double c-array
-    p_size = arraysize;
-    if (p_size > 0){
-		this->destroy();
-        p_data = new double[ arraysize ];
-        for (int i = 0; i < p_size; i++) {
-            p_data[i] = src_data[i];
-        }
-    }else{
-        p_data = NULL;
-    }
-}
-
-void arraydata::copy( const float* src_data, const unsigned int arraysize ){		//src type: double c-array
-    p_size = arraysize;
-    if (p_size > 0){
-		this->destroy();
-        p_data = new double[ arraysize ];
-        for (int i = 0; i < p_size; i++) {
-            p_data[i] = (double)src_data[i];
-        }
-    }else{
-        p_data = NULL;
-    }
-}
-
-void arraydata::copy( const int* src_data, const unsigned int arraysize ){		//src type: int c-array
-    p_size = arraysize;
-    if (p_size > 0){
-		this->destroy();
-        p_data = new double[ arraysize ];
-        for (int i = 0; i < p_size; i++) {
-            p_data[i] = (double) src_data[i];	//convert to double
-        }
-    }else{
-        p_data = NULL;
-    }
-}
-
-void arraydata::copy( const arraydata& src ){						//src type: arraydata object
-    this->copy( src.data(), src.size());
-}
-
-
 double *arraydata::data() const{
     return (double *)p_data;
 }
 
+//-----------------------------------------------------copy
+void arraydata::copy( const arraydata *src ){										//src type: arraydata pointer
+    this->copy( src->data(), src->size());
+}
+
+void arraydata::copy( const array1D *src ){											//src type: array1D pointer
+	this->copy( src->data(), src->size() );
+}
+
+void arraydata::copy( const array2D *src ){											//src type: array2D pointer
+	this->copy( src->data(), src->size() );
+}
+
+void arraydata::copy( const array3D *src ){											//src type: array3D pointer
+	this->copy( src->data(), src->size() );
+}
+
+void arraydata::copy( const array4D *src ){											//src type: array4D pointer
+	this->copy( src->data(), src->size() );
+}
+
+
+	
+void arraydata::copy( const arraydata& src ){										//src type: arraydata object
+    this->copy( src.data(), src.size());
+}
 
 
 //--------------------------------------------------------------------
@@ -397,27 +379,26 @@ array1D::array1D( unsigned int size_dim1 )
     setDim1( size_dim1 );
 }
 
-array1D::array1D( int16_t *CArray, unsigned int size_dim1 )
-        : arraydata( CArray, size_dim1 ){
-    setDim1( size_dim1 );
+array1D::array1D( arraydata *array )
+		: arraydata( array ) {
+    setDim1( array->size() );
 }
 
-array1D::array1D( float *CArray, unsigned int size_dim1 )
-		: arraydata( CArray, size_dim1 ) {
-    setDim1( size_dim1 );
+array1D::array1D( array1D *arrayOneD )
+		: arraydata( arrayOneD ) {
+    setDim1( arrayOneD->size() );
 }
-
 
 //constructor to generate a 1D array from a 2D array
-array1D::array1D( array2D* dataTwoD ) 
-        : arraydata( dataTwoD->size() ){
- 	setDim1( dataTwoD->size() );
+array1D::array1D( array2D* arrayTwoD ) 
+        : arraydata( arrayTwoD->size() ){
+ 	setDim1( arrayTwoD->size() );
 
     //copy contents of dataTwoD to this array1D object
-    p_size = dataTwoD->size();
+    p_size = arrayTwoD->size();
     if (p_size > 0){
         for (int i = 0; i < p_size; i++) {
-            p_data[i] = dataTwoD->get_atIndex(i);
+            p_data[i] = arrayTwoD->get_atIndex(i);
         }
     }else{
         p_data = NULL;
@@ -510,47 +491,20 @@ array2D::array2D( unsigned int size_dim1, unsigned int size_dim2 )
 
 //constructor to generate a 2D array from a 1D array, given the desired dimensions
 array2D::array2D( array1D* dataOneD, unsigned int size_dim1, unsigned int size_dim2) 
-        : arraydata( size_dim1*size_dim2 ){
-    if (!dataOneD) {
-        cerr << "WARNING in array2D::array2D. Input array1D was not allocated! Nothing copied!" << endl;
-        return;
-    }
+        : arraydata( dataOneD ){
+ 	setDim1( size_dim1 );
+	setDim2( size_dim2 );
     if (dataOneD->size() != size_dim1*size_dim2) {
         cerr << "WARNING in array2D::array2D. Inconsistent array size. ";
         cerr << "size1D=" << dataOneD->size() << ", size2D=" << size_dim1*size_dim2 
 			<< "=" << size_dim1 << "*" << size_dim2 << "" << endl;
     }
- 	setDim1( size_dim1 );
-	setDim2( size_dim2 );
-
-    //copy contents of dataOneD to this array2D
-    p_size = dataOneD->size();
-    if (p_size > 0){
-        for (int i = 0; i < p_size; i++) {
-            p_data[i] = dataOneD->get_atIndex(i);
-        }
-    }else{
-        p_data = NULL;
-    }
 }
 
-array2D::array2D( int *dataCArray, unsigned int size_dim1, unsigned int size_dim2 )
-		: arraydata( size_dim1*size_dim2 ){
-    if (!dataCArray) {
-        cerr << "WARNING in array2D::array2D. Input array1D was not allocated! Nothing copied!" << endl;
-        return;
-    }    
- 	setDim1( size_dim1 );
-	setDim2( size_dim2 );	
-	
-    //copy contents of dataOneD to this array2D
-    if (p_size > 0){
-        for (int i = 0; i < p_size; i++) {
-            p_data[i] = dataCArray[i];
-        }
-    }else{
-        p_data = NULL;
-    }
+array2D::array2D( array2D* dataTwoD )
+		: arraydata(dataTwoD){
+	setDim1( dataTwoD->dim1() );
+	setDim2( dataTwoD->dim2() );
 }
 
 array2D::~array2D(){
@@ -1018,12 +972,27 @@ int array3D::writeToASCII( std::string filename ) const{
 //=================================================================================
 //-----------------------------------------------------constructors & destructors
 array4D::array4D( unsigned int size_dim1, unsigned int size_dim2, unsigned int size_dim3, unsigned int size_dim4 )
-		: arraydata(size_dim1*size_dim2*size_dim3){
+		: arraydata(size_dim1*size_dim2*size_dim3*size_dim4){
  	setDim1( size_dim1 );
 	setDim2( size_dim2 );
 	setDim3( size_dim3 );
 	setDim4( size_dim4 );
 }
+
+array4D::array4D( array1D *dataOneD, 
+		unsigned int size_dim1, unsigned int size_dim2, unsigned int size_dim3, unsigned int size_dim4 )
+		: arraydata( dataOneD ){
+ 	setDim1( size_dim1 );
+	setDim2( size_dim2 );
+	setDim3( size_dim3 );
+	setDim4( size_dim4 );
+	if (dataOneD->size() != size_dim1*size_dim2*size_dim3*size_dim4) {
+        cerr << "WARNING in array4D::array4D. Inconsistent array size. ";
+        cerr << "size1D=" << dataOneD->size() 
+			<< ", size4D=" << size_dim1*size_dim2*size_dim3*size_dim4 << endl;
+    }
+}
+
 
 array4D::~array4D(){
 }
@@ -1133,24 +1102,44 @@ int array4D::writeToASCII( std::string filename ) const{
 
 //------------------------------------------------------------- 
 // mainly for creating 'raw' CSPAD images right now, where
-// dim1 : rows of a 2x1
-// dim2 : columns of a 2x1
-// dim3 : 2x1s in a quadrant (align as super-rows)
-// dim4 : quadrants (align as super-columns)
+// dim1 : 388 : rows of a 2x1
+// dim2 : 185 : columns of a 2x1
+// dim3 :   8 : 2x1 sections in a quadrant (align as super-columns)
+// dim4 :   4 : quadrants (align as super-rows)
+//
+//    +--+--+--+--+--+--+--+--+
+// q0 |  |  |  |  |  |  |  |  |
+//    |  |  |  |  |  |  |  |  |
+//    +--+--+--+--+--+--+--+--+
+// q1 |  |  |  |  |  |  |  |  |
+//    |  |  |  |  |  |  |  |  |
+//    +--+--+--+--+--+--+--+--+
+// q2 |  |  |  |  |  |  |  |  |
+//    |  |  |  |  |  |  |  |  |
+//    +--+--+--+--+--+--+--+--+
+// q3 |  |  |  |  |  |  |  |  |
+//    |  |  |  |  |  |  |  |  |
+//    +--+--+--+--+--+--+--+--+
+//     s0 s1 s2 s3 s4 s5 s6 s7
 //
 void array4D::getRepresentationIn2D( array2D *&img ){
 	delete img;
-	img = new array2D(dim1()*dim3(), dim2()*dim4());
-	for (int l = 0; l<dim4(); l++){
-		for (int k = 0; k<dim3(); k++){
-			for (int j = 0; j<dim2(); j++){
-				for (int i = 0; i<dim1(); i++) {
-					int row = k*dim1() + i;
-					int col = l*dim2() + j;
-					img->set( row, col, get(i, j, k, l) );
+	img = new array2D(dim1()*dim4(), dim2()*dim3());	
+//	cout << "4D data, dim1=" << dim1() << ", dim2=" << dim2() << ", dim3=" << dim3() << ", dim4=" << dim4() << ", size=" << size() << endl;
+//	cout << "2D data, dim1=" << img->dim1() << ", dim2=" << img->dim2() << endl; 
+	for (int q = 0; q<dim4(); q++){
+		for (int s = 0; s<dim3(); s++){
+			for (int c = 0; c<dim2(); c++){
+				for (int r = 0; r<dim1(); r++) {
+					int row = q*dim1() + r;
+					int col = s*dim2() + c;
+					img->set( row, col, get(r, c, s, q) );
 				}//i
 			}//j
 		}//k
 	}//l	
+	
+	//transpose to be conform with cheetah's convention
+	img->transpose();
 }
 

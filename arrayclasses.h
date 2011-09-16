@@ -31,22 +31,49 @@ protected:
 	unsigned int p_size;	
 	
 public:
-	arraydata( const unsigned int sizeval = 1 );                     
-    arraydata( const int16_t *CArray, const unsigned int size_val );     //initialize with C-array of ints of a given length
-	arraydata( const float *CArray, const unsigned int size_val );			//initialize with C-array of floats of a given length
-    arraydata( const arraydata &src );                          //copy constructor
+	arraydata( const unsigned int sizeval = 1 );
+	arraydata( const arraydata *array );
+	arraydata( const array1D *array );
+	arraydata( const array2D *array );
+	arraydata( const array3D *array );
+	arraydata( const array4D *array );
+	template <class T> arraydata( const T *CArray, const unsigned int size_val ){
+		init();
+		this->copy( CArray, size_val );
+	}
+	
+	arraydata( const arraydata &src );                          //copy constructor
     arraydata & operator=(const arraydata & src);               //assignment operator
 	~arraydata();
 
     //helper functions
-    void init();
-    void copy( const double* src_data, const unsigned int size_val );
-    void copy( const float* src_data, const unsigned int size_val );
-    void copy( const int* src_data, const unsigned int size_val );
-    void copy( const arraydata& src );
-    void copy( const array1D& src );
-    void destroy();
-    double *data() const;                            			//return pointer to internal raw data array
+    void init();												//initialize class
+	void destroy();												//clean up class memory
+	double *data() const;                            			//return pointer to internal raw data array
+    
+	//functions to create copies from various sources
+	void copy( const arraydata *src );
+	void copy( const array1D *src );
+	void copy( const array2D *src );
+	void copy( const array3D *src );
+	void copy( const array4D *src );
+	
+	void copy( const arraydata& src );
+	
+	// templated function for c-style arrays of basic types (float, double, int, ...)
+	template <class T> void copy( const T *src, const unsigned int arraysize ){
+		p_size = arraysize;
+		if (p_size > 0){
+			this->destroy();
+			p_data = new double[ arraysize ];
+			for (unsigned int i = 0; i < p_size; i++) {
+				p_data[i] = (double)src[i];
+			}
+		}else{
+			p_data = NULL;
+		}
+	}
+	
     
     void zeros();												//set all elements to 0
     void zeros( unsigned int start, unsigned int stop );		//set all elements between start and stop to 0 (incl. start, excl. stop)
@@ -101,9 +128,14 @@ private:
 			
 public:
 	array1D( unsigned int size_dim1 = 1);                          
-    array1D( int16_t *CArray, unsigned int size_val );          //init with C-style array of ints
-	array1D( float *CArray, unsigned int size_val );			//init with C-style array of floats
+    array1D( arraydata* data );                               	//init with any arraydata object
+	array1D( array1D* dataOneD );								//init with an array1D object
     array1D( array2D* dataTwoD );                               //init with an array2D object
+	template <class T> array1D( T *CArray, unsigned int size_dim1 )
+        : arraydata( CArray, size_dim1 ){
+		setDim1( size_dim1 );
+	}
+		
 	~array1D();
     
     void copy( const array1D& src );
@@ -132,7 +164,6 @@ private:
 	int p_dim1;
 	int p_dim2;
 
-
 	//private setters for dimensions
 	//not (yet) safe to resize this class by changing dimensions after instatiation
 	void setDim1( unsigned int size_dim1 );	
@@ -141,7 +172,13 @@ private:
 public:
 	array2D( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1 );              //default constructor
     array2D( array1D* dataOneD, unsigned int size_dim1, unsigned int size_dim2);	// use 1D data to initialize
-	array2D( int *CArray, unsigned int size_dim1, unsigned int size_dim2 );			// use c-array
+	array2D( array2D* dataTwoD );													// initialize with a copy of the argument
+	template <class T> array2D( T *dataCArray, unsigned int size_dim1, unsigned int size_dim2 )
+			: arraydata( dataCArray, size_dim1*size_dim2 ){
+		setDim1( size_dim1 );
+		setDim2( size_dim2 );	
+	}
+
 	~array2D();
 
     void copy( const array2D& src );
@@ -235,7 +272,11 @@ private:
 	void setDim4( unsigned int size_dim4 );
 
 public:
-	array4D( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1, unsigned int size_dim3 = 1, unsigned int size_dim4 = 1 );  //default constructor
+	array4D( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1, 
+				unsigned int size_dim3 = 1, unsigned int size_dim4 = 1 );  //default constructor
+	array4D( array1D *dataOneD, 
+				unsigned int size_dim1, unsigned int size_dim2, 
+				unsigned int size_dim3, unsigned int size_dim4 );
 	~array4D();
     
     void copy( const array4D& src );
