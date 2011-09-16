@@ -30,8 +30,8 @@ public:
 	//   mask(C)Array: array that contains a mask of pixels to use or disregard
 	CrossCorrelator( float *dataCArray, float *qxCArray, float *qyCArray, int arraylength, 
 						int nphi, int nq1, int nq2 = 0, int16_t *maskCArray = NULL );
-	CrossCorrelator( array2D *dataArray, array2D *qxArray, array2D *qyArray, 
-						int nphi, int nq1, int nq2 = 0, array2D *maskArray = NULL  );
+	CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arraydata *qyArray, 
+						int nphi, int nq1, int nq2 = 0, arraydata *maskArray = NULL  );
 	~CrossCorrelator();
 	
 
@@ -57,7 +57,13 @@ public:
 	void calcLookupTableVariables( int lutNy, int lutNx );
 	array2D *lookupTable() const;  
 	void setLookupTable( array2D *LUT );
-	void setLookupTable( int *cLUT, unsigned int LUT_dim1, unsigned int LUT_dim2 );
+
+	template <class T>
+		void setLookupTable( T *cLUT, unsigned int LUT_dim1, unsigned int LUT_dim2 ){
+		calcLookupTableVariables( LUT_dim1, LUT_dim2 );	
+		delete p_table;
+		p_table = new array2D(cLUT, LUT_dim1, LUT_dim2);
+		}
 		
     // looks up the value closest to xcoord, ycoord in the data
     double lookup( double xcoord, double ycoord, array1D *dataArray ) const;
@@ -107,24 +113,51 @@ public:
 	
 	//---------------------------------------------setters & getters for input data
 	array1D *data() const;
-	void setData( array1D *data );
-	void setData( array2D *data );
-	void setData( float *dataCArray, unsigned int size );
+	void setData( arraydata *data );
+	template <class T>
+		void setData( T *dataCArray, unsigned int size ){
+			if (p_data) {
+				delete p_data;
+			}
+			p_data = new array1D( dataCArray, size );
+			setArraySize( size );
+		}
 	
 	array1D *qx() const;
-	void setQx( array1D *qx );
-	void setQx( array2D *qx );
-	void setQx( float *qxCArray, unsigned int size );
+	void setQx( arraydata *qx );
+	template <class T>
+		void setQx( T *qxArray, unsigned int size ){
+			if (p_qx) {
+				delete p_qx;
+			}
+			p_qx = new array1D( qxArray, size );
+		}
 
 	array1D *qy() const;
-	void setQy( array1D *qy );
-	void setQy( array2D *qy );
-	void setQy( float *qyCArray, unsigned int size );
+	void setQy( arraydata *qy );
+	template <class T>
+		void setQy( T *qyArray, unsigned int size ){
+			if (p_qy) {
+				delete p_qy;
+			}
+			p_qy = new array1D( qyArray, size );
+		}
 
 	array1D *mask() const;
-	void setMask( array1D *mask );
-	void setMask( array2D *mask );	
-	void setMask( int16_t *maskCArray, unsigned int size );
+	void setMask( arraydata *mask );
+	template <class T>
+		void setMask(T *maskCArray, unsigned int size){
+			if (p_mask) {
+				delete p_mask;
+			}
+			if (maskCArray) {
+				p_mask = new array1D( maskCArray, size );
+				setMaskEnable( true );
+				normalizeMask();
+			}else{
+				setMaskEnable( false );
+			}
+		}
 	void normalizeMask();
 
 	

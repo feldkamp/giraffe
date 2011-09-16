@@ -45,6 +45,11 @@ CrossCorrelator::CrossCorrelator( float *dataCArray, float *qxCArray, float *qyC
 									int nq2, int16_t *maskCArray){
     initPrivateVariables();
     
+	if (!dataCArray || !qxCArray || !qyCArray) {
+		cerr << "Error in CrossCorrelator (c-array) constructor! Not all input data is allocated." << endl;
+		cerr << "data: " << dataCArray << ", qx: " << qxCArray << ", qy: " << qyCArray << endl; 
+  	}
+	
     //set basic properties for the size of the arrays
     setArraySize(arraylength);
 	
@@ -88,12 +93,16 @@ CrossCorrelator::CrossCorrelator( float *dataCArray, float *qxCArray, float *qyC
 	initInternalArrays();
 }
 
-
 //----------------------------------------------------------------------------constructor with arraydata objects
-CrossCorrelator::CrossCorrelator( array2D *dataArray, array2D *qxArray, array2D *qyArray, 
+CrossCorrelator::CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arraydata *qyArray, 
 									int nphi, int nq1,
-									int nq2, array2D *maskArray ){
+									int nq2, arraydata *maskArray ){
 	initPrivateVariables();
+	
+	if (!dataArray || !qxArray || !qyArray) {
+		cerr << "Error in CrossCorrelator (arraydata) constructor! Not all input data is allocated." << endl;
+		cerr << "data: " << dataArray << ", qx: " << qxArray << ", qy: " << qyArray << endl; 
+  	}
 	
 	if ( (dataArray->size() != qyArray->size()) || (dataArray->size() != qyArray->size()) ){
 		cerr << "Warning in CrossCorrelator constructor! Array sizes don't match" << endl;
@@ -303,28 +312,12 @@ array1D *CrossCorrelator::data() const {
 	return p_data;
 }
 
-void CrossCorrelator::setData( array1D *data ) {
+void CrossCorrelator::setData( arraydata *data ) {
 	if (p_data) {
 		delete p_data;
 	}
-	p_data = new array1D( *data );
+	p_data = new array1D( data );
 	setArraySize( data->size() );
-}
-
-void CrossCorrelator::setData( array2D *data2D ) {
-	if (p_data) {
-		delete p_data;
-	}
-	p_data = new array1D( data2D );
-	setArraySize( data2D->dim1() * data2D->dim2() );
-}
-
-void CrossCorrelator::setData( float *dataCArray, unsigned int size ){
-	if (p_data) {
-		delete p_data;
-	}
-	p_data = new array1D( dataCArray, size );
-	setArraySize( size );
 }
 
 //----------------------------------------------------------------------------qx
@@ -332,25 +325,11 @@ array1D *CrossCorrelator::qx() const {
 	return p_qx;
 }
 
-void CrossCorrelator::setQx( array1D *qx ){
-	if (p_qx) {
-		delete p_qx;
-	}
-	p_qx = new array1D( *qx );
-}
-
-void CrossCorrelator::setQx( array2D *qx ){
+void CrossCorrelator::setQx( arraydata *qx ){
 	if (p_qx) {
 		delete p_qx;
 	}
 	p_qx = new array1D( qx );
-}
-
-void CrossCorrelator::setQx( float *qxArray, unsigned int size ){
-	if (p_qx) {
-		delete p_qx;
-	}
-	p_qx = new array1D( qxArray, size );
 }
 
 
@@ -359,64 +338,25 @@ array1D *CrossCorrelator::qy() const {
 	return p_qy;
 }
 
-void CrossCorrelator::setQy( array1D *qy ) {
-	if (p_qy) {
-		delete p_qy;
-	}
-	p_qy = new array1D( *qy );
-}
-
-void CrossCorrelator::setQy( array2D *qy ) {
+void CrossCorrelator::setQy( arraydata *qy ) {
 	if (p_qy) {
 		delete p_qy;
 	}
 	p_qy = new array1D( qy );
 }
 
-void CrossCorrelator::setQy( float *qyArray, unsigned int size ){
-	if (p_qy) {
-		delete p_qy;
-	}
-	p_qy = new array1D( qyArray, size );
-}
 
 //----------------------------------------------------------------------------mask
 array1D *CrossCorrelator::mask() const {
 	return p_mask;
 }
 
-void CrossCorrelator::setMask( array1D *maskOneDArray ) {
+void CrossCorrelator::setMask( arraydata *maskArray ) {
 	if (p_mask) {
 		delete p_mask;
 	}
-	if (maskOneDArray) {
-		p_mask = new array1D( *maskOneDArray );
-		setMaskEnable( true );
-		normalizeMask();
-	}else{
-		setMaskEnable( false );
-	}
-}
-
-void CrossCorrelator::setMask( array2D *maskTwoDArray ) {
-	if (p_mask) {
-		delete p_mask;
-	}
-	if (maskTwoDArray) {
-		p_mask = new array1D( maskTwoDArray );
-		setMaskEnable( true );
-		normalizeMask();
-	}else{
-		setMaskEnable( false );
-	}
-}
-
-void CrossCorrelator::setMask(int16_t *maskCArray, unsigned int size){
-	if (p_mask) {
-		delete p_mask;
-	}
-	if (maskCArray) {
-		p_mask = new array1D( maskCArray, size );
+	if (maskArray) {
+		p_mask = new array1D( maskArray );
 		setMaskEnable( true );
 		normalizeMask();
 	}else{
@@ -439,12 +379,6 @@ void CrossCorrelator::normalizeMask(){
 void CrossCorrelator::setLookupTable( array2D *LUT ){
 	calcLookupTableVariables( LUT->dim1(), LUT->dim2() );
 	p_table->copy(*LUT);								//store a copy locally
-}
-
-void CrossCorrelator::setLookupTable( int *cLUT, unsigned int LUT_dim1, unsigned int LUT_dim2 ){
-	calcLookupTableVariables( LUT_dim1, LUT_dim2 );	
-	delete p_table;
-	p_table = new array2D(cLUT, LUT_dim1, LUT_dim2);
 }
 
 
