@@ -18,9 +18,6 @@
 //	#undef ARRAYDATAIO_EDF				//do not use EDF
 //	#undef ARRAYDATAIO_TIFF				//do not use TIFF
 //	#undef ARRAYDATAIO_HDF5				//do not use HDF5
-	#ifdef CHEETAH
-		#undef ARRAYDATAIO_EDF				//do not use EDF in cheetah	
-	#endif
 
 //  array2D assumes matrix convention, i.e. dimensions (rows, columns).
 //  The read/write operations assume image convention (nx, ny).
@@ -41,7 +38,9 @@
 		~arraydataIO();
 
 		//------------------------------------------------------------------------------EDF
+		int readFromEDF( std::string filename, array1D *&dest ) const;
 		int readFromEDF( std::string filename, array2D *&dest ) const;
+		int writeToEDF( std::string filename, array1D *src ) const;
 		int writeToEDF( std::string filename, array2D *src ) const;
 		
 		//------------------------------------------------------------------------------Tiff	
@@ -66,7 +65,7 @@
 		void setTranspose( bool t );
 		
 	private:
-		bool p_transpose;
+		bool p_transpose;	 // transpose 2D files to conform with matrix (rows, cols) convention (default: true)
 		
 	};
 	

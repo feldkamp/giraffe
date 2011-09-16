@@ -30,10 +30,52 @@ arraydataIO::~arraydataIO(){
 
 #ifdef ARRAYDATAIO_EDF
 	#include "edf.h"				// needed to read/write EDF files (ESRF Data Format)
-	
-	//-------------------------------------------------------------- readFromEDF
-	// implementation borrowed following matrixdata::in(string fn, datatype_t &datatype) 
+
+
+	//-------------------------------------------------------------- readFromEDF (1D)
+	// implementation borrowed following vectordata/matrixdata::in() 
 	// of the tomo/matlib package (see http://xray-lens.de )
+	//--------------------------------------------------------------
+	int arraydataIO::readFromEDF( string filename, array1D *&dest ) const{
+		int retval = 0;
+		ns_edf::edf *file = new ns_edf::edf;
+		if (dest->data())
+		{
+			file->read_header(filename);
+			if ( file->get_Dim_y() > 1 )
+				cerr << "Warning in arraydataIO::readFromEDF! EDF-file is not 1D!" << endl;			
+			int dim1 = (int)file->get_Dim_x();
+			
+			cout << "Reading '" << filename << "' (EDF file type " << file->get_FileType_str() << ")"
+				<< ", dimension " << dim1 << "" << endl;
+			
+			double *temp = new double[dim1];
+			
+			int fail = file->read_data( temp, filename );
+			if ( fail ){
+				cout << "ERROR. In arraydataIO::readFromEDF - Could not load EDF data file '" << filename << "'." << endl;
+				return 1;
+			}
+			
+			//feed back into dest
+			delete dest;
+			dest = new array1D( dim1 );
+			dest->arraydata::copy( temp, dim1 );
+			
+			delete []temp;
+		}
+		else
+		{
+			cerr << "ERROR. arraydataIO::readFromEDF - dest data not allocated." << endl;
+			retval = 1;
+		}
+		delete file;
+		return retval; 
+	}
+		
+	//-------------------------------------------------------------- readFromEDF (2D)
+	//
+	//
 	//--------------------------------------------------------------------------
 	int arraydataIO::readFromEDF( string filename, array2D *&dest ) const{
 		int retval = 0;
@@ -45,7 +87,7 @@ arraydataIO::~arraydataIO(){
 			int dim1 = (int)file->get_Dim_x();
 			int dim2 = (int)file->get_Dim_y();
 			
-			cout << "Reading " << filename << " (EDF file type " << file->get_FileType_str() << ")"
+			cout << "Reading '" << filename << "' (EDF file type " << file->get_FileType_str() << ")"
 				<< ", dimensions (" << dim1 << ", " << dim2 << ")" << endl;
 			
 			double *temp = new double[dim1*dim2];
@@ -53,7 +95,7 @@ arraydataIO::~arraydataIO(){
 			int fail = file->read_data( temp, filename );
 			if ( fail ){
 				cout << "ERROR. In arraydataIO::readFromEDF - Could not load EDF data file '" << filename << "'." << endl;
-				return 1; // Could not open file fn   (by JP)
+				return 1;
 			}
 			
 			//feed back into dest
@@ -76,7 +118,40 @@ arraydataIO::~arraydataIO(){
 		return retval; 
 	}
 
-	//-------------------------------------------------------------- writeToEDF
+
+	//-------------------------------------------------------------- writeToEDF (1D)
+	//
+	//--------------------------------------------------------------
+	int arraydataIO::writeToEDF( string filename, array1D *src ) const {
+		int retval = 0;
+		bool flipByteOrder = false;
+		
+		// write scaled data?
+		// SF_UNSCALED = 0:  binary values written represent actual data values (a range from 0 to 65535 is possible)
+		// SF_SCALED	= 1: scaling max and min are written to header, data values always span full range from 0 to 65535 (2^16-1)
+		// SF_RETAIN	= 2: if the scaling factor was read from an input file, keep it what it was
+		ns_edf::scaled_t scaleOut = ns_edf::SF_SCALED;				
+		
+		if ( src->data() ){
+			ns_edf::edf *file = new ns_edf::edf;
+			
+			file->set_Dim_x( src->dim1() );
+			file->set_Dim_y( 1 );
+			file->set_ScalingMin( src->calcMin() );
+			file->set_ScalingMax( src->calcMax() );
+			file->set_FilenameOut( filename );
+			file->set_ScaledFlag( scaleOut );
+			retval = file->write( src->data(), flipByteOrder );
+			delete file;
+			return 0;
+		}else{
+			cerr << "ERROR. In matrixdata::write() - Matrix not allocated." << endl;
+			return 1;
+		}
+		return retval;
+	}
+
+	//-------------------------------------------------------------- writeToEDF (2D)
 	//
 	//--------------------------------------------------------------
 	int arraydataIO::writeToEDF( string filename, array2D *src ) const {
@@ -100,9 +175,6 @@ arraydataIO::~arraydataIO(){
 			file->set_ScalingMin( src->calcMin() );
 			file->set_ScalingMax( src->calcMax() );
 			file->set_FilenameOut( filename );
-			
-	//		file->set_FileType( FTS_MATRIX_DATA );
-	//		file->set_DataType( datatype );
 			file->set_ScaledFlag( scaleOut );
 			retval = file->write( src->data(), flipByteOrder );
 			delete file;
@@ -119,8 +191,16 @@ arraydataIO::~arraydataIO(){
 	}
 
 #else
+	int arraydataIO::readFromEDF( string filename, array1D *&dest ) const{
+		cout << "======== WARNING! Dummy function. Nothing read from EDF. ======== " << endl; 
+		return 1;
+	}
 	int arraydataIO::readFromEDF( string filename, array2D *&dest ) const{
 		cout << "======== WARNING! Dummy function. Nothing read from EDF. ======== " << endl; 
+		return 1;
+	}
+	int arraydataIO::writeToEDF( string filename, array1D *src ) const {
+		cout << "======== WARNING! Dummy function. Nothing written to EDF.======== " << endl; 
 		return 1;
 	}
 	int arraydataIO::writeToEDF( string filename, array2D *src ) const {
@@ -155,7 +235,7 @@ arraydataIO::~arraydataIO(){
 			delete dest;
 			dest = new array2D(width, height);
 
-			cout << "Reading " << filename << " (TIFF file)"
+			cout << "Reading '" << filename << "' (TIFF file)"
 				<< ", dimensions (" << dest->dim1() << ", " << dest->dim2() << ")" << endl;
 
 			npixels = width * height;
@@ -382,13 +462,10 @@ arraydataIO::~arraydataIO(){
 		status = H5Fclose(fileID);
 		
 		//copy data back to dest
-		delete dest;
-		dest = new array2D( nx, ny );
-
-
-		//for some reason, the dereferencing of anything else than 'int' seems to fail
+		//for some reason, the dereferencing of anything else than 'int*' seems to fail
 		//need to fix this as this throws away all floating point accurracy
-		dest->arraydata::copy( (int*)buffer, nx*ny);
+		delete dest;
+		dest = new array2D( (int*)buffer, nx, ny );
 
 		if (type == 0) { 
 			//dest->arraydata::copy( (double*)buffer, nx*ny);
