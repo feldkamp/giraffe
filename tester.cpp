@@ -158,13 +158,19 @@ int Tester::testArrayClasses(){
 	my2Darray->gradientAlongDim2(-12, 8);
 	cout << "after rangeDim2(-12, 8) --- " << my2Darray->getASCIIdata();
 	
+	cout << my2Darray->getHistogramASCII( 20 );
+	cout << my2Darray->getHistogramInBoundariesASCII( 20, -5, 5 );
+	
 	array2D *mask = new array2D( my2Darray->dim1(), my2Darray->dim2() );
 	mask->set(1,1,1);
 	mask->set(4,4,1);
 	my2Darray->multiplyByArrayElementwise( mask );
 	cout << "after masking: (1,1)=1 and (4,4)=1, else=0 --- " << my2Darray->getASCIIdata();
+	
 	delete mask;
 	delete my2Darray;
+	
+	
     
     
 //	cout << "----------array3D------------" << endl;
@@ -317,10 +323,12 @@ int Tester::testIO(){
 	
 	arraydataIO *io = new arraydataIO;
 
+	cout << "--- test case 2D ---" << endl;
 	array2D *wmat = new array2D(10, 6);
 //	wmat->generateTestPattern( 4 );		//cases 0 - 4 available
 	wmat->gradientAlongDim1(-10, 10);
-	wmat->writeToASCII(base()+outfn+".txt");
+	wmat->writeToASCII(base()+outfn+"2D.txt");
+	cout << wmat->getASCIIdata();
 	
 
 	
@@ -379,6 +387,23 @@ int Tester::testIO(){
 	cout << rmat->getASCIIdata();
 		
 	delete rmat;
+	
+	
+	cout << "--- test case 1D ---" << endl;
+	array1D *warr = new array1D(10);
+	warr->range(-7, 12);
+	warr->writeToASCII(base()+outfn+"1D.txt");
+	cout << warr->getASCIIdata();
+	
+	cout << "writing to EDF (1D)" << endl;
+	io->writeToEDF(base()+outfn+"1D.edf", warr);
+	delete warr;
+	
+	array1D* rarr = new array1D;
+	io->readFromEDF(base()+infn+"1D.edf", rarr);
+	cout << rarr->getASCIIdata();
+	delete rarr;
+	
 	
 	delete io;
 	

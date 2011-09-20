@@ -69,7 +69,7 @@ int main (int argc, char * const argv[]) {
 				//---------------------------------------------------
 				//run various tests
 				//---------------------------------------------------
-				string base = "/Users/feldkamp/Desktop/test/";
+				string base = "/Users/feldkamp/Desktop/";
 				cout << "output directory '" << base << "'" << endl;
 				Tester *t = new Tester();
 				t->setBase(base);
