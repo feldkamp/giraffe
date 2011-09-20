@@ -13,6 +13,8 @@
 
 #include <string>
 
+#include <vector>
+
 //tell the compiler that these classes are going to be defined below (needed for copy constructors in arraydata)
 class array1D;
 class array2D;
@@ -37,6 +39,8 @@ public:
 	arraydata( const array2D *array );
 	arraydata( const array3D *array );
 	arraydata( const array4D *array );
+	arraydata( const std::vector<double> vec );
+	
 	template <class T> arraydata( const T *CArray, const unsigned int size_val ){
 		init();
 		this->copy( CArray, size_val );
@@ -57,6 +61,7 @@ public:
 	void copy( const array2D *src );
 	void copy( const array3D *src );
 	void copy( const array4D *src );
+	void copy( const std::vector<double> vec );
 	
 	void copy( const arraydata& src );
 	
@@ -65,7 +70,7 @@ public:
 		p_size = arraysize;
 		if (p_size > 0){
 			this->destroy();
-			p_data = new double[ arraysize ];
+			p_data = new double[ p_size ];
 			for (unsigned int i = 0; i < p_size; i++) {
 				p_data[i] = (double)src[i];
 			}
@@ -73,7 +78,6 @@ public:
 			p_data = NULL;
 		}
 	}
-	
     
     void zeros();												//set all elements to 0
     void zeros( unsigned int start, unsigned int stop );		//set all elements between start and stop to 0 (incl. start, excl. stop)
@@ -88,7 +92,7 @@ public:
 	unsigned int size() const;										//total size of the array	
 	double get_atIndex( unsigned int index) const;					// get element value
 	void set_atIndex( unsigned int index, double val);			// set element value
-
+	
 	double calcMin() const;
 	double calcMax() const;
 	double calcSum() const;
@@ -107,6 +111,12 @@ public:
 	int subtractArrayElementwise( const arraydata *secondArray );
     int multiplyByArrayElementwise( const arraydata *secondArray );
     int divideByArrayElementwise( const arraydata *secondArray );
+	
+	int getHistogram( array1D *&hist, array1D *&bins, unsigned int nBins = 20 );
+	std::string getHistogramASCII( unsigned int nBins = 20 );
+
+	int getHistogramInBoundaries( array1D *&hist, array1D *&bins, unsigned int nBins, double min, double max );
+	std::string getHistogramInBoundariesASCII( unsigned int nBins, double min, double max );
 };
 
 
@@ -206,7 +216,14 @@ public:
 	void gradientAlongDim1( double lowlim, double highlim );			//linear gradient along one dimension, same along other dimension
 	void gradientAlongDim2( double lowlim, double highlim );
     
+	void createRawImageCSPAD( array1D *input,
+								int nMaxQuads=4, int nMax2x1sPerQuad=8, int nRowsPer2x1=388, int nColsPer2x1=185 );
+	void createAssembledImageCSPAD( array1D *input, array1D *pixX, array1D *pixY,
+								int nMaxQuads=4, int nMax2x1sPerQuad=8, int nRowsPer2x1=388, int nColsPer2x1=185 );
+	
 	void generateTestPattern( int type );
+	
+	
 };
 
 

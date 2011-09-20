@@ -15,6 +15,8 @@ using std::cout;
 using std::endl;
 using std::cerr;
 
+#include <iomanip>
+
 #include <string>
 using std::string;
 
@@ -24,8 +26,12 @@ using std::ostringstream;
 #include <fstream>
 using std::ofstream;
 
+#include <vector>
+using std::vector;
+
 #include <cmath>
 #include <cassert>
+#include <exception>
 
 
 
@@ -43,9 +49,12 @@ using std::ofstream;
 arraydata::arraydata( unsigned int size_val ){
     init();
 	p_size = size_val;
-	p_data = new double[size_val];
-    if (p_data == 0)
+	try{
+		p_data = new double[size_val];
+	}catch (std::exception& e){
         cerr << "Error in arraydata constructor: could not allocate memory." << endl;
+		cerr << "Standard exception: " << e.what() << endl;
+	}
 	zeros();					// set all elements to zero initially
 }
 
@@ -72,6 +81,11 @@ arraydata::arraydata( const array3D *array ){
 arraydata::arraydata( const array4D *array ){
 	init();
 	this->copy( array );
+}
+
+arraydata::arraydata( const vector<double> vec ){
+	init();
+	this->copy( vec );
 }
 
 
@@ -131,13 +145,23 @@ void arraydata::copy( const array3D *src ){											//src type: array3D pointe
 void arraydata::copy( const array4D *src ){											//src type: array4D pointer
 	this->copy( src->data(), src->size() );
 }
-
-
 	
 void arraydata::copy( const arraydata& src ){										//src type: arraydata object
     this->copy( src.data(), src.size());
 }
 
+void arraydata::copy( const std::vector<double> vec ){
+	p_size = (unsigned int) vec.size();
+	if (p_size > 0){
+		this->destroy();
+		p_data = new double[ p_size ];
+		for (unsigned int i = 0; i < p_size; i++) {
+			p_data[i] = (double)vec.at(i);
+		}
+	}else{
+		p_data = NULL;
+	}
+}
 
 //--------------------------------------------------------------------
 //time-critical function, check with assert is disabled in release configuration
@@ -360,9 +384,75 @@ int arraydata::divideByArrayElementwise( const arraydata *secondArray ){
 }
 
 
+//------------------------------------------------------------- histogram
+int arraydata::getHistogramInBoundaries( array1D *&hist, array1D *&bins, unsigned int nBins, double min, double max ){
+	double range = max-min;
+	double binwidth = range/(double)(nBins);
+	double bindelta = range/(double)(nBins-1);
+	//cout << "min: " << min << ", max:" << max << ", range: " << range << ", binwidth: " << binwidth << ", nBins: " << nBins << endl;
+	
+	if (range == 0){
+		cerr << "WARNING in arraydata::getHistogramInBoundaries. max == min == " << max << endl;
+	}
+	
+	//make bins array
+	delete bins;
+	bins = new array1D(nBins);
+	for (int b = 0; b < bins->size(); b++){
+		bins->set( b, min + b*binwidth );
+	}
+	
+	//make histogram
+	delete hist;
+	hist = new array1D(nBins);
+	for (int i = 0; i < this->size(); i++){
+		unsigned int binnum = (unsigned int) floor( (this->get_atIndex(i)-min) / (double)bindelta );
+		if (binnum < hist->size()){
+			hist->set( binnum, hist->get(binnum) + 1 );
+		}
+	}
+	return 0;
+}
 
 
+std::string arraydata::getHistogramInBoundariesASCII( unsigned int nBins, double min, double max ){
+	array1D *hist = new array1D();
+	array1D *bins = new array1D();
+	
+	this->getHistogramInBoundaries( hist, bins, nBins, min, max );
 
+	double histmax = hist->calcMax();
+	int nMarkers = 20;
+	int numberPerMarker = (int) floor(histmax/nMarkers);
+	if (numberPerMarker < 1)
+		numberPerMarker = 1;
+	
+	ostringstream osst;
+	osst << std::setw(6) << "#" << "   (" << std::setw(10) << "bound" << "): histogram value" << endl;
+	osst << "---------------------------------------------------" << endl;
+	for (int i = 0; i < bins->size(); i++){
+		osst << std::setw(6) << i << "   (" << std::setw(10) << bins->get(i) << "): " 
+			<< std::setw(12) << hist->get(i) << "  |";
+		for (int m = 0; m < (hist->get(i)/(double)numberPerMarker); m++){ osst << "*"; }
+		osst << endl;
+	}
+	
+	delete hist;
+	delete bins;
+	return osst.str();
+}
+
+int arraydata::getHistogram( array1D *&hist, array1D *&bins, unsigned int nBin ){
+	double min = this->calcMin();
+	double max = this->calcMax();
+	return this->getHistogramInBoundaries( hist, bins, nBin, min, max );
+}
+
+std::string arraydata::getHistogramASCII( unsigned int nBin ){
+	double min = this->calcMin();
+	double max = this->calcMax();
+	return this->getHistogramInBoundariesASCII( nBin, min, max );
+}
 
 
 
@@ -549,10 +639,11 @@ int array2D::getRow( int rownum, array1D *&row ) const{
 	// create new array if 'row' doesn't have right size, otherwise, just overwrite data
 	if (row->size() != this->dim2()) {
 		delete row;
-		row = new array1D( this->dim2() );
-		if (!row){ 
+		try{
+			row = new array1D( this->dim2() );
+		}catch (std::exception& e){
 			cerr << "Error in array2D::getRow. Could not allocate row." << endl;
-			return 3;
+			cerr << "Standard exception: " << e.what() << endl;
 		}
 	}
 
@@ -577,10 +668,11 @@ int array2D::getCol( int colnum, array1D *&col) const{
 	// create new array if 'col' doesn't have right size, otherwise, just overwrite data
 	if (col->size() != this->dim1()) {		
     	delete col;
-    	col = new array1D( this->dim1() );
-		if (!col){ 
+		try{
+			col = new array1D( this->dim1() );
+		}catch (std::exception& e){
 			cerr << "Error in array2D::getCol. Could not allocate column." << endl; 
-			return 3;
+			cerr << "Standard exception: " << e.what() << endl;
 		}
  	}
 	
@@ -754,6 +846,82 @@ void array2D::setDim2( unsigned int size_dim2 ){
 }
 
 
+
+//------------------------------------------------------------- assembleRawImageCSPAD
+// function to create 'raw' CSPAD images from plain 1D data, where
+// dim1 : 388 : rows of a 2x1
+// dim2 : 185 : columns of a 2x1
+// dim3 :   8 : 2x1 sections in a quadrant (align as super-columns)
+// dim4 :   4 : quadrants (align as super-rows)
+//
+//    +--+--+--+--+--+--+--+--+
+// q0 |  |  |  |  |  |  |  |  |
+//    |  |  |  |  |  |  |  |  |
+//    +--+--+--+--+--+--+--+--+
+// q1 |  |  |  |  |  |  |  |  |
+//    |  |  |  |  |  |  |  |  |
+//    +--+--+--+--+--+--+--+--+
+// q2 |  |  |  |  |  |  |  |  |
+//    |  |  |  |  |  |  |  |  |
+//    +--+--+--+--+--+--+--+--+
+// q3 |  |  |  |  |  |  |  |  |
+//    |  |  |  |  |  |  |  |  |
+//    +--+--+--+--+--+--+--+--+
+//     s0 s1 s2 s3 s4 s5 s6 s7
+void array2D::createRawImageCSPAD( array1D *input,
+							int nMaxQuads, int nMax2x1sPerQuad, int nRowsPer2x1, int nColsPer2x1 ){
+	array2D *output = new array2D( nMaxQuads*nRowsPer2x1, nMax2x1sPerQuad*nColsPer2x1 );
+
+	const int nPxPer2x1 = nColsPer2x1 * nRowsPer2x1;						// 71780	
+	const int nMaxPxPerQuad = nPxPer2x1 * nMax2x1sPerQuad;					// 574240
+	
+	//sort into ordered 2D data
+	for (int q = 0; q < nMaxQuads; q++){
+		int superrow = q*nRowsPer2x1;
+		for (int s = 0; s < nMax2x1sPerQuad; s++){
+			int supercol = s*nColsPer2x1;
+			for (int c = 0; c < nColsPer2x1; c++){
+				for (int r = 0; r < nRowsPer2x1; r++){
+					output->set( superrow+r, supercol+c, 
+						input->get( q*nMaxPxPerQuad + s*nPxPer2x1 + c*nRowsPer2x1 + r ) );
+				}
+			}
+		}
+	}
+	
+	//transpose to be conform with cheetah's convention
+	output->transpose();
+	copy(output);
+	delete output;
+}
+
+
+void array2D::createAssembledImageCSPAD( array1D *input, array1D *pixX, array1D *pixY,
+									int nMaxQuads, int nMax2x1sPerQuad, int nRowsPer2x1, int nColsPer2x1 ){
+	const int NX_CSPAD = 1750;
+	const int NY_CSPAD = 1750;
+	const int nPxPer2x1 = nColsPer2x1 * nRowsPer2x1;						// 71780	
+	const int nMaxPxPerQuad = nPxPer2x1 * nMax2x1sPerQuad;					// 574240	
+	
+	array2D* output = new array2D( NY_CSPAD, NX_CSPAD );
+
+	//sort into ordered 2D data
+	for (int q = 0; q < nMaxQuads; q++){
+		for (int s = 0; s < nMax2x1sPerQuad; s++){
+			for (int c = 0; c < nColsPer2x1; c++){
+				for (int r = 0; r < nRowsPer2x1; r++){
+					int index = q*nMaxPxPerQuad + s*nPxPer2x1 + c*nRowsPer2x1 + r;
+					output->set( (int)pixY->get(index), (int)pixX->get(index), input->get(index) );
+				}
+			}
+		}
+	}
+	
+	output->transpose();
+	
+	copy(output);
+	delete output;
+}
 
 
 //-----------------------------------------------------test pattern
