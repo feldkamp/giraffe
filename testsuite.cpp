@@ -69,10 +69,14 @@ int main (int argc, char * const argv[]) {
 				//---------------------------------------------------
 				//run various tests
 				//---------------------------------------------------
-				string base = "/Users/feldkamp/Desktop/";
+				string base = "";
+				char *home = getenv( "HOME" );
+				if (home){
+					base = home;
+					base += "/Desktop";
+				}
 				cout << "output directory '" << base << "'" << endl;
-				Tester *t = new Tester();
-				t->setBase(base);
+				Tester *t = new Tester(base);
 				
 				switch(argv[i][2]){
 					case '1':
