@@ -906,19 +906,37 @@ void array2D::createRawImageCSPAD( array1D *input,
 }
 
 
+
+//------------------------------------------------------------- createAssembledImageCSPAD
+// expects 'pixX/Y' arrays to contain pixel count coordinates for each value in 'input'
 void array2D::createAssembledImageCSPAD( array1D *input, array1D *pixX, array1D *pixY,
 									int nMaxQuads, int nMax2x1sPerQuad, int nRowsPer2x1, int nColsPer2x1 ){
-	const int NX_CSPAD = 1750;
-	const int NY_CSPAD = 1750;
-	const int nPxPer2x1 = nColsPer2x1 * nRowsPer2x1;						// 71780	
-	const int nMaxPxPerQuad = nPxPer2x1 * nMax2x1sPerQuad;					// 574240	
+
+	const double xmax = pixX->calcMax();
+	const double xmin = pixX->calcMin();
+	const double ymax = pixY->calcMax();
+	const double ymin = pixY->calcMin();
+	
+	// calculate range of values in pixel arrays 
+	// --> this will be the number of pixels in assembled image (add a safety margin)
+	const int NX_CSPAD = (int) ceil(xmax-xmin) + 1;
+	const int NY_CSPAD = (int) ceil(ymax-ymin) + 1;
+	
+	const int nPxPer2x1 = nColsPer2x1 * nRowsPer2x1;						// 71780
+	const int nMaxPxPerQuad = nPxPer2x1 * nMax2x1sPerQuad;					// 574240
 	
 	if (input->size() != pixX->size() || input->size() != pixY->size() ){
 		cerr << "Error in array2D::createAssembledImageCSPAD! Array sizes don't match. Aborting!" << endl;
 		cerr << "size() of data:" << input->size() << ", pixX:" << pixX->size() << ", pixY:" << pixY->size() << endl;
 		cerr << "dim1() of data:" << input->dim1() << ", pixX:" << pixX->dim1() << ", pixY:" << pixY->dim1() << endl;
 		return;
+	}else{
+		cout << "Assembling CSPAD image. Output (" << NX_CSPAD << ", " << NY_CSPAD << ")" << endl;
 	}
+	
+	//shift output arrays, if necessary, so that they start at zero
+	pixX->subtractValue( xmin );
+	pixY->subtractValue( ymin );
 	
 	array2D* output = new array2D( NY_CSPAD, NX_CSPAD );
 
