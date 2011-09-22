@@ -61,7 +61,7 @@ CrossCorrelator::CrossCorrelator( float *dataCArray, float *qxCArray, float *qyC
 	if (nq1 < 2) cerr << "ERROR in CrossCorrelator::constructor: nq1 must be a positive integer larger than 1." << endl;
 	
 	//check, user wants to run in 2D xaca or full 3D xcca mode
-	if (nq2 == 0 && nq1 == 1){
+	if (nq2 == 0 || nq2 == 1){
 		setXccaEnable(false);
 		p_nQ = nq1;
 		p_autoCorrelation = new array2D( nQ(), nLag() );
@@ -117,7 +117,7 @@ CrossCorrelator::CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arra
 	p_nLag = (int) ceil(p_nPhi/2.0+1);
 	
 	//check, user wants to run in 2D xaca or full 3D xcca mode
-	if (nq2 == 0 && nq1 == 1){
+	if (nq2 == 0 || nq2 == 1){
 		setXccaEnable(false);
 		p_nQ = nq1;
 		p_autoCorrelation = new array2D( nQ(), nLag() );
@@ -1159,7 +1159,7 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( array1D* cartesian1D, array
             << step_phi << " is smaller than zero." << endl;
     
 	for(q = start_q, q_ct=0; q_ct < number_q; q+=step_q, q_ct++){                        // q: for all rings/q-values
-        if(debug()){cout << "#" << q_ct << ",q=" << q << "  " << std::flush;}
+        if(debug()>1){cout << "#" << q_ct << ",q=" << q << "  " << std::flush;}
 		for(p = start_phi, p_ct=0; p_ct < number_phi; p+=step_phi, p_ct++){				// phi: go through all angles
 
             //find lookup coordinates
@@ -1429,7 +1429,7 @@ int CrossCorrelator::calculateXCCA_FAST(){
 		throw e;	//re-throw
 	}
 
-	if(debug()){ cout << endl << "CrossCorrelator::calculateXCCA_FAST done." << endl; }			
+	if(debug()>1){ cout << endl << "CrossCorrelator::calculateXCCA_FAST done." << endl; }			
     return 0;
 }
 
@@ -1450,7 +1450,7 @@ int CrossCorrelator::autocorrelateFFT(array2D *polar2D, array2D *corr2D) const {
 		if (f->size() == 0) { throw 2; }
 				
 		if (debug()>1){ cout << "   #" << q_ct << ", f before FFT: " << f->getASCIIdata() << endl; }
-		if (debug()){ cout << q_ct << " " << std::flush; }
+		if (debug()>1){ cout << q_ct << " " << std::flush; }
 		
 		//perform autocorrelation --> compute via FFT
 		// initialize imaginary part to zero --> f is real
@@ -1504,7 +1504,7 @@ int CrossCorrelator::crosscorrelateFFT(array2D *polar2D, array3D *corr3D) const 
 			if (debug()>1){ 
 				cout << "   #" << fq_ct << ", f before FFT: " << f->getASCIIdata() << endl; 
 			}
-			if (debug()){ cout << fq_ct << " " << std::flush; }
+			if (debug()>1){ cout << fq_ct << " " << std::flush; }
 			
 			//perform CROSS-correlation --> compute via FFT
 			if (!f || !g) {
