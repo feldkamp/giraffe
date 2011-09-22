@@ -41,11 +41,6 @@ using std::vector;
 // CLASS IMPLEMENTATION OF arraydata
 //
 //=================================================================================
-//arraydata::arraydata(){
-//    init();
-//	p_data = new double[0];
-//}
-
 arraydata::arraydata( unsigned int size_val ){
     init();
 	p_size = size_val;
@@ -98,7 +93,6 @@ arraydata::arraydata( const arraydata &src ){
 //assignment operator
 arraydata & arraydata::operator=(const arraydata & src){
     if ( this != &src ){
-		cout << "DEBUG: ASSIGNMENT OPERATOR FOR arraydata" << endl;
         this->destroy();
         init();
         copy( src );
@@ -329,7 +323,11 @@ int arraydata::divideByValue( double value ){
 
 //add each element by an element from a second array
 int arraydata::addArrayElementwise( const arraydata *secondArray ){
-    if (this->size() != secondArray->size()){
+    if (!secondArray){
+		cerr << "Error in arraydata::addArrayElementwise! Second array not allocated. ";
+		return 2;
+	}
+	if (this->size() != secondArray->size()){
         cerr << "Error in arraydata::addArrayElementwise! Array sizes don't match. ";
         cerr << "(this array size " << this->size() << " != second array size " << secondArray->size() << "). Operation not performed."<< endl;
         return 1;
@@ -343,6 +341,10 @@ int arraydata::addArrayElementwise( const arraydata *secondArray ){
 
 //subtract each element by an element from a second array
 int arraydata::subtractArrayElementwise( const arraydata *secondArray ){
+    if (!secondArray){
+		cerr << "Error in arraydata::subtractArrayElementwise! Second array not allocated. ";
+		return 2;
+	}
     if (this->size() != secondArray->size()){
         cerr << "Error in arraydata::subtractArrayElementwise! Array sizes don't match. ";
         cerr << "(" << this->size() << " != " << secondArray->size() << "). Operation not performed."<< endl;
@@ -357,6 +359,10 @@ int arraydata::subtractArrayElementwise( const arraydata *secondArray ){
 
 //multiply each element by an element from a second array
 int arraydata::multiplyByArrayElementwise( const arraydata *secondArray ){
+    if (!secondArray){
+		cerr << "Error in arraydata::multiplyArrayElementwise! Second array not allocated. ";
+		return 2;
+	}
     if (this->size() != secondArray->size()){
         cerr << "Error in arraydata::multiplyArrayElementwise! Array sizes don't match. ";
         cerr << "(" << this->size() << " != " << secondArray->size() << "). Operation not performed."<< endl;
@@ -371,6 +377,10 @@ int arraydata::multiplyByArrayElementwise( const arraydata *secondArray ){
 
 //divide each element by an element from a second array
 int arraydata::divideByArrayElementwise( const arraydata *secondArray ){
+    if (!secondArray){
+		cerr << "Error in arraydata::divideArrayElementwise! Second array not allocated. ";
+		return 2;
+	}
     if (this->size() != secondArray->size()){
         cerr << "Error in arraydata::divideArrayElementwise! Array sizes don't match. ";
         cerr << "(" << this->size() << " != " << secondArray->size() << "). Operation not performed."<< endl;
@@ -902,6 +912,13 @@ void array2D::createAssembledImageCSPAD( array1D *input, array1D *pixX, array1D 
 	const int NY_CSPAD = 1750;
 	const int nPxPer2x1 = nColsPer2x1 * nRowsPer2x1;						// 71780	
 	const int nMaxPxPerQuad = nPxPer2x1 * nMax2x1sPerQuad;					// 574240	
+	
+	if (input->size() != pixX->size() || input->size() != pixY->size() ){
+		cerr << "Error in array2D::createAssembledImageCSPAD! Array sizes don't match. Aborting!" << endl;
+		cerr << "size() of data:" << input->size() << ", pixX:" << pixX->size() << ", pixY:" << pixY->size() << endl;
+		cerr << "dim1() of data:" << input->dim1() << ", pixX:" << pixX->dim1() << ", pixY:" << pixY->dim1() << endl;
+		return;
+	}
 	
 	array2D* output = new array2D( NY_CSPAD, NX_CSPAD );
 

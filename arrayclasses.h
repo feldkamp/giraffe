@@ -11,8 +11,8 @@
 #ifndef _arrayclasses_h
 #define _arrayclasses_h
 
+#include <iostream>
 #include <string>
-
 #include <vector>
 
 //tell the compiler that these classes are going to be defined below (needed for copy constructors in arraydata)
@@ -68,7 +68,7 @@ public:
 	// templated function for c-style arrays of basic types (float, double, int, ...)
 	template <class T> void copy( const T *src, const unsigned int arraysize ){
 		p_size = arraysize;
-		if (p_size > 0){
+		if (p_size > 0 && src){
 			this->destroy();
 			p_data = new double[ p_size ];
 			for (unsigned int i = 0; i < p_size; i++) {
@@ -76,6 +76,7 @@ public:
 			}
 		}else{
 			p_data = NULL;
+			std::cerr << "Error in arraydata::copy! src=" << src << ", size=" << arraysize << std::endl;
 		}
 	}
     
