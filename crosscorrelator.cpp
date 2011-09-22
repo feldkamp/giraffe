@@ -61,7 +61,7 @@ CrossCorrelator::CrossCorrelator( float *dataCArray, float *qxCArray, float *qyC
 	if (nq1 < 2) cerr << "ERROR in CrossCorrelator::constructor: nq1 must be a positive integer larger than 1." << endl;
 	
 	//check, user wants to run in 2D xaca or full 3D xcca mode
-	if (nq2 == 0){
+	if (nq2 == 0 && nq1 == 1){
 		setXccaEnable(false);
 		p_nQ = nq1;
 		p_autoCorrelation = new array2D( nQ(), nLag() );
@@ -117,7 +117,7 @@ CrossCorrelator::CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arra
 	p_nLag = (int) ceil(p_nPhi/2.0+1);
 	
 	//check, user wants to run in 2D xaca or full 3D xcca mode
-	if (nq2 == 0){
+	if (nq2 == 0 && nq1 == 1){
 		setXccaEnable(false);
 		p_nQ = nq1;
 		p_autoCorrelation = new array2D( nQ(), nLag() );
@@ -1075,12 +1075,25 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( double start_q, double stop
 	if ( abs_q_max > fabs(p_qymax)) { abs_q_max = fabs(p_qymax); }
 	if ( abs_q_max > fabs(p_qxmin)) { abs_q_max = fabs(p_qxmin); }
 	if ( abs_q_max > fabs(p_qymin)) { abs_q_max = fabs(p_qymin); }
-    stop_q = abs_q_max<stop_q ? abs_q_max : stop_q;  	//take the smallest value of the two
+//    stop_q = abs_q_max<stop_q ? abs_q_max : stop_q;  	//take the smallest value of the two
+
+	//----------------------ATTTENTION--------------------------------
+	//THIS BECOMES IMPORTANT WHEN Q-VALUE ARRAYS PASSED IN THE CONSTRUCTOR ARE
+	//ACTUALLY USED AS START / STOP VALUES
+	//--->REVISIT THIS SECTION
+	
+
+	if (stop_q < start_q){
+		cerr << "Warning in CrossCorrelator::calculatePolarCoordinates_FAST. stop_q not well defined." << endl;
+		cerr << "(start_q, stop_q) was = (" << start_q << ", " << stop_q << ") ";
+		stop_q = start_q + nQ();
+		cerr << "is now (" << start_q << ", " << stop_q << ")" << endl;
+	}
 
 	if( debug()>1 ){ 
 		cout << "CrossCorrelator::calculatePolarCoordinates_FAST" << endl; 
-		cout << "varying scattering vector q from " << start_q << " to " <<  stop_q << " in " << nQ() << " steps, "
-			<< "and angle phi full circle in " << nPhi() << " steps." << endl;
+		cout << "Varying scattering vector q from " << start_q << " to " <<  stop_q << " in " << nQ() << " steps, "
+			<< "and angle phi from " << start_phi << " to " <<  stop_phi << " in " << nPhi() << " steps." << endl;
 	}
     int retval = 0;
 
@@ -1105,7 +1118,10 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( double start_q, double stop
 		setMaskEnable(true);	// ...turn back on
 	}
 	
+	
+	//call the 'worker' function to actually do the calculation
 	int novalue_count = calculatePolarCoordinates_FAST( data(), polar(), nPhi(), start_phi, stop_phi, nQ(), start_q, stop_q );
+
 	if ( novalue_count > 0 ){
 		cout << "Couldn't assign a true value in " << novalue_count << " cases (" 
 			<< ((double)novalue_count)/nQ()/nPhi()*100 << "%) in the polar coordinate image of " 
@@ -1220,9 +1236,8 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( array1D* cartesian1D, array
 			
 			// there should be an equal number of starts and stops now, at least one of each
 			if (start_m.size() != stop_m.size() || start_m.empty() || stop_m.empty()){
-				cerr << "Error in CrossCorrelator::calculatePolarCoordinates_FAST!";
-				cerr << " start_m.size()=" << start_m.size() << " != stop_m.size()=" << stop_m.size() << endl;
-				throw;
+				cerr << "Error in CrossCorrelator::calculatePolarCoordinates_FAST ( q = " << q;
+				cerr << "   start_m.size()=" << start_m.size() << " != stop_m.size()=" << stop_m.size() << endl;
 			}
 			
 			//calculate interpolation
@@ -1331,7 +1346,7 @@ double CrossCorrelator::lookup( double xcoord, double ycoord, array1D *dataArray
 			if ( valid > 0 ){
 				value = sum / ((double)valid);
 			} else {
-				if (debug()){
+				if (debug()>1){
 					cout << "WARNING in lookup()! Couldn't find a value in LUT for coordinates (" << xcoord << ", " << ycoord << "). " << endl;
 				}
 				// search region would have to be expanded in a complete implementation....... 
