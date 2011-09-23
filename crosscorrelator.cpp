@@ -640,7 +640,7 @@ void CrossCorrelator::setDebug( int debuglevel ){
     p_debug = debuglevel;
 }
 
-    
+//----------------------------------------------------------------------------variables    
 double CrossCorrelator::deltaq() const{						//getter only, dependent variable
 	return p_deltaq;
 }
@@ -661,26 +661,18 @@ int CrossCorrelator::nLag() const{					//getter only, dependent variable
 	return p_nLag;
 }
 
-//double CrossCorrelator::getQavg(unsigned index) const {
-//	return p_qAvg->get(index);
-//}
-//
-//double CrossCorrelator::getPhiavg(unsigned index) const {
-//	return p_phiAvg->get(index);
-//}
-//
-//double CrossCorrelator::getIavg(unsigned index) const {
-//	return p_iAvg->get(index);
-//}
-
-double CrossCorrelator::getAutoCorrelation(unsigned index1, unsigned index2) const {
-	return p_autoCorrelation->get(index1,index2);
+//----------------------------------------------------------------------------calculated arrays
+array1D *CrossCorrelator::qAvg() const{
+	return p_qAvg;
 }
 
-double CrossCorrelator::getCrossCorrelation(unsigned index1, unsigned index2, unsigned index3) const {
-	return p_crossCorrelation->get(index1,index2,index3);
+array1D *CrossCorrelator::phiAvg() const{
+	return p_phiAvg;
 }
 
+array1D *CrossCorrelator::iAvg() const{
+	return p_iAvg;
+}
 
 
 

@@ -108,7 +108,7 @@ public:
 	
 	//---------------------------------------------setters & getters
 
-	//---------------------------------------------getters for dependent variables
+	//---------------------------------------------getters for variables
 	int nQ() const;
 	int nPhi() const;
 	int nLag() const;
@@ -116,9 +116,9 @@ public:
 	double deltaphi() const;	
 	
 	//---------------------------------------------getters for calculated arrays
-//	double getQavg(unsigned index) const;
-//	double getPhiavg(unsigned index) const;
-//	double getIavg(unsigned index) const;
+	array1D *qAvg() const;
+	array1D *phiAvg() const;
+	array1D *iAvg() const;
 	array2D *fluctuations() const;	// intensity fluctuations in polar coordinates produced by calculateXCCA()
 	array2D *polar() const;			// intensities in polar coordinates produced by calculateXCCA()/calculatePolarCoordinates_FAST()
 	array2D *mask_polar() const;	// mask in polar coordinates produced by calculatePolarCoordinates_FAST()
