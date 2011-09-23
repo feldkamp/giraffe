@@ -40,6 +40,22 @@ public:
 	void destroyInternalArrays();
     void initDefaultQ();
 	
+	//---------------------------------------------main interface, calls different algorithms
+	// master_algorithm: (1-4) call a combination of the partial algorithms below
+	//		(1) calc coordinates with alg. 1, calc correlation with alg. 1
+	//		(2) calc coordinates with alg. 2, calc correlation with alg. 2
+	//		(3) calc coordinates with alg. 1, calc correlation with alg. 2
+	//		(4) calc coordinates with alg. 2, calc correlation with alg. 1
+	void run(int master_algorithm = 1, bool calc_SAXS = true);
+	void run(double start_q, double stop_q, int master_algorithm = 1, bool calc_SAXS = true);
+	
+	// alg_coords: (1) full data with interpolation
+	//             (2) only lookup certain values, FAST, but no interpolation
+	// alg_corr:   (1) direct correlation calculation, works on data with gaps, slow
+	//             (2) correlation via Fourier transform, fast, strong artifacts on data with gaps
+	void run(double start_q, double stop_q, int alg_coords, int alg_corr, bool calc_SAXS);
+	
+	
 	//---------------------------------------------calculations (Jonas's way)
 	void calculatePolarCoordinates(double start_q = 0, double stop_q = 0);
 	void calculateSAXS(double start_q = 0, double stop_q = 0);
@@ -100,9 +116,9 @@ public:
 	double deltaphi() const;	
 	
 	//---------------------------------------------getters for calculated arrays
-	double getQavg(unsigned index) const;
-	double getPhiavg(unsigned index) const;
-	double getIavg(unsigned index) const;
+//	double getQavg(unsigned index) const;
+//	double getPhiavg(unsigned index) const;
+//	double getIavg(unsigned index) const;
 	array2D *fluctuations() const;	// intensity fluctuations in polar coordinates produced by calculateXCCA()
 	array2D *polar() const;			// intensities in polar coordinates produced by calculateXCCA()/calculatePolarCoordinates_FAST()
 	array2D *mask_polar() const;	// mask in polar coordinates produced by calculatePolarCoordinates_FAST()
@@ -172,7 +188,7 @@ public:
 	void setQmax( double qmax_val );
 	double qmin() const;
 	void setQmin( double qmin_val );
-	void setQminmax( double qmin_val, double qmax_val );	
+	void setQminQmax( double qmin_val, double qmax_val );	
 	
 	double phimin() const;
 	void setPhimin( double phimin_val );
@@ -237,14 +253,11 @@ private:
 	array1D *p_phiAvg;			// vector of output angles
 	
 	array2D *p_fluctuations;	// intensity fluctuations in polar coordinates
-	
-	void updateDependentVariables();
     
 	// function trackers
     int p_calculatePolarCoordinates;	// tracker for calculatePolarCoordinates()
 	int p_calculateSAXS;				// tracker for calculateSAXS()
 	int p_calculateXCCA;				// tracker for calculateXCCA()
-	int p_updateDependentVariables;		// tracker for updateDependentVariables()
 	
 	//-------------------------------------------------required for alg2
 	array2D *p_mask_polar;
