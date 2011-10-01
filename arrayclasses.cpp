@@ -646,7 +646,7 @@ int array2D::getRow( int rownum, array1D *&row ) const{
 		return 2;
 	}
 	
-	// create new array if 'row' doesn't have right size, otherwise, just overwrite data
+	// create fresh array if 'row' doesn't have right size, otherwise, just overwrite data
 	if (row->size() != this->dim2()) {
 		delete row;
 		try{
@@ -675,7 +675,7 @@ int array2D::getCol( int colnum, array1D *&col) const{
 		return 2;
 	}
 
-	// create new array if 'col' doesn't have right size, otherwise, just overwrite data
+	// create fresh array if 'col' doesn't have right size, otherwise, just overwrite data
 	if (col->size() != this->dim1()) {		
     	delete col;
 		try{
@@ -856,107 +856,6 @@ void array2D::setDim2( unsigned int size_dim2 ){
 }
 
 
-
-//------------------------------------------------------------- assembleRawImageCSPAD
-// function to create 'raw' CSPAD images from plain 1D data, where
-// dim1 : 388 : rows of a 2x1
-// dim2 : 185 : columns of a 2x1
-// dim3 :   8 : 2x1 sections in a quadrant (align as super-columns)
-// dim4 :   4 : quadrants (align as super-rows)
-//
-//    +--+--+--+--+--+--+--+--+
-// q0 |  |  |  |  |  |  |  |  |
-//    |  |  |  |  |  |  |  |  |
-//    +--+--+--+--+--+--+--+--+
-// q1 |  |  |  |  |  |  |  |  |
-//    |  |  |  |  |  |  |  |  |
-//    +--+--+--+--+--+--+--+--+
-// q2 |  |  |  |  |  |  |  |  |
-//    |  |  |  |  |  |  |  |  |
-//    +--+--+--+--+--+--+--+--+
-// q3 |  |  |  |  |  |  |  |  |
-//    |  |  |  |  |  |  |  |  |
-//    +--+--+--+--+--+--+--+--+
-//     s0 s1 s2 s3 s4 s5 s6 s7
-void array2D::createRawImageCSPAD( array1D *input,
-							int nMaxQuads, int nMax2x1sPerQuad, int nRowsPer2x1, int nColsPer2x1 ){
-	array2D *output = new array2D( nMaxQuads*nRowsPer2x1, nMax2x1sPerQuad*nColsPer2x1 );
-
-	const int nPxPer2x1 = nColsPer2x1 * nRowsPer2x1;						// 71780	
-	const int nMaxPxPerQuad = nPxPer2x1 * nMax2x1sPerQuad;					// 574240
-	
-	//sort into ordered 2D data
-	for (int q = 0; q < nMaxQuads; q++){
-		int superrow = q*nRowsPer2x1;
-		for (int s = 0; s < nMax2x1sPerQuad; s++){
-			int supercol = s*nColsPer2x1;
-			for (int c = 0; c < nColsPer2x1; c++){
-				for (int r = 0; r < nRowsPer2x1; r++){
-					output->set( superrow+r, supercol+c, 
-						input->get( q*nMaxPxPerQuad + s*nPxPer2x1 + c*nRowsPer2x1 + r ) );
-				}
-			}
-		}
-	}
-	
-	//transpose to be conform with cheetah's convention
-	output->transpose();
-	copy(output);
-	delete output;
-}
-
-
-
-//------------------------------------------------------------- createAssembledImageCSPAD
-// expects 'pixX/Y' arrays to contain pixel count coordinates for each value in 'input'
-void array2D::createAssembledImageCSPAD( array1D *input, array1D *pixX, array1D *pixY,
-									int nMaxQuads, int nMax2x1sPerQuad, int nRowsPer2x1, int nColsPer2x1 ){
-
-	const double xmax = pixX->calcMax();
-	const double xmin = pixX->calcMin();
-	const double ymax = pixY->calcMax();
-	const double ymin = pixY->calcMin();
-	
-	// calculate range of values in pixel arrays 
-	// --> this will be the number of pixels in assembled image (add a safety margin)
-	const int NX_CSPAD = (int) ceil(xmax-xmin) + 1;
-	const int NY_CSPAD = (int) ceil(ymax-ymin) + 1;
-	
-	const int nPxPer2x1 = nColsPer2x1 * nRowsPer2x1;						// 71780
-	const int nMaxPxPerQuad = nPxPer2x1 * nMax2x1sPerQuad;					// 574240
-	
-	if (input->size() != pixX->size() || input->size() != pixY->size() ){
-		cerr << "Error in array2D::createAssembledImageCSPAD! Array sizes don't match. Aborting!" << endl;
-		cerr << "size() of data:" << input->size() << ", pixX:" << pixX->size() << ", pixY:" << pixY->size() << endl;
-		cerr << "dim1() of data:" << input->dim1() << ", pixX:" << pixX->dim1() << ", pixY:" << pixY->dim1() << endl;
-		return;
-	}else{
-		cout << "Assembling CSPAD image. Output (" << NX_CSPAD << ", " << NY_CSPAD << ")" << endl;
-	}
-	
-	//shift output arrays, if necessary, so that they start at zero
-	pixX->subtractValue( xmin );
-	pixY->subtractValue( ymin );
-	
-	array2D* output = new array2D( NY_CSPAD, NX_CSPAD );
-
-	//sort into ordered 2D data
-	for (int q = 0; q < nMaxQuads; q++){
-		for (int s = 0; s < nMax2x1sPerQuad; s++){
-			for (int c = 0; c < nColsPer2x1; c++){
-				for (int r = 0; r < nRowsPer2x1; r++){
-					int index = q*nMaxPxPerQuad + s*nPxPer2x1 + c*nRowsPer2x1 + r;
-					output->set( (int)pixY->get(index), (int)pixX->get(index), input->get(index) );
-				}
-			}
-		}
-	}
-	
-	output->transpose();
-	
-	copy(output);
-	delete output;
-}
 
 
 //-----------------------------------------------------test pattern

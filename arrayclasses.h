@@ -158,6 +158,7 @@ public:
     
     std::string getASCIIdata() const;
     int writeToASCII( std::string filename ) const;
+
 };
 
 
@@ -217,14 +218,7 @@ public:
 	void gradientAlongDim1( double lowlim, double highlim );			//linear gradient along one dimension, same along other dimension
 	void gradientAlongDim2( double lowlim, double highlim );
     
-	void createRawImageCSPAD( array1D *input,
-								int nMaxQuads=4, int nMax2x1sPerQuad=8, int nRowsPer2x1=388, int nColsPer2x1=185 );
-	void createAssembledImageCSPAD( array1D *input, array1D *pixX, array1D *pixY,
-								int nMaxQuads=4, int nMax2x1sPerQuad=8, int nRowsPer2x1=388, int nColsPer2x1=185 );
-	
 	void generateTestPattern( int type );
-	
-	
 };
 
 

@@ -350,9 +350,12 @@ int Tester::testIO(){
 	
 	cout << "writing to HDF5 (int)" << endl;
 	io->writeToHDF5(base()+outfn+"_i.h5", wmat, 2);
+
+	cout << "writing to HDF5 (int16_t)" << endl;
+	io->writeToHDF5(base()+outfn+"_i16.h5", wmat, 3);
 	
-	cout << "writing to HDF5 (default)" << endl;
-	io->writeToHDF5(base()+outfn+".h5", wmat, 3);
+	cout << "writing to HDF5 (long)" << endl;
+	io->writeToHDF5(base()+outfn+"_long.h5", wmat, 4);
 	
 	delete wmat;
 	
@@ -381,28 +384,32 @@ int Tester::testIO(){
 	cout << "\nreading from HDF5(int)" << endl;
 	io->readFromHDF5(base()+infn+"_i.h5", rmat);
 	cout << rmat->getASCIIdata();
+
+	cout << "\nreading from HDF5(int16_t)" << endl;
+	io->readFromHDF5(base()+infn+"_i16.h5", rmat);
+	cout << rmat->getASCIIdata();
 	
-	cout << "\nreading from HDF5(default)" << endl;
-	io->readFromHDF5(base()+infn+".h5", rmat);
+	cout << "\nreading from HDF5(long)" << endl;
+	io->readFromHDF5(base()+infn+"_long.h5", rmat);
 	cout << rmat->getASCIIdata();
 		
 	delete rmat;
 	
 	
-	cout << "--- test case 1D ---" << endl;
-	array1D *warr = new array1D(10);
-	warr->range(-7, 12);
-	warr->writeToASCII(base()+outfn+"1D.txt");
-	cout << warr->getASCIIdata();
-	
-	cout << "writing to EDF (1D)" << endl;
-	io->writeToEDF(base()+outfn+"1D.edf", warr);
-	delete warr;
-	
-	array1D* rarr = new array1D;
-	io->readFromEDF(base()+infn+"1D.edf", rarr);
-	cout << rarr->getASCIIdata();
-	delete rarr;
+//	cout << "--- test case 1D ---" << endl;
+//	array1D *warr = new array1D(10);
+//	warr->range(-7, 12);
+//	warr->writeToASCII(base()+outfn+"1D.txt");
+//	cout << warr->getASCIIdata();
+//	
+//	cout << "writing to EDF (1D)" << endl;
+//	io->writeToEDF(base()+outfn+"1D.edf", warr);
+//	delete warr;
+//	
+//	array1D* rarr = new array1D;
+//	io->readFromEDF(base()+infn+"1D.edf", rarr);
+//	cout << rarr->getASCIIdata();
+//	delete rarr;
 	
 	
 	delete io;

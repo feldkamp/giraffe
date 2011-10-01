@@ -17,6 +17,8 @@ using std::flush;
 #include <string>
 using std::string;
 
+#include <sstream>
+
 #include <cmath>
 
 
@@ -231,7 +233,7 @@ arraydataIO::~arraydataIO(){
 			TIFFGetField(tiff, TIFFTAG_IMAGEWIDTH, &width);
 			TIFFGetField(tiff, TIFFTAG_IMAGELENGTH, &height);
 
-			//allocate new data to write image to		
+			//allocate data to write image to		
 			delete dest;
 			dest = new array2D(width, height);
 
@@ -396,23 +398,26 @@ arraydataIO::~arraydataIO(){
 		cout << "Reading " << filename << " (HDF5 file)" << endl;
 		
 		string dataset_name = "data/data";
-
+		unsigned int access_mode = H5F_ACC_RDONLY;			// file mode, read-only, other option: H5F_ACC_RDWR
+		hid_t access_prp = H5P_DEFAULT;						// file access property list
 		
-		// open file and dataset using the default properties
-		hid_t fileID = H5Fopen (filename.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
-		hid_t datasetID = H5Dopen (fileID, dataset_name.c_str(), H5P_DEFAULT);
-		
-		hid_t typeID = H5Dget_type(datasetID);
-		H5T_class_t t_class = H5Tget_class(typeID);
-
-		H5T_order_t order = H5Tget_order(typeID);
-		if (order == H5T_ORDER_LE){
-			cout << "Little endian order" << endl;
-		}else if (order == H5T_ORDER_BE){
-			cout << "Big endian order" << endl;
+		hid_t fileID = H5Fopen(filename.c_str(), access_mode, access_prp);			// open file
+		if (fileID <= 0){
+			cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+			cerr << "  ERROR in arraydataIO::readFromHDF5. Could not read HDF5 from file '" << filename << "'!" << endl;
+			cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+			return 1;
 		}
+		hid_t datasetID = H5Dopen(fileID, dataset_name.c_str(), access_prp);		// open dataset in that file
 
-		size_t size = H5Tget_size(typeID);
+
+		hid_t memTypeID = H5T_NATIVE_INT;		//datatype in memory (not necessarily in the file)
+		hid_t memSpaceID = H5S_ALL;				//dataspace in memory, H5S_ALL is default --> the whole dataspace in memory will be used for I/O
+		hid_t fileSpaceID = H5S_ALL;			//dataspace in file, H5S_ALL is default --> the whole dataspace in the fill is selected for I/O
+		hid_t xfer_prp = H5P_DEFAULT;			//transfer property list, H5P_DEFAULT is default
+				
+		hid_t typeID = H5Dget_type(datasetID);
+		H5T_class_t varClass = H5Tget_class(typeID);
 
 		hid_t dataspace = H5Dget_space(datasetID);    /* dataspace handle */
 		int rank = H5Sget_simple_extent_ndims(dataspace);
@@ -420,136 +425,218 @@ arraydataIO::~arraydataIO(){
 		int status_n = H5Sget_simple_extent_dims(dataspace, dims_out, NULL);
 		int ny = (int)(dims_out[0]);
 		int nx = (int)(dims_out[1]);
-		cout << "rank " << rank << ", dimensions nx:" << nx << " x ny:" << ny << ", status " << status_n << endl;
+		cout << "Rank " << rank << ". Dimensions: nx,ny = " << nx << "," << ny << ". Status: " << status_n << endl;
+
+		H5T_order_t order = H5Tget_order(typeID);
+		if (order == H5T_ORDER_LE){
+			cout << "Little endian order. " << flush;
+		}else if (order == H5T_ORDER_BE){
+			cout << "Big endian order. " << flush;
+		}
+		size_t varSize = H5Tget_size(typeID);
 
 		//allocate data to hold what comes out of the file
 		void *buffer = NULL;
-		int type = 0;
-		if (t_class == H5T_FLOAT){
-			cout << "Data set has FLOAT type, data size is " << (int)size;
-			if (size == sizeof(float)){
-				cout << " --> float" << endl;
-				buffer = new float[nx*ny];
-				type = 1;
-			}else if (size == sizeof(double)){
-				cout << " --> double" << endl;
+		if (varClass == H5T_FLOAT){
+			cout << "FLOAT type, size " << (int)varSize << " " << flush;
+			if (varSize == sizeof(double)){
+				cout << "--> double " << flush;
 				buffer = new double[nx*ny];
-				type = 0;
+				memTypeID = H5T_NATIVE_DOUBLE;
+			}else if (varSize == sizeof(float)){
+				cout << "--> float " << flush;
+				buffer = new float[nx*ny];
+				memTypeID = H5T_NATIVE_FLOAT;
 			}
-		}else if (t_class == H5T_INTEGER){
-			cout << "Data set has INTEGER type, data size is " << (int)size;
-			type = 2;
-			if (size == sizeof(int)){
-				cout << " --> int" << endl;
+		}else if (varClass == H5T_INTEGER){
+			cout << "INTEGER type, size" << (int)varSize << " " << flush;
+			if (varSize == sizeof(int)){
+				cout << "--> int " << flush;
 				buffer = new int[nx*ny];
-			}else if (size == sizeof(short int)){
-				cout << " --> short" << endl;
-				buffer = new short int[nx*ny];
-			}else if (size == sizeof(long int)){
-				cout << " --> long" << endl;
+				memTypeID = H5T_NATIVE_INT;
+			}else if (varSize == sizeof(int16_t)){
+				cout << "--> int16_t " << flush;
+				buffer = new int16_t[nx*ny];
+				memTypeID = H5T_STD_I16LE;
+			}else if (varSize == sizeof(long int)){
+				cout << "--> long " << flush;
 				buffer = new long int[nx*ny];
+				memTypeID = H5T_NATIVE_LONG;
+			}
+			
+			H5T_sign_t sign = H5Tget_sign(typeID);
+			if (sign == H5T_SGN_NONE){
+				cout << "unsigned " << flush;
+			}else if (sign == H5T_SGN_2){
+				cout << "signed " << flush;
 			}
 		}else{
-			cerr << "Error in arraydataIO::readFromHDF5. Unknown HDF5 class type '" << t_class << "'" << endl;
+			cerr << "Error in arraydataIO::readFromHDF5. Unknown HDF5 class type '" << varClass << "'" << endl;
+		}
+		
+		if (!buffer){
+			cerr << "Error in readFromHDF5, could not allocate read buffer of size " << nx*ny << "." << endl;
+			return 1;
 		}
 
+		cout << "." << flush; // dot no. 1
+
 		// read the data using the default properties.
-	//    hid_t status = H5Dread (dataset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &buffer[0]);
-		hid_t status = H5Dread (datasetID, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, buffer);
+		//hid_t status = H5Dread (dataset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &buffer[0]);
+		hid_t status = H5Dread (datasetID, memTypeID, memSpaceID, fileSpaceID, xfer_prp, buffer);
+		
+		cout << "." << flush; // dot no. 2
 		
 		// close and release resources.
 		status = H5Dclose(datasetID);
 		status = H5Fclose(fileID);
-		
-		//copy data back to dest
-		//for some reason, the dereferencing of anything else than 'int*' seems to fail
-		//need to fix this as this throws away all floating point accurracy
-		delete dest;
-		dest = new array2D( (int*)buffer, nx, ny );
 
-		if (type == 0) { 
-			//dest->arraydata::copy( (double*)buffer, nx*ny);
+		cout << "." << flush; // dot no. 3
+				
+		//copy data back to dest, then delete buffer memory
+		//-----ATTENTION-------
+		//for some reason, the dereferencing of anything else than 'int*' seems to fail for floating point types
+		//this throws away all floating point accuracy in the data.......
+		if (memTypeID == H5T_NATIVE_DOUBLE) {
+			delete dest;
+			dest = new array2D( (double*)buffer, nx, ny );
 			delete[] ((double*)buffer);
-		} else if (type == 1) { 
-			//dest->arraydata::copy( (float*)buffer, nx*ny);
+		} else if (memTypeID == H5T_NATIVE_FLOAT) {
+			delete dest;
+			dest = new array2D( (float*)buffer, nx, ny );
 			delete[] ((float*)buffer);
-		} else if (type == 2) { 
-			//dest->arraydata::copy( (int*)buffer, nx*ny);
+		} else if (memTypeID == H5T_NATIVE_INT) { 
+			delete dest;
+			dest = new array2D( (int*)buffer, nx, ny );
 			delete[] ((int*)buffer);
+		} else if (memTypeID == H5T_STD_I16LE) { 
+			delete dest;
+			dest = new array2D( (int16_t*)buffer, nx, ny );
+			delete[] ((int16_t*)buffer);
+		} else if (memTypeID == H5T_NATIVE_LONG) { 
+			delete dest;
+			dest = new array2D( (long*)buffer, nx, ny );
+			delete[] ((long*)buffer);
 		} else { 
 			cerr << "Error in arraydataIO::readFromHDF5. Type not found. " << endl;
 		}
+
+		cout << "." << flush; // dot no. 4
 		
 		if (transpose()){
 			dest->transpose();
 		}
 		
+		cout << "." << flush; // dot no. 5
+		cout << endl;
+		
 		return 0;
 	}
 
 	//-------------------------------------------------------------- writeToHDF5
-	// dataType = 0 --> write as doubles (default) 
-	// dataType = 1 --> write as float
-	// dataType = 2 --> write as int
+	// dataType = 0 --> write as doubles (H5T_NATIVE_DOUBLE, default)
+	// dataType = 1 --> write as float   (H5T_NATIVE_FLOAT)
+	// dataType = 2 --> write as int     (H5T_NATIVE_INT)
+	// dataType = 3 --> write as int16_t (H5T_STD_I16LE)
+	// dataType = 4 --> write as long    (H5T_NATIVE_LONG)
 	//-------------------------------------------------------------- 
-	int arraydataIO::writeToHDF5( string filename, array2D *src, int type, int debug ) const {
-
+	int arraydataIO::writeToHDF5( string filename, array2D *src, int internalType, int debug ) const {
+	
 		if (transpose()){
 			src->transpose();
 		}
 		
 		int nx = src->dim1();
 		int ny = src->dim2();
+	
+		std::ostringstream info;
+		info << nx*ny << " entries written to " << filename << " ";
 
-		hid_t typeID;
-		void *data;
+				
+		hid_t memTypeID;				//datatype in memory (not necessarily in the file)
+		hid_t memSpaceID = H5S_ALL;		//dataspace in memory, H5S_ALL is default --> the whole dataspace in memory will be used for I/O
+		hid_t fileSpaceID = H5S_ALL;	//dataspace in file, H5S_ALL is default --> the whole dataspace in the fill is selected for I/O
+		hid_t xfer_prp = H5P_DEFAULT;	//transfer property list, H5P_DEFAULT is default
+		void *data = NULL;				//data buffer
 		
-		// allocate data buffer to write	
-		if (type == 0){
-			typeID = H5T_NATIVE_DOUBLE;
+		// translate the internalType variable to HDF5 types
+		info << "(data type ";
+		switch(internalType){
+			case 0:
+				memTypeID = H5T_NATIVE_DOUBLE;
+				info << "H5T_NATIVE_DOUBLE";
+				break;
+			case 1:
+				memTypeID = H5T_NATIVE_FLOAT;
+				info << "H5T_NATIVE_FLOAT";
+				break;
+			case 2:
+				memTypeID = H5T_NATIVE_INT;
+				info << "H5T_NATIVE_INT";
+				break;
+			case 3:
+				memTypeID = H5T_STD_I16LE;
+				info << "H5T_STD_I16LE";
+				break;
+			case 4:
+				memTypeID = H5T_NATIVE_LONG;
+				info << "H5T_NATIVE_LONG";
+				break;
+			default:
+				memTypeID = H5T_NATIVE_DOUBLE;
+				info << "H5T_NATIVE_DOUBLE";
+		}
+		info << ").";
+		
+	
+		// then allocate data buffer to write	
+		if (internalType == 0){
 			data = new double[nx*ny];
-		}else if (type == 1){
-			typeID = H5T_NATIVE_FLOAT;
+		}else if (internalType == 1){
 			data = new float[nx*ny];
-		}else if (type == 2){
-			typeID = H5T_NATIVE_INT;	//H5T_STD_I16LE creates weird results --> look into this later (maybe)....
+		}else if (internalType == 2){
 			data = new int[nx*ny];
+		}else if (internalType == 3){
+			data = new int16_t[nx*ny];
+		}else if (internalType == 4){
+			data = new long[nx*ny];		
 		}else{ 								//default = doubles
 			cerr << "Warning in  arraydataIO::writeToHDF5. Type not known. Continuing with H5T_NATIVE_DOUBLE." << endl;
-			typeID = H5T_NATIVE_DOUBLE;
+			memTypeID = H5T_NATIVE_DOUBLE;
 			data = new double[nx*ny];
 		}
 		
 		// data assignment and output buffer initialization.
 		for( int j = 0; j < ny; j++){
 			for( int i = 0; i < nx; i++){
-				if (typeID == H5T_NATIVE_DOUBLE) { 
+				if (memTypeID == H5T_NATIVE_DOUBLE) { 
 					((double*)data)[j*nx+i] = double( src->get(i, j) );
-				} else if (typeID == H5T_NATIVE_FLOAT) { 
+				} else if (memTypeID == H5T_NATIVE_FLOAT) { 
 					((float*)data)[j*nx+i] = float( src->get(i, j) );
-				} else if (typeID == H5T_NATIVE_INT) { 
+				} else if (memTypeID == H5T_NATIVE_INT) { 
 					((int*)data)[j*nx+i] = int( src->get(i, j) );
-				} else { 
+				} else if (memTypeID == H5T_STD_I16LE) { 
+					((int16_t*)data)[j*nx+i] = int16_t( src->get(i, j) );
+				} else if (memTypeID == H5T_NATIVE_LONG) { 
+					((long*)data)[j*nx+i] = long( src->get(i, j) );
+				} else {
 					((double*)data)[j*nx+i] = src->get(i, j); 
 				}
 			}
 		}
 		
-		// create file, ANTON_CHECK
 		// returns 'file' handler
-		hid_t fileID = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
-		
+		hid_t fileID = H5Fcreate(filename.c_str(), H5F_ACC_TRUNC, xfer_prp, xfer_prp);
 		
 		// create group "data"
 		string groupname = "data";
-		hid_t groupID = H5Gcreate(fileID, groupname.c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+		hid_t groupID = H5Gcreate(fileID, groupname.c_str(), H5P_DEFAULT, xfer_prp, xfer_prp);
 		if (groupID < 0){
 			std::cerr << "Error in writeToHDF5. Couldn't create group " << groupname << endl;
 			H5Fclose(fileID);
 			return 1;
 		}
 
-		
 		//create dataspace
 		int img_rank = 2;
 		hsize_t	dims[img_rank];
@@ -557,27 +644,23 @@ arraydataIO::~arraydataIO(){
 		dims[1] = nx;
 		hid_t dataspaceID = H5Screate_simple(img_rank, dims, NULL);
 		
-		
 		//create dataset in dataspace
 		std::string dataset_name = groupname+"/data";
-		hid_t datasetID = H5Dcreate1(fileID, dataset_name.c_str(), typeID, dataspaceID, H5P_DEFAULT);
+		hid_t datasetID = H5Dcreate1(fileID, dataset_name.c_str(), memTypeID, dataspaceID, xfer_prp);
 		if (datasetID < 0) {
 			cerr << "Error in arraydataIO::writeToHDF5. Couldn't create dataset." << endl;
 			H5Fclose(fileID);
 		}
 		
-		
 		// write data to the dataset
-		herr_t status = H5Dwrite(datasetID, typeID, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+		herr_t status = H5Dwrite(datasetID, memTypeID, memSpaceID, fileSpaceID, xfer_prp, data);
 		if (status < 0){ 
 			cerr << "Error in arraydataIO::writeToHDF5. Could not write HDF5. " << endl;
-		}
-		
+		}		
 		
 		//close all open structures 
 		H5Dclose(datasetID);
 		H5Sclose(dataspaceID);
-		
 		H5Gclose(groupID);
 		H5Fclose(fileID);
 		
@@ -594,38 +677,48 @@ arraydataIO::~arraydataIO(){
 				cout << endl;
 			}
 
-			//observe new data stream to be written
+			//observe data stream to be written
 			cout << "data buffer:" << endl;
 			for( int j = 0; j < ny; j++){
 				cout << "j" << j << ": ";
 				for( int i = 0; i < nx; i++){
-					if (typeID == H5T_NATIVE_DOUBLE) { 
+					if (memTypeID == H5T_NATIVE_DOUBLE) { 
 						cout << ((double*)data)[j*nx+i] << " ";
-					} else if (typeID == H5T_NATIVE_FLOAT) { 
+					} else if (memTypeID == H5T_NATIVE_FLOAT) { 
 						cout << ((float*)data)[j*nx+i] << " ";
-					} else if (typeID == H5T_NATIVE_INT) { 
+					} else if (memTypeID == H5T_NATIVE_INT) { 
 						cout << ((int*)data)[j*nx+i] << " ";
+					} else if (memTypeID == H5T_STD_I16LE) { 
+						cout << ((int16_t*)data)[j*nx+i] << " ";
+					} else if (memTypeID == H5T_NATIVE_LONG) { 
+						cout << ((long*)data)[j*nx+i] << " ";
 					} else { 
-						cout << ((double*)data)[j*nx+i] << " ";
+						cout << "Error in arraydataIO::writeToHDF5. Unsupported data format!" << endl;
 					}
 				}//for i
 				cout << endl;
 			}//for j
 		}//debug
 
-		if (typeID == H5T_NATIVE_DOUBLE) { 
+		if (memTypeID == H5T_NATIVE_DOUBLE) { 
 			delete[] ((double*)data);
-		} else if (typeID == H5T_NATIVE_FLOAT) { 
+		} else if (memTypeID == H5T_NATIVE_FLOAT) { 
 			delete[] ((float*)data);
-		} else if (typeID == H5T_NATIVE_INT) { 
+		} else if (memTypeID == H5T_NATIVE_INT) { 
 			delete[] ((int*)data);
+		} else if (memTypeID == H5T_STD_I16LE) { 
+			delete[] ((int16_t*)data);
+		} else if (memTypeID == H5T_NATIVE_LONG) { 
+			delete[] ((long*)data);
 		} else { 
-			delete[] ((double*)data);
+			cout << "Error in arraydataIO::writeToHDF5. Unsupported data format!" << endl;
 		}
 		
 		if (transpose()){//transpose back before returning
 			src->transpose();
 		}
+		
+		cout << info.str() << endl;
 		return 0;
 	}
 #else //define empty dummy functions
