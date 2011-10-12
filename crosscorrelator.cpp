@@ -108,10 +108,12 @@ CrossCorrelator::CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arra
   	}
 	
 	if ( (dataArray->size() != qyArray->size()) || (dataArray->size() != qyArray->size()) ){
-		cerr << "Warning in CrossCorrelator constructor! Array sizes don't match" << endl;
-		cerr << "qxArray size = " << qxArray->size() << endl;
-		cerr << "qyArray size = " << qyArray->size() << endl;
-		cerr << "dataArray size = " << dataArray->size() << endl;
+		cerr << "Warning in CrossCorrelator (arraydata) constructor! Array sizes don't match" << endl;
+		cerr << "   qxArray size   = " << qxArray->size() << endl;
+		cerr << "   qyArray size   = " << qyArray->size() << endl;
+		cerr << "   dataArray size = " << dataArray->size() << endl;
+		cerr << "------> fatal error, aborting." << endl;
+		throw;
 	}
 	
     //set basic properties for the size of the arrays
@@ -469,6 +471,9 @@ void CrossCorrelator::normalizeMask(){
 }
 
 void CrossCorrelator::setLookupTable( array2D *LUT ){
+	if (!LUT){
+		cerr << "CrossCorrelator::setLookupTable! Not a valid lookup table." << endl;
+	}
 	calcLookupTableVariables( LUT->dim1(), LUT->dim2() );
 	p_table->copy(*LUT);								//store a copy locally
 }
