@@ -729,7 +729,13 @@ void array2D::setCol( int colnum, const array1D *col, int start ){
 
 //------------------------------------------------------------- transpose
 void array2D::transpose(){
+	if (this->dim1()==0 || this->dim2()==0){
+		cerr << "Error in array2D::transpose. dim1=" << dim1() << ", dim2=" << dim2() << ". Nothing done." << endl;
+		return;
+	}
+	
 	array2D *old = new array2D(*this);
+	
 	//swap dimensions, total arraydata length stays the same
 	this->setDim1(old->dim2());
 	this->setDim2(old->dim1());
