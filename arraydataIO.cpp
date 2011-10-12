@@ -39,40 +39,34 @@ arraydataIO::~arraydataIO(){
 	// of the tomo/matlib package (see http://xray-lens.de )
 	//--------------------------------------------------------------
 	int arraydataIO::readFromEDF( string filename, array1D *&dest ) const{
-		int retval = 0;
 		ns_edf::edf *file = new ns_edf::edf;
-		if (dest->data())
-		{
-			file->read_header(filename);
-			if ( file->get_Dim_y() > 1 )
-				cerr << "Warning in arraydataIO::readFromEDF! EDF-file is not 1D!" << endl;			
-			int dim1 = (int)file->get_Dim_x();
-			
-			cout << "Reading '" << filename << "' (EDF file type " << file->get_FileType_str() << ")"
-				<< ", dimension " << dim1 << "" << endl;
-			
-			double *temp = new double[dim1];
-			
-			int fail = file->read_data( temp, filename );
-			if ( fail ){
-				cout << "ERROR. In arraydataIO::readFromEDF - Could not load EDF data file '" << filename << "'." << endl;
-				return 1;
-			}
-			
-			//feed back into dest
-			delete dest;
-			dest = new array1D( dim1 );
-			dest->arraydata::copy( temp, dim1 );
-			
-			delete []temp;
+		if (file->read_header(filename)){
+			cerr << "Error in arraydataIO::readFromEDF! Could not read file '" << filename << "'." << endl;
 		}
-		else
-		{
-			cerr << "ERROR. arraydataIO::readFromEDF - dest data not allocated." << endl;
-			retval = 1;
+		
+		if ( file->get_Dim_y() > 1 )
+			cerr << "Warning in arraydataIO::readFromEDF! EDF-file is not 1D!" << endl;			
+		int dim1 = (int)file->get_Dim_x();
+		
+		cout << "Reading '" << filename << "' (EDF file type " << file->get_FileType_str() << ")"
+			<< ", dimension " << dim1 << "" << endl;
+		
+		double *temp = new double[dim1];
+		
+		int fail = file->read_data( temp, filename );
+		if ( fail ){
+			cout << "ERROR. In arraydataIO::readFromEDF - Could not load EDF data file '" << filename << "'." << endl;
+			return 1;
 		}
+		
+		//feed back into dest
+		delete dest;
+		dest = new array1D( dim1 );
+		dest->arraydata::copy( temp, dim1 );
+		
+		delete []temp;
 		delete file;
-		return retval; 
+		return 0; 
 	}
 		
 	//-------------------------------------------------------------- readFromEDF (2D)
@@ -80,44 +74,39 @@ arraydataIO::~arraydataIO(){
 	//
 	//--------------------------------------------------------------------------
 	int arraydataIO::readFromEDF( string filename, array2D *&dest ) const{
-		int retval = 0;
 		ns_edf::edf *file = new ns_edf::edf;
-		if (dest->data())
-		{
-			file->read_header(filename);
-			
-			int dim1 = (int)file->get_Dim_x();
-			int dim2 = (int)file->get_Dim_y();
-			
-			cout << "Reading '" << filename << "' (EDF file type " << file->get_FileType_str() << ")"
-				<< ", dimensions (" << dim1 << ", " << dim2 << ")" << endl;
-			
-			double *temp = new double[dim1*dim2];
-			
-			int fail = file->read_data( temp, filename );
-			if ( fail ){
-				cout << "ERROR. In arraydataIO::readFromEDF - Could not load EDF data file '" << filename << "'." << endl;
-				return 1;
-			}
-			
-			//feed back into dest
-			delete dest;
-			dest = new array2D( dim1, dim2 );
-			dest->arraydata::copy( temp, dim1*dim2);
-			
-			delete []temp;
-			
-			if (transpose()){
-				dest->transpose();
-			}
+
+		if (file->read_header(filename)){
+			cerr << "Error in arraydataIO::readFromEDF! Could not read file '" << filename << "'." << endl;
 		}
-		else
-		{
-			cerr << "ERROR. arraydataIO::readFromEDF - dest data not allocated." << endl;
-			retval = 1;
+		
+		int dim1 = (int)file->get_Dim_x();
+		int dim2 = (int)file->get_Dim_y();
+		
+		cout << "Reading '" << filename << "' (EDF file type " << file->get_FileType_str() << ")"
+			<< ", dimensions (" << dim1 << ", " << dim2 << ")" << endl;
+		
+		double *temp = new double[dim1*dim2];
+		
+		int fail = file->read_data( temp, filename );
+		if ( fail ){
+			cout << "ERROR. In arraydataIO::readFromEDF - Could not load EDF data file '" << filename << "'." << endl;
+			return 1;
 		}
+		
+		//feed back into dest
+		delete dest;
+		dest = new array2D( dim1, dim2 );
+		dest->arraydata::copy( temp, dim1*dim2);
+		
+		delete []temp;
+		
+		if (transpose()){
+			dest->transpose();
+		}
+
 		delete file;
-		return retval; 
+		return 0; 
 	}
 
 
@@ -125,7 +114,11 @@ arraydataIO::~arraydataIO(){
 	//
 	//--------------------------------------------------------------
 	int arraydataIO::writeToEDF( string filename, array1D *src ) const {
-		int retval = 0;
+		if ( !src ){
+			cerr << "ERROR. In arraydataIO::writeToEDF(1D). No source data. Could not write to file " << filename << endl;
+			return 1;
+		}
+		
 		bool flipByteOrder = false;
 		
 		// write scaled data?
@@ -134,22 +127,16 @@ arraydataIO::~arraydataIO(){
 		// SF_RETAIN	= 2: if the scaling factor was read from an input file, keep it what it was
 		ns_edf::scaled_t scaleOut = ns_edf::SF_SCALED;				
 		
-		if ( src->data() ){
-			ns_edf::edf *file = new ns_edf::edf;
-			
-			file->set_Dim_x( src->dim1() );
-			file->set_Dim_y( 1 );
-			file->set_ScalingMin( src->calcMin() );
-			file->set_ScalingMax( src->calcMax() );
-			file->set_FilenameOut( filename );
-			file->set_ScaledFlag( scaleOut );
-			retval = file->write( src->data(), flipByteOrder );
-			delete file;
-			return 0;
-		}else{
-			cerr << "ERROR. In matrixdata::write() - Matrix not allocated." << endl;
-			return 1;
-		}
+		ns_edf::edf *file = new ns_edf::edf;
+		
+		file->set_Dim_x( src->dim1() );
+		file->set_Dim_y( 1 );
+		file->set_ScalingMin( src->calcMin() );
+		file->set_ScalingMax( src->calcMax() );
+		file->set_FilenameOut( filename );
+		file->set_ScaledFlag( scaleOut );
+		int retval = file->write( src->data(), flipByteOrder );
+		delete file;
 		return retval;
 	}
 
@@ -157,7 +144,11 @@ arraydataIO::~arraydataIO(){
 	//
 	//--------------------------------------------------------------
 	int arraydataIO::writeToEDF( string filename, array2D *src ) const {
-		int retval = 0;
+		if ( !src ){
+			cerr << "ERROR. In arraydataIO::writeToEDF(2D). No source data. Could not write to file " << filename << endl;
+			return 1;
+		}
+		
 		bool flipByteOrder = false;
 		
 		// write scaled data?
@@ -166,28 +157,22 @@ arraydataIO::~arraydataIO(){
 		// SF_RETAIN	= 2: if the scaling factor was read from an input file, keep it what it was
 		ns_edf::scaled_t scaleOut = ns_edf::SF_SCALED;				
 		
-		if ( src->data() ){
-			if (transpose()){//transpose before writing
-				src->transpose();
-			}
-			ns_edf::edf *file = new ns_edf::edf;
-			
-			file->set_Dim_x( src->dim1() );
-			file->set_Dim_y( src->dim2() );
-			file->set_ScalingMin( src->calcMin() );
-			file->set_ScalingMax( src->calcMax() );
-			file->set_FilenameOut( filename );
-			file->set_ScaledFlag( scaleOut );
-			retval = file->write( src->data(), flipByteOrder );
-			delete file;
-			
-			if (transpose()){//transpose back before returning
-				src->transpose();
-			}
-			return 0;
-		}else{
-			cerr << "ERROR. In matrixdata::write() - Matrix not allocated." << endl;
-			return 1;
+		if (transpose()){//transpose before writing
+			src->transpose();
+		}
+		ns_edf::edf *file = new ns_edf::edf;
+		
+		file->set_Dim_x( src->dim1() );
+		file->set_Dim_y( src->dim2() );
+		file->set_ScalingMin( src->calcMin() );
+		file->set_ScalingMax( src->calcMax() );
+		file->set_FilenameOut( filename );
+		file->set_ScaledFlag( scaleOut );
+		int retval = file->write( src->data(), flipByteOrder );
+		delete file;
+		
+		if (transpose()){//transpose back before returning
+			src->transpose();
 		}
 		return retval;
 	}
@@ -283,7 +268,11 @@ arraydataIO::~arraydataIO(){
 	// of the tomo/matlib package (see http://xray-lens.de )
 	//--------------------------------------------------------------------------
 	int arraydataIO::writeToTiff( string filename, array2D *src, int scaleFlag, int verbose ) const {
-
+		if ( !src ){
+			cerr << "ERROR. In arraydataIO::writeToTiff. No source data. Could not write to file " << filename << endl;
+			return 1;
+		}
+		
 		if (src->size() == 0) {
 			cerr << "Error in writeToTiff! Array size is zero." << endl;
 		}
@@ -403,9 +392,7 @@ arraydataIO::~arraydataIO(){
 		
 		hid_t fileID = H5Fopen(filename.c_str(), access_mode, access_prp);			// open file
 		if (fileID <= 0){
-			cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
-			cerr << "  ERROR in arraydataIO::readFromHDF5. Could not read HDF5 from file '" << filename << "'!" << endl;
-			cerr << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
+			cerr << "ERROR in arraydataIO::readFromHDF5. Could not read HDF5 from file '" << filename << "'!" << endl;
 			return 1;
 		}
 		hid_t datasetID = H5Dopen(fileID, dataset_name.c_str(), access_prp);		// open dataset in that file
@@ -541,7 +528,11 @@ arraydataIO::~arraydataIO(){
 	// dataType = 4 --> write as long    (H5T_NATIVE_LONG)
 	//-------------------------------------------------------------- 
 	int arraydataIO::writeToHDF5( string filename, array2D *src, int internalType, int debug ) const {
-	
+		if ( !src ){
+			cerr << "ERROR. In arraydataIO::writeToHDF5. No source data. Could not write to file " << filename << endl;
+			return 1;
+		}
+		
 		if (transpose()){
 			src->transpose();
 		}
