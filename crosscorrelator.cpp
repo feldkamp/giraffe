@@ -348,7 +348,8 @@ void CrossCorrelator::run(double start_q, double stop_q, int master_algorithm, b
 //             (2) correlation via Fourier transform, fast, strong artifacts on data with gaps
 void CrossCorrelator::run(double start_q, double stop_q, int alg_coords, int alg_corr, bool calc_SAXS){
 
-	if (debug()) cout << "start_q=" << start_q << ", stop_q=" << stop_q << endl;
+	if (debug()) cout << "start_q=" << start_q << ", stop_q=" << stop_q 
+		<< ", alg_coords=" << alg_coords << ", alg_corr=" << alg_corr << ", calc_SAXS=" << calc_SAXS << endl;
 	
 	switch (alg_coords){
 		case 1:

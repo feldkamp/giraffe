@@ -401,7 +401,7 @@ int arraydata::getHistogramInBoundaries( array1D *&hist, array1D *&bins, unsigne
 	double bindelta = range/(double)(nBins-1);
 	//cout << "min: " << min << ", max:" << max << ", range: " << range << ", binwidth: " << binwidth << ", nBins: " << nBins << endl;
 	
-	if (range == 0){
+	if (range == 0 && hist->size() > 1){
 		cerr << "WARNING in arraydata::getHistogramInBoundaries. max == min == " << max << endl;
 	}
 	
