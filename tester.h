@@ -22,7 +22,7 @@ class Tester {
 		int testArrayClasses();												// case 1
 		int testCrossCorrelator( int alg = 1, int testpattern = 1 );		// case 2
 		int testFourierTrafo();												// case 3
-		int testIO();														// case 4
+		int testIO(int mode=0);												// case 4 (mode 0: all formats, 1:edf, 2:hdf5, 3:tiff, 4:ascii)
 		int testDataTypes();												// case 5
 		int testArraySpeed();												// case 6
 		

@@ -222,23 +222,41 @@ void arraydata::range( double neg, double pos ){	//set elements to a range of va
 	}	
 }
 
-//--------------------------------------------------------------------
+//-------------------------------------------------------------------- calcMin
+// ignores the position of the minimum
 double arraydata::calcMin() const{
+	int pos = 0;					
+	return this->calcMin(pos);
+}
+
+//-------------------------------------------------------------------- calcMin
+// returns the position of the minimum
+double arraydata::calcMin(int &pos) const{
 	double tempmin = +INFINITY;
 	for (int i = 0; i < size(); i++) {
 		if (get_atIndex(i) < tempmin) {
 			tempmin = get_atIndex(i);
+			pos = i;
 		}
 	}
 	return tempmin;
 }
 
-//--------------------------------------------------------------------
+//-------------------------------------------------------------------- calcMax
+// ignores the position of the minimum
 double arraydata::calcMax() const{
+	int pos = 0;					
+	return this->calcMax(pos);
+}
+
+//-------------------------------------------------------------------- calcMax
+// returns the position of the maximum
+double arraydata::calcMax(int &pos) const{
 	double tempmax = -INFINITY;
 	for (int i = 0; i < size(); i++) {
 		if (get_atIndex(i) > tempmax) {
 			tempmax = get_atIndex(i);
+			pos = i;
 		}
 	}
 	return tempmax;
@@ -259,7 +277,7 @@ double arraydata::calcAvg() const{
 	return avg;
 }
 
-//------------------------------------------------------------- getASCIIdata
+//------------------------------------------------------------- getASCIIdataAsRow
 string arraydata::getASCIIdataAsRow() const{
     ostringstream osst;
 	if (size() == 0) {
@@ -273,7 +291,7 @@ string arraydata::getASCIIdataAsRow() const{
     return osst.str();
 }
 
-//------------------------------------------------------------- getASCIIdata
+//------------------------------------------------------------- getASCIIdataAsColumn
 string arraydata::getASCIIdataAsColumn() const{
     ostringstream osst;
 	if (size() == 0) {
@@ -431,22 +449,30 @@ std::string arraydata::getHistogramInBoundariesASCII( unsigned int nBins, double
 	
 	this->getHistogramInBoundaries( hist, bins, nBins, min, max );
 
-	double histmax = hist->calcMax();
+	int maxpos = 0;
+	double histmax = hist->calcMax( maxpos );
 	int nMarkers = 20;
 	int numberPerMarker = (int) floor(histmax/nMarkers);
-	if (numberPerMarker < 1)
+	if (numberPerMarker < 1){
 		numberPerMarker = 1;
+	}
 	
+	double binsize = (max-min)/(double)(nBins+1);
 	ostringstream osst;
-	osst << std::setw(6) << "#" << "   (" << std::setw(10) << "bound" << "): histogram value" << endl;
+	osst << std::setw(8) << "#" << " (" << std::setw(12) << "low" << ", " 
+		<< std::setw(12) << "high" << "): " << std::setw(12) << "occurrence" << endl;
 	osst << "---------------------------------------------------" << endl;
 	for (int i = 0; i < bins->size(); i++){
-		osst << std::setw(6) << i << "   (" << std::setw(10) << bins->get(i) << "): " 
+		osst << std::setw(8) << i << " (" << std::setw(12) << bins->get(i) << ", " 
+			<< std::setw(12) << bins->get(i)+binsize << "): " 
 			<< std::setw(12) << hist->get(i) << "  |";
 		for (int m = 0; m < (hist->get(i)/(double)numberPerMarker); m++){ osst << "*"; }
 		osst << endl;
 	}
-	
+	osst << "---------------------------------------------------" << endl;
+	osst << "max:" << std::setw(4) << maxpos << " (" << std::setw(12) << bins->get(maxpos) << ", " 
+		<< std::setw(12) << bins->get(maxpos)+binsize << "): " << std::setw(12) << hist->get(maxpos) << "  |" << endl;
+			
 	delete hist;
 	delete bins;
 	return osst.str();
@@ -545,29 +571,26 @@ void array1D::setDim1( unsigned int size_dim1 ){
 
 
 //------------------------------------------------------------- getASCIIdata
-string array1D::getASCIIdata() const{
+string array1D::getASCIIdata( bool annotate ) const{
     ostringstream osst;
 	if (size() == 0) {
   		osst << "1D data has size zero." << endl;
 	}else{
-		osst << "1D data, dim1=" << dim1() << ", size=" << size() << endl;
-		osst << " [";
+		if (annotate){
+			osst << "1D data, dim1=" << dim1() << ", size=" << size() << endl;
+			osst << " [";
+		}
 		for (int i = 0; i<dim1(); i++) {
 			osst << " " << get(i);
 		}
-		osst << "]" << endl;
+		if (annotate){osst << "]";}
+		osst << endl;
 	}
     return osst.str();
 }
 
 
-//------------------------------------------------------------- writeToASCII
-int array1D::writeToASCII( std::string filename ) const{
-	ofstream fout( filename.c_str() );
-	fout << arraydata::getASCIIdataAsColumn();
-	fout.close();
-	return 0;
-}
+
 
 
 
@@ -808,39 +831,25 @@ void array2D::gradientAlongDim2( double lowlim, double highlim ){	//set elements
 
     
 //------------------------------------------------------------- getASCIIdata
-std::string array2D::getASCIIdata() const{
+std::string array2D::getASCIIdata( bool annotate ) const{
     ostringstream osst;
 	if (size() == 0) {
   		osst << "2D data has size zero." << endl;
 	}else{
-		osst << "2D data, dim1=" << dim1() << ", dim2=" << dim2() << ", size=" << size() << endl;
+		if (annotate){ osst << "2D data, dim1=" << dim1() << ", dim2=" << dim2() << ", size=" << size() << endl; }
 		for (int i = 0; i<dim1(); i++){
-			osst << " [";
+			if (annotate){ osst << " ["; }
 			for (int j = 0; j<dim2(); j++){
 				osst << " " << get(i, j);
 			}
-			osst << "]" << endl;
+			if (annotate){ osst << "]"; }
+			osst << endl;
 		}
 	}
     return osst.str();
 }
 
 
-
-//------------------------------------------------------------- writeToASCII
-int array2D::writeToASCII( std::string filename, int format ) const{
-	ofstream fout( filename.c_str() );
-	switch (format){
-		case 1:
-			fout << arraydata::getASCIIdataAsColumn();
-		case 2:
-			fout << arraydata::getASCIIdataAsRow();
-		default:
-			fout << getASCIIdata();
-	}
-	fout.close();
-	return 0;
-}
 
 
 
@@ -1040,36 +1049,29 @@ void array3D::setDim3( unsigned int size_dim3 ){
 
 
 //------------------------------------------------------------- getASCIIdata
-string array3D::getASCIIdata() const{
+string array3D::getASCIIdata( bool annotate ) const{
     ostringstream osst;
 	if (size() == 0) {
   		osst << "3D data has size zero." << endl;
 	}else{
-		osst << "3D data, dim1=" << dim1() << ", dim2=" << dim2() << ", dim3=" << dim3() << ", size=" << size() << endl;
+		if (annotate){ osst << "3D data, dim1=" << dim1() << ", dim2=" << dim2() << ", dim3=" << dim3() << ", size=" << size() << endl; }
 		for (int k = 0; k<dim3(); k++){
-			osst << " [[" << endl;
+			if (annotate){ osst << " [[" << endl; }
 			for (int j = 0; j<dim2(); j++){
-				osst << "  [";
+				if (annotate){ osst << "  ["; }
 				for (int i = 0; i<dim1(); i++) {
 					osst << " " << get(i, j, k);
 				}//k
-				osst << "]" << endl;
+				if (annotate){ osst << "]"; }
+				osst << endl;
 			}//j
-			osst << "]]" << endl;
+			if (annotate){ osst << "]]"; }
+			osst << endl;
 		}//i
 	}
     return osst.str();
 }
 
-
-
-//------------------------------------------------------------- writeToASCII
-int array3D::writeToASCII( std::string filename ) const{
-	ofstream fout( filename.c_str() );
-	fout << arraydata::getASCIIdataAsColumn();
-	fout.close();
-    return 0;
-}
 
 
 
@@ -1173,38 +1175,31 @@ void array4D::setDim4( unsigned int size_dim4 ){
 
 
 //------------------------------------------------------------- getASCIIdata
-string array4D::getASCIIdata() const{
+string array4D::getASCIIdata( bool annotate ) const{
     ostringstream osst;
 	if (size() == 0) {
   		osst << "4D data has size zero." << endl;
 	}else{
-		osst << "4D data, dim1=" << dim1() << ", dim2=" << dim2() << ", dim3=" << dim3() << ", dim4=" << dim4() << ", size=" << size() << endl;
+		if (annotate){ osst << "4D data, dim1=" << dim1() << ", dim2=" << dim2() << ", dim3=" << dim3() << ", dim4=" << dim4() << ", size=" << size() << endl; }
 		for (int l = 0; l<dim4(); l++){
 			for (int k = 0; k<dim3(); k++){
-				osst << " [[" << endl;
+				if (annotate){ osst << " [[" << endl; }
 				for (int j = 0; j<dim2(); j++){
-					osst << "  [";
+					if (annotate){ osst << "  ["; }
 					for (int i = 0; i<dim1(); i++) {
 						osst << " " << get(i, j, k, l);
 					}//i
-					osst << "]" << endl;
+					if (annotate){ osst << "]"; }
+					osst << endl;
 				}//j
-				osst << "]]" << endl;
+				if (annotate){ osst << "]]"; }
+				osst << endl;
 			}//k
 		}//l
 	}
     return osst.str();
 }
 
-
-
-//------------------------------------------------------------- writeToASCII
-int array4D::writeToASCII( std::string filename ) const{
-	ofstream fout( filename.c_str() );
-	fout << arraydata::getASCIIdataAsColumn();
-	fout.close();
-    return 0;
-}
 
 
 

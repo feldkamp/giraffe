@@ -60,7 +60,13 @@
 		// dataType = 3 --> write as int16_t (H5T_STD_I16LE)
 		// dataType = 4 --> write as long    (H5T_NATIVE_LONG)
 		int writeToHDF5( std::string filename, array2D *src, int dataType = 1, int verbose = 0 ) const;
-	
+		
+		
+		//------------------------------------------------------------------------------ASCII
+		int readFromASCII( std::string filename, array2D *&dest ) const;
+		int writeToASCII( std::string filename, array1D *src, int format=0 ) const;
+		int writeToASCII( std::string filename, array2D *src, int format=0 ) const;
+		int writeToASCII( std::string filename, array3D *src, int format=0 ) const;
 		
 		//------------------------------------------------------------------------------general support functions
 		bool transpose() const;

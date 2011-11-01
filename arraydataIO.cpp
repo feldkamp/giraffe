@@ -17,7 +17,14 @@ using std::flush;
 #include <string>
 using std::string;
 
-#include <sstream>
+#include <vector>
+using std::vector;
+
+#include <sstream>				//string steaming
+
+#include <fstream>				//file streaming
+
+#include <iterator>
 
 #include <cmath>
 
@@ -723,6 +730,153 @@ arraydataIO::~arraydataIO(){
 	}
 #endif
 
+
+
+
+//-------------------------------------------------------------- readFromASCII (1D)
+//
+//-------------------------------------------------------------- 
+int arraydataIO::readFromASCII( std::string filename, array2D *&dest ) const {
+	std::ifstream fin( filename.c_str() );
+	if (!fin.fail()) {
+		unsigned int linecount = 0; 
+		unsigned int colcount = 0;
+
+		std::vector< std::vector<string> > matrix_str;
+		while (!fin.eof()) {
+			std::vector<string> numbers_str;
+			char cbuffer[4096];
+			fin.getline(cbuffer, 4096, '\n');
+			std::istringstream iss(cbuffer);
+			copy(std::istream_iterator<string>(iss), 
+					std::istream_iterator<string>(), 
+					std::back_inserter<std::vector<string> >(numbers_str) );
+			matrix_str.push_back( numbers_str );
+			if ( numbers_str.size() > colcount ){
+				colcount = (unsigned int) numbers_str.size(); 
+			}
+			linecount++;
+		}//while
+		linecount--;
+		
+		cout << "read lines: " << linecount << ", columns: " << colcount << endl;
+		
+		// transfer to 'dest'
+		delete dest;
+		dest = new array2D( linecount, colcount );
+		for( unsigned int row = 0; row < linecount; row++ ){
+			for( unsigned col = 0; col < colcount; col++ ){
+				std::istringstream isst( matrix_str.at(row).at(col) );
+				double val = 0.;
+				isst >> val;
+				dest->set( row, col, val );
+			}	
+		}
+		
+		fin.close();
+	}else{
+		cerr << "ERROR in arraydataIO::readFromASCII (1D). Couldn't read from file " << filename << ". " << endl;
+	}
+	return 0;
+}
+
+//-------------------------------------------------------------- writeToASCII (1D)
+//
+//-------------------------------------------------------------- 
+int arraydataIO::writeToASCII( std::string filename, array1D *src, int format ) const {
+	if ( !src ){
+		cerr << "ERROR in arraydataIO::writeToASCII (1D). No source data. Could not write to file " << filename << endl;
+		return 1;
+	}
+	
+	if (src->size() == 0) {
+		cerr << "ERROR in arraydataIO::writeToASCII (1D). Array size is zero." << endl;
+	}
+	
+	if (!src->data()) {
+		cerr << "ERROR in arraydataIO::writeToASCII (1D). No data in array." << endl;
+	}	
+
+	std::ofstream fout( filename.c_str() );
+	switch (format){
+		case 1:
+			fout << src->getASCIIdataAsColumn();
+			break;
+		case 2:
+			fout << src->getASCIIdataAsRow();
+			break;
+		default:
+			fout << src->getASCIIdata(0);
+	}
+	fout.close();
+	return 0;
+}
+
+//-------------------------------------------------------------- writeToASCII (2D)
+//
+//-------------------------------------------------------------- 
+int arraydataIO::writeToASCII( std::string filename, array2D *src, int format ) const {
+	if ( !src ){
+		cerr << "ERROR in arraydataIO::writeToASCII (2D). No source data. Could not write to file " << filename << endl;
+		return 1;
+	}
+	
+	if (src->size() == 0) {
+		cerr << "ERROR in arraydataIO::writeToASCII (2D). Array size is zero." << endl;
+	}
+	
+	if (!src->data()) {
+		cerr << "ERROR in arraydataIO::writeToASCII (2D). No data in array." << endl;
+	}	
+	
+
+	std::ofstream fout( filename.c_str() );
+	switch (format){
+		case 1:
+			fout << src->getASCIIdataAsColumn();
+			break;
+		case 2:
+			fout << src->getASCIIdataAsRow();
+			break;
+		default:
+			fout << src->getASCIIdata(0);
+	}
+	fout.close();
+	return 0;
+}
+
+//-------------------------------------------------------------- writeToASCII (3D)
+//
+//-------------------------------------------------------------- 
+int arraydataIO::writeToASCII( std::string filename, array3D *src, int format ) const {
+	if ( !src ){
+		cerr << "ERROR in arraydataIO::writeToASCII (3D). No source data. Could not write to file " << filename << endl;
+		return 1;
+	}
+	
+	if (src->size() == 0) {
+		cerr << "ERROR in arraydataIO::writeToASCII (3D). Array size is zero." << endl;
+	}
+	
+	if (!src->data()) {
+		cerr << "ERROR in arraydataIO::writeToASCII (3D). No data in array." << endl;
+	}	
+
+
+	std::ofstream fout( filename.c_str() );
+	switch (format){
+		case 1:
+			fout << src->getASCIIdataAsColumn();
+			break;
+		case 2:
+			fout << src->getASCIIdataAsRow();
+			break;
+		default:
+			fout << src->getASCIIdata(0);
+	}
+	fout.close();
+	return 0;
+}
 
 
 bool arraydataIO::transpose() const{

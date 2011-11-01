@@ -95,7 +95,9 @@ public:
 	void set_atIndex( unsigned int index, double val);			// set element value
 	
 	double calcMin() const;
+	double calcMin(int &pos) const;
 	double calcMax() const;
+	double calcMax(int &pos) const;
 	double calcSum() const;
 	double calcAvg() const;
 	
@@ -156,8 +158,7 @@ public:
 	double get( unsigned int i ) const;
 	void set( unsigned int i, double value );
     
-    std::string getASCIIdata() const;
-    int writeToASCII( std::string filename ) const;
+    std::string getASCIIdata( bool annotate=1 ) const;
 
 };
 
@@ -201,8 +202,7 @@ public:
 	double get( unsigned int i, unsigned int j ) const;                 //returns single pixel value
 	void set( unsigned int i, unsigned int j, double value );
 
-    std::string getASCIIdata() const;
-	int writeToASCII( std::string filename, int format = 0 ) const;		// format default(0): 2D; (1): column output; (2): row output
+    std::string getASCIIdata( bool annotate=1 ) const;
 	
 	//-------------functions special to 2D case-----------------
     int getCol( int colnum, array1D *&col ) const;						//returns one dimensional column, extracted at the specified column number
@@ -255,8 +255,7 @@ public:
 	double get( unsigned int i, unsigned int j, unsigned int k ) const;
 	void set( unsigned int i, unsigned int j, unsigned int k, double value );
 
-    std::string getASCIIdata() const;
-    int writeToASCII( std::string filename ) const;
+    std::string getASCIIdata( bool annotate=1 ) const;
 };
 
 
@@ -303,8 +302,7 @@ public:
 
 	void getRepresentationIn2D( array2D *&img );
 
-    std::string getASCIIdata() const;
-    int writeToASCII( std::string filename ) const;
+    std::string getASCIIdata( bool annotate=1 ) const;
 };
 
 

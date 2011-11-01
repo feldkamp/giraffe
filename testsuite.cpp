@@ -89,7 +89,15 @@ int main (int argc, char * const argv[]) {
 						t->testFourierTrafo();
 						break;
 					case '4':
-						t->testIO();
+						{
+//						int io_mode = 0;	//general case: test all formats
+//						int io_mode = 1; 	//EDF
+//						int io_mode = 2;	//HDF5
+//						int io_mode = 3;	//TIFF
+//						int io_mode = 4;	//ASCII
+						int io_mode = 5;	//special case...
+						t->testIO(io_mode);
+						}
 						break;
 					case '5':
 						t->testDataTypes();					

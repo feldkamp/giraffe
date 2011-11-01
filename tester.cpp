@@ -315,7 +315,7 @@ int Tester::testFourierTrafo(){
 
 
 //-------------------------------------------------------- -t4
-int Tester::testIO(){
+int Tester::testIO(int mode){
 	cout << "TESTING THE ARRAYDATA INPUT/OUTPUT" << endl;
 	
 	string outfn = "test";
@@ -323,76 +323,98 @@ int Tester::testIO(){
 	
 	arraydataIO *io = new arraydataIO;
 
+	//-------------------------------------------------------------writing
 	cout << "--- test case 2D ---" << endl;
 	array2D *wmat = new array2D(10, 6);
 //	wmat->generateTestPattern( 4 );		//cases 0 - 4 available
 	wmat->gradientAlongDim1(-10, 10);
-	wmat->writeToASCII(base()+outfn+"2D.txt");
 	cout << wmat->getASCIIdata();
 	
-
 	
-	cout << "writing to EDF" << endl;
-	io->writeToEDF(base()+outfn+".edf", wmat);
+	if (mode == 0 || mode == 1){
+		cout << "writing to EDF" << endl;
+		io->writeToEDF(base()+outfn+".edf", wmat);
+	}
 	
-	cout << "writing to TIFF scaled" << endl;
-	io->writeToTiff(base()+outfn+"_scaled.tif", wmat, 1);
-
-	cout << "writing to TIFF unscaled" << endl;
-	io->writeToTiff(base()+outfn+"_unscaled.tif", wmat, 0);
-
+	if (mode == 0 || mode == 2){
+		cout << "writing to HDF5 (doubles)" << endl;
+		io->writeToHDF5(base()+outfn+"_d.h5", wmat, 0);
+		cout << "writing to HDF5 (float)" << endl;
+		io->writeToHDF5(base()+outfn+"_f.h5", wmat, 1);
+		cout << "writing to HDF5 (int)" << endl;
+		io->writeToHDF5(base()+outfn+"_i.h5", wmat, 2);
+		cout << "writing to HDF5 (int16_t)" << endl;
+		io->writeToHDF5(base()+outfn+"_i16.h5", wmat, 3);
+		cout << "writing to HDF5 (long)" << endl;
+		io->writeToHDF5(base()+outfn+"_long.h5", wmat, 4);
+	}
 	
-	cout << "writing to HDF5 (doubles)" << endl;
-	io->writeToHDF5(base()+outfn+"_d.h5", wmat, 0);
-
-	cout << "writing to HDF5 (float)" << endl;
-	io->writeToHDF5(base()+outfn+"_f.h5", wmat, 1);
+	if (mode == 0 || mode == 3){
+		cout << "writing to TIFF scaled" << endl;
+		io->writeToTiff(base()+outfn+"_scaled.tif", wmat, 1);	
+		cout << "writing to TIFF unscaled" << endl;
+		io->writeToTiff(base()+outfn+"_unscaled.tif", wmat, 0);
+	}
 	
-	cout << "writing to HDF5 (int)" << endl;
-	io->writeToHDF5(base()+outfn+"_i.h5", wmat, 2);
-
-	cout << "writing to HDF5 (int16_t)" << endl;
-	io->writeToHDF5(base()+outfn+"_i16.h5", wmat, 3);
-	
-	cout << "writing to HDF5 (long)" << endl;
-	io->writeToHDF5(base()+outfn+"_long.h5", wmat, 4);
+	if (mode == 0 || mode == 4){
+		cout << "writing to ASCII (1D)" << endl;
+		io->writeToASCII(base()+outfn+"_1D.txt", wmat, 1);	
+		cout << "writing to ASCII (2D)" << endl;
+		io->writeToASCII(base()+outfn+"_2D.txt", wmat);
+	}
 	
 	delete wmat;
 	
+	//-------------------------------------------------------------reading
 	array2D *rmat = new array2D;
 
-	cout << "\nreading from EDF" << endl;
-	io->readFromEDF(base()+infn+".edf", rmat);
-	cout << rmat->getASCIIdata();
+	if (mode == 0 || mode == 1){
+		cout << "\nreading from EDF" << endl;
+		io->readFromEDF(base()+infn+".edf", rmat);
+		cout << rmat->getASCIIdata();
+	}
 	
-	cout << "\nreading from TIFF scaled" << endl;
-	io->readFromTiff(base()+infn+"_scaled.tif", rmat);
-	cout << rmat->getASCIIdata();
-
-	cout << "\nreading from TIFF unscaled" << endl;
-	io->readFromTiff(base()+infn+"_unscaled.tif", rmat);
-	cout << rmat->getASCIIdata();
-
-	cout << "\nreading from HDF5(double)" << endl;
-	io->readFromHDF5(base()+infn+"_d.h5", rmat);
-	cout << rmat->getASCIIdata();
-
-	cout << "\nreading from HDF5(float)" << endl;
-	io->readFromHDF5(base()+infn+"_f.h5", rmat);
-	cout << rmat->getASCIIdata();
-	
-	cout << "\nreading from HDF5(int)" << endl;
-	io->readFromHDF5(base()+infn+"_i.h5", rmat);
-	cout << rmat->getASCIIdata();
-
-	cout << "\nreading from HDF5(int16_t)" << endl;
-	io->readFromHDF5(base()+infn+"_i16.h5", rmat);
-	cout << rmat->getASCIIdata();
-	
-	cout << "\nreading from HDF5(long)" << endl;
-	io->readFromHDF5(base()+infn+"_long.h5", rmat);
-	cout << rmat->getASCIIdata();
+	if (mode == 0 || mode == 2){
+		cout << "\nreading from HDF5(double)" << endl;
+		io->readFromHDF5(base()+infn+"_d.h5", rmat);
+		cout << rmat->getASCIIdata();
+		cout << "\nreading from HDF5(float)" << endl;
+		io->readFromHDF5(base()+infn+"_f.h5", rmat);
+		cout << rmat->getASCIIdata();
+		cout << "\nreading from HDF5(int)" << endl;
+		io->readFromHDF5(base()+infn+"_i.h5", rmat);
+		cout << rmat->getASCIIdata();
+		cout << "\nreading from HDF5(int16_t)" << endl;
+		io->readFromHDF5(base()+infn+"_i16.h5", rmat);
+		cout << rmat->getASCIIdata();
+		cout << "\nreading from HDF5(long)" << endl;
+		io->readFromHDF5(base()+infn+"_long.h5", rmat);
+		cout << rmat->getASCIIdata();
+	}
 		
+	if (mode == 0 || mode == 3){
+		cout << "\nreading from TIFF scaled" << endl;
+		io->readFromTiff(base()+infn+"_scaled.tif", rmat);
+		cout << rmat->getASCIIdata();
+		cout << "\nreading from TIFF unscaled" << endl;
+		io->readFromTiff(base()+infn+"_unscaled.tif", rmat);
+		cout << rmat->getASCIIdata();
+	}
+	
+	if (mode == 0 || mode == 4){
+		cout << "\nreading from ASCII (1D)" << endl;
+		io->readFromASCII(base()+infn+"_1D.txt", rmat);
+		cout << rmat->getASCIIdata();
+		cout << "\nreading from ASCII (2D)" << endl;
+		io->readFromASCII(base()+infn+"_2D.txt", rmat);
+		cout << rmat->getASCIIdata();
+	}
+	
+	//special testing mode.....
+	if (mode == 5){
+		cout << "\nreading from large file ASCII (2D)" << endl;
+		io->readFromASCII("/Users/feldkamp/Work/SLAC/2011_06_Water_L357/results/kitty_out/PEDESTALSNEW/cspad-pedestals_r0006.dat", rmat);	
+	}
 	delete rmat;
 	
 	
