@@ -90,13 +90,14 @@ int main (int argc, char * const argv[]) {
 						break;
 					case '4':
 						{
-//						int io_mode = 0;	//general case: test all formats
-//						int io_mode = 1; 	//EDF
-//						int io_mode = 2;	//HDF5
-//						int io_mode = 3;	//TIFF
-//						int io_mode = 4;	//ASCII
-						int io_mode = 5;	//special case...
-						t->testIO(io_mode);
+							int io_mode = 0;	//general case: test all 2D formats
+//							io_mode = 1; 	//2D EDF
+//							io_mode = 2;	//2D HDF5
+//							io_mode = 3;	//2D TIFF
+//							io_mode = 4;	//2D ASCII
+//							io_mode = 5;	//special case...
+//							io_mode = 12; 	//test all 1D formats
+							t->testIO(io_mode);
 						}
 						break;
 					case '5':

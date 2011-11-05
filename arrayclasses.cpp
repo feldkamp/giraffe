@@ -611,9 +611,19 @@ array2D::array2D( unsigned int size_dim1, unsigned int size_dim2 )
 	setDim2( size_dim2 );
 }
 
+array2D::array2D( arraydata* data, unsigned int size_dim1, unsigned int size_dim2 )
+        : arraydata( data ){
+ 	setDim1( size_dim1 );
+	setDim2( size_dim2 );
+    if (data->size() != size_dim1*size_dim2) {
+        cerr << "WARNING in array2D::array2D. Inconsistent array size. ";
+        cerr << "size1D=" << data->size() << ", size2D=" << size_dim1*size_dim2 
+			<< "=" << size_dim1 << "*" << size_dim2 << "" << endl;
+    }
+}
 
 //constructor to generate a 2D array from a 1D array, given the desired dimensions
-array2D::array2D( array1D* dataOneD, unsigned int size_dim1, unsigned int size_dim2) 
+array2D::array2D( array1D* dataOneD, unsigned int size_dim1, unsigned int size_dim2 ) 
         : arraydata( dataOneD ){
  	setDim1( size_dim1 );
 	setDim2( size_dim2 );
@@ -658,7 +668,7 @@ void array2D::set( unsigned int i, unsigned int j, double value ){
 }
 
 
-//-----------------------------------------------------more data accessors
+//-----------------------------------------------------getRow
 int array2D::getRow( int rownum, array1D *&row ) const{
 	if (rownum >= dim1() || rownum < 0){ 
 		cerr << "Error in array2D::getRow. row number " << rownum << " too big or below zero." << endl; 
@@ -687,7 +697,7 @@ int array2D::getRow( int rownum, array1D *&row ) const{
 	return 0;
 }
 
-
+//-----------------------------------------------------getCol
 int array2D::getCol( int colnum, array1D *&col) const{
     if (colnum >= dim2() || colnum < 0){ 
 		cerr << "Error in array2D::getCol. column number " << colnum << " too big or below zero." << endl; 
@@ -717,7 +727,11 @@ int array2D::getCol( int colnum, array1D *&col) const{
 }
 
 
-//-----------------------------------------------------setRow/setCol
+
+
+	
+
+//-----------------------------------------------------setRow
 // note: there is no check for dimensions
 // the array2D is updated as long as there is data in the passed array1D
 // therefore, if dim(1D) < dim(2D), there will be old data, which is not overwritten
@@ -736,6 +750,7 @@ void array2D::setRow( int rownum, const array1D *row, int start ){
 	}
 }
 
+//-----------------------------------------------------setCol
 void array2D::setCol( int colnum, const array1D *col, int start ){
 	if (!col){
 		cerr << "Error in array2D::setCol. Passed 'col' not allocated." << endl;
@@ -749,6 +764,35 @@ void array2D::setCol( int colnum, const array1D *col, int start ){
 		}
 	}
 }
+
+//-----------------------------------------------------calcAvgRow
+int array2D::calcAvgRow( array1D *&avgrow ) const{
+	delete avgrow;
+	avgrow = new array1D( this->dim1() );
+	for (int c = 0; c < dim2(); c++){
+		double sum = 0;
+		for (int r = 0; r < dim1(); r++){
+			sum += get(r,c);
+		}
+		avgrow->set(c, sum/dim1());
+	}
+	return 0;
+}
+
+//-----------------------------------------------------calcAvgCol
+int array2D::calcAvgCol( array1D *&avgcol ) const{
+	delete avgcol;
+	avgcol = new array1D( this->dim1() );
+	for (int r = 0; r < dim1(); r++){
+		double sum = 0;
+		for (int c = 0; c < dim2(); c++){
+			sum += get(r,c);
+		}
+		avgcol->set(r, sum/dim2());
+	}
+	return 0;
+}
+
 
 //------------------------------------------------------------- transpose
 void array2D::transpose(){

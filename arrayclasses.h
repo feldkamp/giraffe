@@ -184,7 +184,8 @@ private:
 			
 public:
 	array2D( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1 );              //default constructor
-    array2D( array1D* dataOneD, unsigned int size_dim1, unsigned int size_dim2);	// use 1D data to initialize
+    array2D( arraydata* data, unsigned int size_dim1, unsigned int size_dim2);
+	array2D( array1D* dataOneD, unsigned int size_dim1, unsigned int size_dim2);	// use 1D data to initialize
 	array2D( array2D* dataTwoD );													// initialize with a copy of the argument
 	template <class T> array2D( T *dataCArray, unsigned int size_dim1, unsigned int size_dim2 )
 			: arraydata( dataCArray, size_dim1*size_dim2 ){
@@ -210,7 +211,10 @@ public:
     
     int getRow( int rownum, array1D *&row ) const; 	                    //returns one-dimensional 'row' or 'col'
 	void setRow( int rownum, const array1D *row, int start=0 );
-
+	
+	int calcAvgRow( array1D *&row ) const;
+	int calcAvgCol( array1D *&col ) const;
+	
 	void transpose();													//transpose (dim1,dim2) --> (dim2,dim1)
 	void flipud();														//flip up-down
 	void fliplr();														//flip left-right

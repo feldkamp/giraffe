@@ -52,28 +52,30 @@
 		
 		
 		//------------------------------------------------------------------------------HDF5
-		int readFromHDF5( std::string filename, array2D *&dest) const;		// there is a problem with getting floating point numbers, int works
+		int readFromHDF5( std::string filename, array1D *&dest) const;
+		int readFromHDF5( std::string filename, array2D *&dest) const;
 		
 		// dataType = 0 --> write as doubles (H5T_NATIVE_DOUBLE, default)
 		// dataType = 1 --> write as float   (H5T_NATIVE_FLOAT)
 		// dataType = 2 --> write as int     (H5T_NATIVE_INT)
 		// dataType = 3 --> write as int16_t (H5T_STD_I16LE)
 		// dataType = 4 --> write as long    (H5T_NATIVE_LONG)
-		int writeToHDF5( std::string filename, array2D *src, int dataType = 1, int verbose = 0 ) const;
-		
+		int writeToHDF5( std::string filename, array1D *src, int dataType = 1, int verbose = 0 ) const;
+		int writeToHDF5( std::string filename, array2D *src, int dataType = 1, int verbose = 0 ) const;	
 		
 		//------------------------------------------------------------------------------ASCII
+		int readFromASCII( std::string filename, array1D *&dest ) const;
 		int readFromASCII( std::string filename, array2D *&dest ) const;
 		int writeToASCII( std::string filename, array1D *src, int format=0 ) const;
 		int writeToASCII( std::string filename, array2D *src, int format=0 ) const;
 		int writeToASCII( std::string filename, array3D *src, int format=0 ) const;
 		
 		//------------------------------------------------------------------------------general support functions
-		bool transpose() const;
-		void setTranspose( bool t );
+		bool transposeForIO() const;
+		void setTransposeForIO( bool t );
 		
 	private:
-		bool p_transpose;	 // transpose 2D files to conform with matrix (rows, cols) convention (default: true)
+		bool p_transposeForIO;	 // transpose 2D files to conform with matrix (rows, cols) convention (default: true)
 		
 	};
 	

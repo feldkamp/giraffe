@@ -363,8 +363,6 @@ int Tester::testIO(int mode){
 		io->writeToASCII(base()+outfn+"_2D.txt", wmat);
 	}
 	
-	delete wmat;
-	
 	//-------------------------------------------------------------reading
 	array2D *rmat = new array2D;
 
@@ -402,9 +400,6 @@ int Tester::testIO(int mode){
 	}
 	
 	if (mode == 0 || mode == 4){
-		cout << "\nreading from ASCII (1D)" << endl;
-		io->readFromASCII(base()+infn+"_1D.txt", rmat);
-		cout << rmat->getASCIIdata();
 		cout << "\nreading from ASCII (2D)" << endl;
 		io->readFromASCII(base()+infn+"_2D.txt", rmat);
 		cout << rmat->getASCIIdata();
@@ -415,25 +410,53 @@ int Tester::testIO(int mode){
 		cout << "\nreading from large file ASCII (2D)" << endl;
 		io->readFromASCII("/Users/feldkamp/Work/SLAC/2011_06_Water_L357/results/kitty_out/PEDESTALSNEW/cspad-pedestals_r0006.dat", rmat);	
 	}
-	delete rmat;
 	
 	
-//	cout << "--- test case 1D ---" << endl;
-//	array1D *warr = new array1D(10);
-//	warr->range(-7, 12);
-//	warr->writeToASCII(base()+outfn+"1D.txt");
-//	cout << warr->getASCIIdata();
-//	
-//	cout << "writing to EDF (1D)" << endl;
-//	io->writeToEDF(base()+outfn+"1D.edf", warr);
-//	delete warr;
-//	
-//	array1D* rarr = new array1D;
-//	io->readFromEDF(base()+infn+"1D.edf", rarr);
-//	cout << rarr->getASCIIdata();
-//	delete rarr;
+	//-------------------------------------------------------------writing
+	cout << "--- test case 1D ---" << endl;
+	array1D *warr = new array1D(10);
+	warr->range(-7, 12);
+	cout << warr->getASCIIdata();
+
+	if (mode == 10 || mode == 11) {
+		cout << "writing to EDF (1D)" << endl;
+		io->writeToEDF(base()+outfn+"_1D.edf", warr);
+	}
 	
+	if (mode == 10 || mode == 12) {
+		cout << "writing to HDF5 (1D)" << endl;
+		io->writeToHDF5(base()+outfn+"_1D.h5", warr);	
+	}
+
+	if (mode == 10 || mode == 14) {
+		cout << "writing to ASCII (1D)" << endl;	
+		io->writeToASCII(base()+outfn+"_1D.txt", warr);
+	}
 	
+	//-------------------------------------------------------------reading
+	array1D* rarr = new array1D;
+	
+	if (mode == 10 || mode == 11) {
+		io->readFromEDF(base()+infn+"_1D.edf", rarr);
+		cout << rarr->getASCIIdata();
+	}
+
+	if (mode == 10 || mode == 12) {
+		cout << "\nreading from HDF5 (1D)" << endl;
+		io->readFromHDF5(base()+infn+"_1D.h5", rarr);
+		cout << rarr->getASCIIdata();
+	}
+
+	if (mode == 10 || mode == 14) {
+		cout << "\nreading from ASCII (1D)" << endl;
+		io->readFromASCII(base()+infn+"_1D.txt", rarr);
+		cout << rarr->getASCIIdata();
+	}
+
+	delete wmat;
+	delete warr;
+	delete rmat;	
+	delete rarr;
 	delete io;
 	
 	return 0;
