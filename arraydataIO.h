@@ -36,6 +36,12 @@
 	public:
 		arraydataIO();
 		~arraydataIO();
+		
+		//general functions, data type is determined by checking the file extension
+		int readFromFile( std::string filename, array1D *&dest) const;
+		int readFromFile( std::string filename, array2D *&dest) const;
+		int writeToFile( std::string filename, array1D *src) const;
+		int writeToFile( std::string filename, array2D *src) const;
 
 		//------------------------------------------------------------------------------EDF
 		int readFromEDF( std::string filename, array1D *&dest ) const;

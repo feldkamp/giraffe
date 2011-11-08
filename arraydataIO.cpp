@@ -28,13 +28,100 @@ using std::vector;
 
 #include <cmath>
 
+//-------------------------------------------------------------getExt
+
+//-------------------------------------------------------------
+std::string getExt(std::string filename){
+	char separator = '.';
+	//find separator dot from the end of the string
+	size_t pos = filename.rfind( separator );
+	//get extension without the '.'
+	string ext = filename.substr( pos+1, filename.length() );
+	return ext;
+}
+
 
 arraydataIO::arraydataIO(){
 	p_transposeForIO = true;			//should be 'true', generally. see note in header
 }
 
+
+
 arraydataIO::~arraydataIO(){
 
+}
+
+
+int arraydataIO::readFromFile( std::string filename, array1D *&dest) const{
+	string ext = getExt( filename );
+	int fail = 0;
+	
+	// read 2D 'raw' image
+	if (ext == "edf" || ext == "EDF" || ext == "bin"){			
+		fail = readFromEDF( filename, dest );
+	}else if (ext == "h5" || ext == "hdf5" || ext == "H5" || ext == "HDF5"){		
+		fail = readFromHDF5( filename, dest );
+	}else if (ext == "txt" || ext == "TXT"){		
+		fail = readFromASCII( filename, dest );
+	}else{
+		cout << "Error in arraydataIO::readFromFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
+		cout << "valid options include 'edf', 'h5' and 'txt'" << endl;
+	}
+	return fail;
+}
+
+int arraydataIO::readFromFile( std::string filename, array2D *&dest) const{
+	string ext = getExt( filename );
+	int fail = 0;
+	
+	// read 2D 'raw' image
+	if (ext == "edf" || ext == "EDF" || ext == "bin"){			
+		fail = readFromEDF( filename, dest );
+	}else if (ext == "h5" || ext == "hdf5" || ext == "H5" || ext == "HDF5"){		
+		fail = readFromHDF5( filename, dest );
+	}else if (ext == "txt" || ext == "TXT"){		
+		fail = readFromASCII( filename, dest );
+	}else{
+		cout << "Error in arraydataIO::readFromFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
+		cout << "valid options include 'edf', 'h5' and 'txt'" << endl;
+	}
+	return fail;
+}
+
+int arraydataIO::writeToFile( std::string filename, array1D *src) const{
+	string ext = getExt( filename );
+	int fail = 0;
+	
+	// read 2D 'raw' image
+	if (ext == "edf" || ext == "EDF" || ext == "bin"){			
+		fail = writeToEDF( filename, src );
+	}else if (ext == "h5" || ext == "hdf5" || ext == "H5" || ext == "HDF5"){		
+		fail = writeToHDF5( filename, src );
+	}else if (ext == "txt" || ext == "TXT"){		
+		fail = writeToASCII( filename, src );
+	}else{
+		cout << "Error in arraydataIO::writeToFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
+		cout << "valid options include 'edf', 'h5' and 'txt'" << endl;
+	}
+	return fail;
+}
+
+int arraydataIO::writeToFile( std::string filename, array2D *src) const{
+	string ext = getExt( filename );
+	int fail = 0;
+	
+	// read 2D 'raw' image
+	if (ext == "edf" || ext == "EDF" || ext == "bin"){			
+		fail = writeToEDF( filename, src );
+	}else if (ext == "h5" || ext == "hdf5" || ext == "H5" || ext == "HDF5"){		
+		fail = writeToHDF5( filename, src );
+	}else if (ext == "txt" || ext == "TXT"){		
+		fail = writeToASCII( filename, src );
+	}else{
+		cout << "Error in arraydataIO::writeToFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
+		cout << "valid options include 'edf', 'h5' and 'txt'" << endl;
+	}
+	return fail;
 }
 
 #ifdef ARRAYDATAIO_EDF
