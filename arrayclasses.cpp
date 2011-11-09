@@ -412,6 +412,22 @@ int arraydata::divideByArrayElementwise( const arraydata *secondArray ){
 }
 
 
+//------------------------------------------------------------- applyMask
+int arraydata::applyMask( arraydata* mask, double checkval, double rejectval ){
+	if (size() != mask->size()){
+		cerr << "Error in arraydata::applyMask! Data size " << size() << " doesn't match mask size " << mask->size() << "." << endl;
+		return 1;
+	}
+	for (int i = 0; i < size(); i++){
+		if (mask->get_atIndex(i) < checkval){
+			//replace by fill value
+			set_atIndex(i, rejectval);
+		}else{
+			//do nothing, keep the original data
+		}
+	}	
+}
+
 //------------------------------------------------------------- histogram
 int arraydata::getHistogramInBoundaries( array1D *&hist, array1D *&bins, unsigned int nBins, double min, double max ){
 	double range = max-min;
@@ -872,6 +888,7 @@ void array2D::gradientAlongDim2( double lowlim, double highlim ){	//set elements
 		delete row;
 	}
 }
+
 
     
 //------------------------------------------------------------- getASCIIdata

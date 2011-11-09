@@ -115,6 +115,10 @@ public:
     int multiplyByArrayElementwise( const arraydata *secondArray );
     int divideByArrayElementwise( const arraydata *secondArray );
 	
+	// application of a mask (usually ones and zeros)
+	// set values below 'checkval' to 'rejectval'
+	int applyMask( arraydata* mask, double checkval = 0.5, double rejectval = 0. );	
+	
 	int getHistogram( array1D *&hist, array1D *&bins, unsigned int nBins = 20 );
 	std::string getHistogramASCII( unsigned int nBins = 20 );
 
@@ -219,9 +223,11 @@ public:
 	void flipud();														//flip up-down
 	void fliplr();														//flip left-right
 	
-	void gradientAlongDim1( double lowlim, double highlim );			//linear gradient along one dimension, same along other dimension
+	
+	//linear gradient along one dimension, same along other dimension
+	void gradientAlongDim1( double lowlim, double highlim );			
 	void gradientAlongDim2( double lowlim, double highlim );
-    
+	
 	void generateTestPattern( int type );
 };
 

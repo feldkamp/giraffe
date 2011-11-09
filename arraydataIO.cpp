@@ -66,6 +66,7 @@ int arraydataIO::readFromFile( std::string filename, array1D *&dest) const{
 	}else{
 		cout << "Error in arraydataIO::readFromFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
 		cout << "valid options include 'edf', 'h5' and 'txt'" << endl;
+		fail = 100;
 	}
 	return fail;
 }
@@ -84,6 +85,7 @@ int arraydataIO::readFromFile( std::string filename, array2D *&dest) const{
 	}else{
 		cout << "Error in arraydataIO::readFromFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
 		cout << "valid options include 'edf', 'h5' and 'txt'" << endl;
+		fail = 100;
 	}
 	return fail;
 }
@@ -102,6 +104,7 @@ int arraydataIO::writeToFile( std::string filename, array1D *src) const{
 	}else{
 		cout << "Error in arraydataIO::writeToFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
 		cout << "valid options include 'edf', 'h5' and 'txt'" << endl;
+		fail = 100;
 	}
 	return fail;
 }
@@ -120,6 +123,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	}else{
 		cout << "Error in arraydataIO::writeToFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
 		cout << "valid options include 'edf', 'h5' and 'txt'" << endl;
+		fail = 100;
 	}
 	return fail;
 }
@@ -136,6 +140,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		ns_edf::edf *file = new ns_edf::edf;
 		if (file->read_header(filename)){
 			cerr << "Error in arraydataIO::readFromEDF! Could not read file '" << filename << "'." << endl;
+			return 1;
 		}
 		
 		if ( file->get_Dim_y() > 1 )
@@ -150,7 +155,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		int fail = file->read_data( temp, filename );
 		if ( fail ){
 			cout << "ERROR. In arraydataIO::readFromEDF - Could not load EDF data file '" << filename << "'." << endl;
-			return 1;
+			return 2;
 		}
 		
 		//feed back into dest
@@ -172,6 +177,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 
 		if (file->read_header(filename)){
 			cerr << "Error in arraydataIO::readFromEDF! Could not read file '" << filename << "'." << endl;
+			return 1;
 		}
 		
 		int dim1 = (int)file->get_Dim_x();
@@ -185,7 +191,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		int fail = file->read_data( temp, filename );
 		if ( fail ){
 			cout << "ERROR. In arraydataIO::readFromEDF - Could not load EDF data file '" << filename << "'." << endl;
-			return 1;
+			return 2;
 		}
 		
 		//feed back into dest
@@ -369,10 +375,12 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		
 		if (src->size() == 0) {
 			cerr << "Error in writeToTiff! Array size is zero." << endl;
+			return 2;
 		}
 		
 		if (!src->data()) {
 			cerr << "Error in writeToTiff! No data in array." << endl;
+			return 3;
 		}
 		
 		TIFF *out = TIFFOpen(filename.c_str() ,"w");
@@ -568,11 +576,12 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			}
 		}else{
 			cerr << "Error in arraydataIO::readFromHDF5. Unknown HDF5 class type '" << varClass << "'" << endl;
+			return 1;
 		}
 		
 		if (!buffer){
 			cerr << "Error in readFromHDF5, could not allocate read buffer of size " << n << "." << endl;
-			return 1;
+			return 2;
 		}
 
 		cout << "." << flush; // dot no. 1
@@ -615,6 +624,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			delete[] ((long*)buffer);
 		} else { 
 			cerr << "Error in arraydataIO::readFromHDF5. Type not found. " << endl;
+			return 1;
 		}
 
 		cout << "." << flush; // dot no. 4
@@ -789,12 +799,14 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		if (datasetID < 0) {
 			cerr << "Error in arraydataIO::writeToHDF5. Couldn't create dataset." << endl;
 			H5Fclose(fileID);
+			return 1;
 		}
 		
 		// write data to the dataset
 		herr_t status = H5Dwrite(datasetID, memTypeID, memSpaceID, fileSpaceID, xfer_prp, data);
 		if (status < 0){ 
 			cerr << "Error in arraydataIO::writeToHDF5. Could not write HDF5. " << endl;
+			return 2;
 		}		
 		
 		//close all open structures 
@@ -815,6 +827,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			delete[] ((long*)data);
 		} else { 
 			cout << "Error in arraydataIO::writeToHDF5. Unsupported data format!" << endl;
+			return 1;
 		}
 
 		cout << info.str() << endl;
@@ -881,6 +894,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 //						cout << ((long*)data)[j*nx+i] << " ";
 //					} else { 
 //						cout << "Error in arraydataIO::writeToHDF5. Unsupported data format!" << endl;
+//						return 1;
 //					}
 //				}//for i
 //				cout << endl;
@@ -977,10 +991,12 @@ int arraydataIO::writeToASCII( std::string filename, array1D *src, int format ) 
 	
 	if (src->size() == 0) {
 		cerr << "ERROR in arraydataIO::writeToASCII (1D). Array size is zero." << endl;
+		return 2;
 	}
 	
 	if (!src->data()) {
 		cerr << "ERROR in arraydataIO::writeToASCII (1D). No data in array." << endl;
+		return 3;
 	}	
 
 	std::ofstream fout( filename.c_str() );
@@ -1009,10 +1025,12 @@ int arraydataIO::writeToASCII( std::string filename, array2D *src, int format ) 
 	
 	if (src->size() == 0) {
 		cerr << "ERROR in arraydataIO::writeToASCII (2D). Array size is zero." << endl;
+		return 2;
 	}
 	
 	if (!src->data()) {
 		cerr << "ERROR in arraydataIO::writeToASCII (2D). No data in array." << endl;
+		return 3;
 	}	
 	
 
@@ -1042,10 +1060,12 @@ int arraydataIO::writeToASCII( std::string filename, array3D *src, int format ) 
 	
 	if (src->size() == 0) {
 		cerr << "ERROR in arraydataIO::writeToASCII (3D). Array size is zero." << endl;
+		return 2;
 	}
 	
 	if (!src->data()) {
 		cerr << "ERROR in arraydataIO::writeToASCII (3D). No data in array." << endl;
+		return 3;
 	}	
 
 
