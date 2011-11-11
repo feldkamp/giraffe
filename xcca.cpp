@@ -33,7 +33,7 @@ string argToString( char * const argument ){
 	//fill argument after the -<option letter> into a string
 	std::ostringstream osst;
 	int j = 2;
-	while ( argument[j] != '\0' ){
+	while ( argument[j] != '\0'){
 		osst << argument[j];
 		j++;
 	}

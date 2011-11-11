@@ -52,11 +52,13 @@ int Analyzer::processFiles( vector<string> files, double shiftX, double shiftY, 
 
 int Analyzer::processFiles( std::vector<string> files, double shiftX, double shiftY, int num_phi, int num_q, 
 					double start_q, double stop_q, int LUTx, int LUTy ){
-					
+	
+	string ext = ".h5";			//standard extension for output (alternatives: .edf, .tif, .txt)
+	
 	//prepare array2D's to hold overall averages
 	arraydataIO *io = new arraydataIO;
 	array2D *detavg = new array2D;
-	io->readFromEDF( files.at(0), detavg );
+	io->readFromFile( files.at(0), detavg );
 	detavg->zeros();							// this is now an image of correct dimensions, all zeros
 	int imgX = detavg->dim2();
 	int imgY = detavg->dim1();
@@ -80,7 +82,7 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 	CrossCorrelator *lutcc = new CrossCorrelator(detavg, qx, qy, num_phi, num_q);
 	lutcc->createLookupTable(LUTy, LUTx);
 	array2D *LUT = new array2D( *(lutcc->lookupTable()) );
-	io->writeToEDF( outputDirectory()+"LUT.edf", LUT );
+	io->writeToFile( outputDirectory()+"LUT"+ext, LUT );
 	
 	array2D *polaravg = new array2D( lutcc->nQ(), lutcc->nPhi() );
 	array2D *corravg = new array2D( lutcc->nQ(), lutcc->nLag() );
@@ -100,7 +102,7 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 		cout << "#" << k << ": ";// << fn << endl;
 		
 		array2D *image = new array2D;
-		io->readFromEDF( fn, image );
+		io->readFromFile( fn, image );
 		array2D *image_copy = new array2D( *image );
 		
 		
@@ -122,7 +124,6 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 				cc->calculatePolarCoordinates( start_q, stop_q );
 				cc->calculateSAXS();
 				cc->calculateXCCA();	
-				
 			break;
 			case 2:
 				cout << "FAST COORDINATES, FAST XCCA (algorithm 2)" << endl;
@@ -131,9 +132,6 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 				cc->calculateXCCA_FAST();
 
 				polaravg->addArrayElementwise( cc->polar() );
-				if ( flag_single_correlation_output ){
-					io->writeToEDF( cc->outputdir()+"polar"+single_desc+".edf", cc->polar() );           		
-				}
 				break;
 			case 3:
 				cout << "DIRECT COORDINATES, FAST XCCA (algorithm 3)" << endl;
@@ -142,9 +140,6 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 				cc->calculateXCCA_FAST();
 
 				polaravg->addArrayElementwise( cc->polar() );
-				if ( flag_single_correlation_output ){
-					io->writeToEDF( cc->outputdir()+"polar"+single_desc+".edf", cc->polar() );           		
-				}
 				break;
 			case 4:
 				cout << "FAST COORDINATES, DIRECT XCCA (algorithm 4)" << endl;
@@ -153,9 +148,6 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 				cc->calculateXCCA();
 
 				polaravg->addArrayElementwise( cc->polar() );
-				if ( flag_single_correlation_output ){
-					io->writeToEDF( cc->outputdir()+"polar"+single_desc+".edf", cc->polar() );           		
-				}
 				break;
 			default:
 				std::cerr << "Choice of algorithm is invalid. Aborting." << endl;
@@ -164,8 +156,8 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 		
 		corravg->addArrayElementwise( cc->autoCorr() );
 		if ( flag_single_correlation_output ){
-			io->writeToEDF( cc->outputdir()+"corr"+single_desc+".edf", cc->autoCorr() );
-			io->writeToHDF5( cc->outputdir()+"corr"+single_desc+".h5", cc->autoCorr() );
+			io->writeToFile( cc->outputdir()+"corr"+single_desc+ext, cc->autoCorr() );
+			io->writeToFile( cc->outputdir()+"polar"+single_desc+ext, cc->polar() );
 		}
 
 						
@@ -183,12 +175,12 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 	polaravg->divideByValue( num_files );		//normalize	
 	corravg->divideByValue( num_files );		//normalize
 	
-	io->writeToEDF( outputDirectory()+"det_avg.edf", detavg);			// average background-subtracted detector image
-	io->writeToEDF( outputDirectory()+"polar_avg.edf", polaravg);		// average image in polar coordinates
-	io->writeToEDF( outputDirectory()+"corr_avg.edf", corravg);			// average autocorrelation
+	io->writeToFile( outputDirectory()+"det_avg"+ext, detavg);			// average background-subtracted detector image
+	io->writeToFile( outputDirectory()+"polar_avg"+ext, polaravg);		// average image in polar coordinates
+	io->writeToFile( outputDirectory()+"corr_avg"+ext, corravg);			// average autocorrelation
 	if ( flag_subtract_background ){
-//		io->writeToEDF( outputDirectory()+"det_avg_original.edf", detavg_copy);		// no background subtraction
-		io->writeToEDF( outputDirectory()+"det_background_avg.edf", backavg);					// just the background
+//		io->writeToFile( outputDirectory()+"det_avg_original"+ext, detavg_copy);		// no background subtraction
+		io->writeToFile( outputDirectory()+"det_background_avg"+ext, backavg);					// just the background
 	}
 
 
