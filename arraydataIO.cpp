@@ -524,25 +524,25 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			rows = (int)(dims[0]);
 			cols = (int)(dims[1]);
 			n = rows * cols;
-			cout << "rows,cols = " << rows << "," << cols << "." << endl;
+			cout << "rows,cols = " << rows << "," << cols << ". " << flush;
 		}else{
 			cerr << "--> can't handle that rank. Aborting." << endl;
 			return 1;
 		}
-		cout << "data points: " << n << ". status: " << status_n << " " << flush;
+		cout << "(" << n << "). status: " << status_n << ". " << flush;
 
 		H5T_order_t order = H5Tget_order(typeID);
 		if (order == H5T_ORDER_LE){
-			cout << "Little endian order. " << flush;
+			cout << "LE. " << flush;	//little endian byte order
 		}else if (order == H5T_ORDER_BE){
-			cout << "Big endian order. " << flush;
+			cout << "BE. " << flush;	//big endian byte order
 		}
 		size_t varSize = H5Tget_size(typeID);
 
 		//allocate data to hold what comes out of the file
 		void *buffer = NULL;
 		if (varClass == H5T_FLOAT){
-			cout << "FLOAT type, size " << (int)varSize << " " << flush;
+			cout << "H5type FLOAT, size " << (int)varSize << " " << flush;
 			if (varSize == sizeof(double)){
 				cout << "--> double " << flush;
 				buffer = new double[n];
@@ -553,7 +553,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 				memTypeID = H5T_NATIVE_FLOAT;
 			}
 		}else if (varClass == H5T_INTEGER){
-			cout << "INTEGER type, size" << (int)varSize << " " << flush;
+			cout << "H5type INTEGER, size " << (int)varSize << " " << flush;
 			if (varSize == sizeof(int)){
 				cout << "--> int " << flush;
 				buffer = new int[n];

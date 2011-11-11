@@ -320,21 +320,25 @@ void CrossCorrelator::run(int master_algorithm, bool calc_SAXS){
 void CrossCorrelator::run(double start_q, double stop_q, int master_algorithm, bool calc_SAXS){
 	switch (master_algorithm){
 		case 1: 
-			if(debug()) cout << "DIRECT COORDINATES, DIRECT XCCA (master algorithm 1)" << endl;
+			if(debug()) 
+				cout << "DIRECT COORDINATES, DIRECT XCCA (master algorithm 1)" << endl;
 			run(start_q, stop_q, 1, 1, calc_SAXS);
 			break;
 		case 2: 
-			if(debug()) cout <<  "FAST COORDINATES, FAST XCCA (master algorithm 2)" << endl;
+			if(debug()) 
+				cout <<  "FAST COORDINATES, FAST XCCA (master algorithm 2)" << endl;
 			run(start_q, stop_q, 2, 2, calc_SAXS);
 			break;
 		case 3: 
 			//doesn't work yet, because, as of now, the polar() object 
 			//isn't filled in calculatePolarCoordinates(), but in calculateXCCA()
-			if(debug()) cout << "DIRECT COORDINATES, FAST XCCA (master algorithm 3)" << endl;
+			if(debug()) 
+				cout << "DIRECT COORDINATES, FAST XCCA (master algorithm 3)" << endl;
 			run(start_q, stop_q, 1, 2, calc_SAXS);
 			break;
 		case 4: 
-			if(debug()) cout << "FAST COORDINATES, DIRECT XCCA (algorithm 4)" << endl;
+			if(debug()) 
+				cout << "FAST COORDINATES, DIRECT XCCA (master algorithm 4)" << endl;
 			run(start_q, stop_q, 2, 1, calc_SAXS);
 			break;
 		default:
@@ -636,7 +640,7 @@ void CrossCorrelator::setOutputdir( std::string dir ){
 	if( lastchar != '/' ){		//if last character is not a slash, append one
 		dir += '/';
 	}
-    p_outputdir = dir;
+	p_outputdir = dir;
 }
 
 //----------------------------------------------------------------------------debug
@@ -697,7 +701,10 @@ array1D *CrossCorrelator::iAvg() const{
 //--------------------------------------------------------calculatePolarCoordinates
 // calculates polar coordinates for each pixel from cartesian coordinate system
 void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
-	
+	if (debug() >= 1){
+		cout << "CrossCorrelator::calculatePolarCoordinates(" << start_q << "," << stop_q << "). calculating polar arrays..." << endl;
+	}
+		
 	// sanity limit check
 	if (!qmax() && !stop_q) {
 		cerr << "ERROR in CrossCorrelator::calculatePolarCoordinates: Need to specify Q-limits as arguments!" << endl;
@@ -755,10 +762,6 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 	for (int i=0; i<nPhi(); i++) {
 		p_phiAvg->set( i, phimin()+i*deltaphi() );
 	}
-	
-	if (debug() >= 1){
-		cout << "calculating polar arrays..." << endl;
-	}
 
 	// create array of the intensities in polar coordinates with the correct binning
 	delete p_polar;
@@ -810,6 +813,9 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 //----------------------------------------------------------------------------calculateSAXS
 // calculates the angular average of the intensity as a function of |q|
 void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
+	if (debug() >= 1){
+		cout << "CrossCorrelator::calculateSAXS. calculating angular average of the intensity..." << endl;
+	}
 	
 	// sanity limit check
 	if (!qmax() && !stop_q) {
@@ -833,8 +839,6 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 		p_iAvg = new array1D(nQ());
 	}
 	
-	if (debug() >= 1) printf("calculating angular average of the intensity...\n");
-	
 	if (!p_calculatePolarCoordinates && !p_calculateSAXS) {
 		// calculate |q| for each pixel and bin lengths with correct resolution
 		for (int i=0; i<arraySize(); i++) {
@@ -856,7 +860,9 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 			if (p_q->get(i) <= qmax() && p_q->get(i) >= qmin()) {
 				p_iAvg->set( qIndex, p_iAvg->get(qIndex)+data()->get(i) );
 				counter->set( qIndex, counter->get(qIndex)+1 );
-			} else if (debug() >= 3) printf("POINT EXCLUDED! q: %4.2f, qmin: %4.2f, qmax: %4.2f, nQ: %d, qIndex: %d\n", p_q->get(i), qmin(), qmax(), nQ(), qIndex );
+			} else if (debug() >= 3) 
+				cout << "POINT EXCLUDED! q: " << p_q->get(i) << ", qmin: " << qmin() << ", qmax: " << qmax() 
+					<< ", nQ: " << nQ() << ", qIndex: " << qIndex << endl;
 		}
 	}
 	
@@ -866,7 +872,7 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 	}
 	
 	if (debug() >= 2) {
-		printf("angular average of the intensity:\n");
+		cout << "angular average of the intensity:" << endl;
 		for (int i=0; i<nQ(); i++)
 			cout << "Q: " << p_qAvg->get(i) << ",   \t# pixels: " << counter->get(i) << ",\tI: " << p_iAvg->get(i) << endl;
 	}
@@ -881,6 +887,10 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 
 //----------------------------------------------------------------------------calculateXCCA
 void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
+	if (debug() >= 1){
+		string mode = xccaEnable() ? "full cross-correlation" : "auto-correlation";
+		cout << "CrossCorrelator::calculateXCCA. calculating " << mode << endl;
+	}
 	
 	// sanity limit check
 	if (!qmax() && !stop_q) {
@@ -891,8 +901,7 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 	}
 	
 	// function order check
-	if (p_calculatePolarCoordinates) {
-		
+	if (p_calculatePolarCoordinates) {		
 		// if calculateXCCA() has already been used, free and recreate p_crossCorrelation, p_autoCorrelation
 		if (p_calculateXCCA) {
 			if (xccaEnable()) {
@@ -906,9 +915,7 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 		
 		// calculate cross-correlation array and normalization array for cross-correlation	
 		if (xccaEnable()) {
-			
-			if (debug() >= 1) printf("starting main loop to calculate cross-correlation...\n");
-			
+			//full cross-correlation
 			for (int i=0; i<nQ(); i++) { // q1 index
 				for (int j=0; j<nQ(); j++) { // q2 index
 					for (int k=0; k<nLag(); k++) { // phi lag => phi2 index = (l+k)%nPhi
@@ -934,12 +941,6 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 					double variance1 = crossCorr()->get(i, i, 0);
 					double variance2 = crossCorr()->get(j, j, 0);
 					for (int k=0; k<nLag(); k++) { // phi lag => phi2 index = (l+k)%nPhi
-//						if (p_iAvg->get(i) && p_iAvg->get(j)) {
-//							// normalize the cross-correlation array with the SAXS intensity
-//							crossCorr()->set(i, j, k, crossCorr()->get(i,j,k) / (p_iAvg->get(i)*p_iAvg->get(j)) );
-//						} else { // fail code if average intensity is 0
-//							crossCorr()->set(i, j, k, -1.5);
-//						}
 						if (variance1 && variance2) {
 							// normalize by standard deviations (or the square root of the diagonal elements of the cross-correlation)
 							crossCorr()->set(i, j, k, crossCorr()->get(i,j,k) / (sqrt(variance1)*sqrt(variance2)) );
@@ -950,9 +951,7 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 				} // for q2
 			} // for q1
 		} else {
-			
-			if (debug() >= 1) printf("starting main loop to calculate auto-correlation...\n");
-			
+			//auto-correlation only
 			for (int i=0; i<nQ(); i++) { // q index
 				double variance = 0;
 				for (int k=0; k<nLag(); k++) { // phi lag => phi2 index = (l+k)%nPhi
@@ -964,12 +963,6 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 						norm += norm_contribution;
 					}
 					if (norm != 0) {
-//						if (p_iAvg->get(i) != 0) {
-//							// normalize the cross-correlation array with the SAXS intensity and the calculated normalization constant					
-//							autoCorr()->set(i, k, autoCorr()->get(i,k) / (norm*p_iAvg->get(i)*p_iAvg->get(i)) );
-//						} else { // fail code if average intensity is 0
-//							autoCorr()->set(i, k, -1.5);						
-//						}
 						if (k == 0) {
 							variance = autoCorr()->get(i, 0)/norm;
 						}
@@ -985,15 +978,18 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 				}		
 			} // for q
 		}
-		
-		if (debug() >= 1) printf("done calculating cross-correlation...\n");
+		if (debug() >= 1) 
+			cout << "done calculating cross-correlation..." << endl;
 		
 		p_calculateXCCA++;
 	} else {
-		cout << "WARNING: polar coordinates must be calculated before XCCA is calculated." << endl;
+		cerr << "WARNING: polar coordinates must be calculated before XCCA is calculated." << endl;
 		calculatePolarCoordinates();
-		if (p_calculateXCCA) calculatePolarCoordinates();
-		else cerr << "ERROR in CrossCorrelator::calculateXCCA: polar coordinates were not calculated properly prior to use." << endl;
+		if (p_calculateXCCA){
+			calculatePolarCoordinates();
+		}else{
+			cerr << "ERROR in CrossCorrelator::calculateXCCA. polar coordinates were not calculated properly prior to use." << endl;
+		}
 	}	
 }
 

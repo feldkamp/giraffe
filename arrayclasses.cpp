@@ -340,9 +340,13 @@ int arraydata::multiplyByValue( double value ){
 
 //divide each element by a numerical value (enforcing float division)
 int arraydata::divideByValue( double value ){
-    for (int i = 0; i<this->size(); i++) {
-        this->set_atIndex(i, ((double) this->get_atIndex(i)) / value);
-    }
+	if (value != 0){
+		for (int i = 0; i<this->size(); i++) {
+			this->set_atIndex(i, ((double) this->get_atIndex(i)) / value);
+		}
+	}else{
+		cerr << "Error in arraydata::divideByValue. Division by zero requested! Nothing done." << endl;
+	}
     return 0;
 }
 
