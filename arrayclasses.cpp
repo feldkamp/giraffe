@@ -235,8 +235,12 @@ double arraydata::calcMin(int &pos) const{
 	double tempmin = +INFINITY;
 	for (int i = 0; i < size(); i++) {
 		if (get_atIndex(i) < tempmin) {
-			tempmin = get_atIndex(i);
-			pos = i;
+			if ( get_atIndex(i) != -INFINITY ){
+				tempmin = get_atIndex(i);
+				pos = i;
+			}else{
+				cout << "WARNING in arraydata::calcMax(). Data contains '-infinity' at index " << i << ". Skipping this value." << endl;
+			}
 		}
 	}
 	return tempmin;
@@ -255,8 +259,12 @@ double arraydata::calcMax(int &pos) const{
 	double tempmax = -INFINITY;
 	for (int i = 0; i < size(); i++) {
 		if (get_atIndex(i) > tempmax) {
-			tempmax = get_atIndex(i);
-			pos = i;
+			if ( get_atIndex(i) != INFINITY ){
+				tempmax = get_atIndex(i);
+				pos = i;
+			}else{
+				cout << "WARNING in arraydata::calcMax(). Data contains 'infinity' at index " << i << ". Skipping this value." << endl;
+			}
 		}
 	}
 	return tempmax;
@@ -425,7 +433,8 @@ int arraydata::applyMask( arraydata* mask, double checkval, double rejectval ){
 		}else{
 			//do nothing, keep the original data
 		}
-	}	
+	}
+	return 0;
 }
 
 //------------------------------------------------------------- histogram

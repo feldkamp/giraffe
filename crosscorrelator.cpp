@@ -235,6 +235,7 @@ void CrossCorrelator::initInternalArrays(){
 	p_qAvg = new array1D(nQ());
 	p_iAvg = new array1D(nQ());
 	p_phiAvg = new array1D(nPhi());
+	p_pixelCount = new array2D( nQ(), nPhi() );
 }
 
 //---------------------------------------------------------------------------- destroyInternalArrays
@@ -254,6 +255,7 @@ void CrossCorrelator::destroyInternalArrays(){
 	delete p_qAvg;
 	delete p_iAvg;
 	delete p_phiAvg;
+	delete p_pixelCount;
 	delete p_fluctuations;
 	
 	delete p_crossCorrelation;
@@ -676,6 +678,10 @@ array1D *CrossCorrelator::phiAvg() const{
 	return p_phiAvg;
 }
 
+array2D *CrossCorrelator::pixelCount() const{
+	return p_pixelCount;
+}
+
 array1D *CrossCorrelator::iAvg() const{
 	return p_iAvg;
 }
@@ -730,9 +736,11 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 			phii += 2*M_PI;
 		}
 		
-		if (debug() >= 3) {
-			if (phii < 0) cout << "phii: " << phii << ", nAngle(phii): " << round(phii/deltaphi()) << endl;
-			else if (phii > (nPhi()-1)*deltaphi()) cout << "phii: " << phii << ", nAngle(phii): " << round(phii/deltaphi()) << endl;
+		if (debug() >= 3) {				
+			if (phii < 0) 	//by JF: why this distinction of cases...?
+				cout << "phii: " << phii << ", nAngle(phii): " << round(phii/deltaphi()) << endl;
+			else if (phii > (nPhi()-1)*deltaphi()) 
+				cout << "phii: " << phii << ", nAngle(phii): " << round(phii/deltaphi()) << endl;
 		}
 		
 		p_phi->set( i, round(phii/deltaphi()) * deltaphi() );
@@ -748,6 +756,52 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 		p_phiAvg->set( i, phimin()+i*deltaphi() );
 	}
 	
+	if (debug() >= 1){
+		cout << "calculating polar arrays..." << endl;
+	}
+
+	// create array of the intensities in polar coordinates with the correct binning
+	delete p_polar;
+	p_polar = new array2D( nQ(), nPhi() );
+	
+	// create array of the intensity fluctuations in polar coordinates with the correct binning
+	delete p_fluctuations;
+	p_fluctuations = new array2D( nQ(), nPhi() );
+	
+	// calculate polar arrays
+	for (int i=0; i<arraySize(); i++) {
+		if (!maskEnable() || mask()->get(i)) {
+			int qIndex = (int) round((p_q->get(i)-qmin())/deltaq()); // the index in qAvg[] that corresponds to q[i]
+			int phiIndex = (int) round((p_phi->get(i)-phimin())/deltaphi()); // the index in phiAvg[] that corresponds to phi[i]
+			if (qIndex >= 0 && qIndex < nQ() && phiIndex >= 0 && phiIndex < nPhi()) { // make sure qIndex and phiIndex are not out of array bounds
+				polar()->set(qIndex, phiIndex, polar()->get(qIndex, phiIndex) + data()->get(i) );
+				pixelCount()->set(qIndex, phiIndex, pixelCount()->get(qIndex,phiIndex)+1);
+			} else {
+				if (debug() >= 3) 
+					cout << "POINT EXCLUDED! qIndex: " << qIndex << ", phiIndex: " << phiIndex;
+			}
+		}
+	}
+	
+	// calculate SAXS if not already calculated
+	if (!p_calculateSAXS){
+		calculateSAXS();
+	}
+	
+	// normalize polar array of the intensities and calculate fluctuations
+	for (int i=0; i<nQ(); i++) {
+		for (int j=0; j<nPhi(); j++) {
+			if (pixelCount()->get(i,j) > 0.1) {	//compare to 0.1 to make sure float inaccuracies don't make this 'true'
+				polar()->set(i, j, polar()->get(i,j)/pixelCount()->get(i,j) );
+				// subtract SAXS average for all shots or just subtract the SAXS from the specific shot?
+				// second alternative is used here, since that always produces fluctuations with zero mean
+				fluctuations()->set(i, j, polar()->get(i,j)-p_iAvg->get(i) );
+			}
+			if (debug() >= 2) 
+				cout << "q: " << p_qAvg->get(i) << ", phi: " << p_phiAvg->get(j) 
+					<< " --> count: " << pixelCount()->get(i, j) << endl;
+		}
+	}			
 	p_calculatePolarCoordinates++;
 }
 
@@ -839,18 +893,6 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 	// function order check
 	if (p_calculatePolarCoordinates) {
 		
-		// create array of the intensities in polar coordinates with the correct binning
-		delete p_polar;
-		p_polar = new array2D( nQ(), nPhi() );
-		
-		// create array of the intensity fluctuations in polar coordinates with the correct binning
-		delete p_fluctuations;
-		p_fluctuations = new array2D( nQ(), nPhi() );
-		
-		// create local arrays over pixel counts in polar coordinates
-		array2D *pixelCount = new array2D( nQ(), nPhi() );
-		array2D *pixelBool = new array2D( nQ(), nPhi() );
-		
 		// if calculateXCCA() has already been used, free and recreate p_crossCorrelation, p_autoCorrelation
 		if (p_calculateXCCA) {
 			if (xccaEnable()) {
@@ -859,39 +901,6 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 			} else {
 				delete p_autoCorrelation;
 				p_autoCorrelation = new array2D( nQ(), nLag() );
-			}
-		}
-		
-		if (debug() >= 1) printf("calculating polar arrays...\n");
-		
-		// calculate polar arrays
-		for (int i=0; i<arraySize(); i++) {
-			if (!maskEnable() || mask()->get(i)) {
-				int qIndex = (int) round((p_q->get(i)-qmin())/deltaq()); // the index in qAvg[] that corresponds to q[i]
-				int phiIndex = (int) round((p_phi->get(i)-phimin())/deltaphi()); // the index in phiAvg[] that corresponds to phi[i]
-				if (qIndex >= 0 && qIndex < nQ() && phiIndex >= 0 && phiIndex < nPhi()) { // make sure qIndex and phiIndex are not out of array bounds
-					polar()->set(qIndex, phiIndex, polar()->get(qIndex, phiIndex) + data()->get(i) );
-					pixelCount->set(qIndex, phiIndex, pixelCount->get(qIndex,phiIndex)+1);
-					if (pixelBool->get(qIndex, phiIndex) != 1) {
-						pixelBool->set(qIndex, phiIndex, 1);
-					}
-				} else if (debug() >= 3) printf("POINT EXCLUDED! qIndex: %d, phiIndex: %d\n", qIndex, phiIndex);
-			}
-		}
-		
-		// calculate SAXS if not already calculated
-		if (!p_calculateSAXS) calculateSAXS();
-		
-		// normalize polar array of the intensities and calculate fluctuations
-		for (int i=0; i<nQ(); i++) {
-			for (int j=0; j<nPhi(); j++) {
-				if (pixelBool->get(i,j) != 0) {
-					polar()->set(i, j, polar()->get(i,j)/pixelCount->get(i,j) );
-					// subtract SAXS average for all shots or just subtract the SAXS from the specific shot?
-					// second alternative is used here, since that always produces fluctuations with zero mean
-					fluctuations()->set(i, j, polar()->get(i,j)-p_iAvg->get(i) );
-				}
-				if (debug() >= 2) printf("q: %f, phi: %f --> bool: %f, count: %f\n", p_qAvg->get(i), p_phiAvg->get(j), pixelBool->get(i, j), pixelCount->get(i, j));
 			}
 		}
 		
@@ -907,7 +916,8 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 						for (int l=0; l<nPhi(); l++) { // phi1 index
 							int phi2_index = (l+k)%nPhi();
 							crossCorr()->set(i,j,k, crossCorr()->get(i,j,k) + fluctuations()->get(i,l)*fluctuations()->get(j, phi2_index) );
-							norm += pixelBool->get(i,l)*pixelBool->get(j, phi2_index);
+							int norm_contribution = pixelCount()->get(i,l)*pixelCount()->get(j,phi2_index) > 0 ? 1 : 0;
+							norm += norm_contribution;
 						}
 						if (norm) {
 							crossCorr()->set(i, j, k, crossCorr()->get(i,j,k)/norm );
@@ -950,7 +960,8 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 					for (int l=0; l<nPhi(); l++) { // phi1 index
 						int phi2_index = (l+k)%nPhi();
 						autoCorr()->set(i,k, autoCorr()->get(i,k) + fluctuations()->get(i,l)*fluctuations()->get(i, phi2_index) );
-						norm += pixelBool->get(i,l)*pixelBool->get(i, phi2_index);
+						int norm_contribution = pixelCount()->get(i,l)*pixelCount()->get(i,phi2_index) > 0 ? 1 : 0;
+						norm += norm_contribution;
 					}
 					if (norm != 0) {
 //						if (p_iAvg->get(i) != 0) {
@@ -974,9 +985,6 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 				}		
 			} // for q
 		}
-		
-		delete pixelBool;
-		delete pixelCount;
 		
 		if (debug() >= 1) printf("done calculating cross-correlation...\n");
 		

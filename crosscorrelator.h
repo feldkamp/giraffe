@@ -75,7 +75,7 @@ public:
 	void setLookupTable( array2D *LUT );
 
 	template <class T>
-		void setLookupTable( T *cLUT, unsigned int LUT_dim1, unsigned int LUT_dim2 ){
+	void setLookupTable( T *cLUT, unsigned int LUT_dim1, unsigned int LUT_dim2 ){
 		calcLookupTableVariables( LUT_dim1, LUT_dim2 );	
 		delete p_table;
 		p_table = new array2D(cLUT, LUT_dim1, LUT_dim2);
@@ -118,6 +118,7 @@ public:
 	//---------------------------------------------getters for calculated arrays
 	array1D *qAvg() const;
 	array1D *phiAvg() const;
+	array2D *pixelCount() const;
 	array1D *iAvg() const;
 	array2D *fluctuations() const;	// intensity fluctuations in polar coordinates produced by calculateXCCA()
 	array2D *polar() const;			// intensities in polar coordinates produced by calculateXCCA()/calculatePolarCoordinates_FAST()
@@ -251,6 +252,7 @@ private:
 	array1D *p_qAvg;			// vector of output magnitudes of q-vector
 	array1D *p_iAvg;			// vector of output average intensities for magnitudes of q-vector
 	array1D *p_phiAvg;			// vector of output angles
+	array2D *p_pixelCount;		// pixel counts in polar coordinates
 	
 	array2D *p_fluctuations;	// intensity fluctuations in polar coordinates
     
