@@ -192,28 +192,28 @@ void CrossCorrelator::initPrivateVariables(){
 	p_xcca_enable = true;
     p_outputdir = "";
 
-	p_data = NULL;
-	p_qx = NULL;
-	p_qy = NULL;
-	p_mask = NULL;
-	p_polar = NULL;
+	p_data = 0;
+	p_qx = 0;
+	p_qy = 0;
+	p_mask = 0;
+	p_polar = 0;
 
-	p_crossCorrelation = NULL;
-	p_autoCorrelation = NULL;
+	p_crossCorrelation = 0;
+	p_autoCorrelation = 0;
 	
-	p_q = NULL;
-	p_phi = NULL;	
-	p_qAvg = NULL;
-	p_iAvg = NULL;
-	p_phiAvg = NULL;
-	p_fluctuations = NULL;
+	p_q = 0;
+	p_phi = 0;	
+	p_qAvg = 0;
+	p_iAvg = 0;
+	p_phiAvg = 0;
+	p_fluctuations = 0;
 	
-	p_calculatePolarCoordinates = 0;
-	p_calculateSAXS = 0;
-	p_calculateXCCA = 0;
+	p_tracker_calculatePolarCoordinates = 0;
+	p_tracker_calculateSAXS = 0;
+	p_tracker_calculateXCCA = 0;
 	
-	p_mask_polar = NULL;
-    p_table = NULL;
+	p_mask_polar = 0;
+    p_table = 0;
 	
 	p_qxmin = 0;
 	p_qymin = 0;
@@ -252,8 +252,8 @@ void CrossCorrelator::destroyInternalArrays(){
 	
 	delete p_q;
 	delete p_phi;	
-	delete p_qAvg;
-	delete p_iAvg;
+	delete qAvg();
+	delete iAvg();
 	delete p_phiAvg;
 	delete p_pixelCount;
 	delete p_fluctuations;
@@ -636,10 +636,6 @@ string CrossCorrelator::outputdir(){
 }
 
 void CrossCorrelator::setOutputdir( std::string dir ){
-	const char lastchar = dir.at( dir.size()-1 );
-	if( lastchar != '/' ){		//if last character is not a slash, append one
-		dir += '/';
-	}
 	p_outputdir = dir;
 }
 
@@ -755,7 +751,7 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 	
 	// calculate vector of output |q|
 	for (int i=0; i<nQ(); i++) {
-		p_qAvg->set( i, qmin()+i*deltaq() );
+		qAvg()->set( i, qmin()+i*deltaq() );
 	}
 
 	// calculate vector of output angles
@@ -787,7 +783,7 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 	}
 	
 	// calculate SAXS if not already calculated
-	if (!p_calculateSAXS){
+	if (!p_tracker_calculateSAXS){
 		calculateSAXS();
 	}
 	
@@ -798,14 +794,14 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 				polar()->set(i, j, polar()->get(i,j)/pixelCount()->get(i,j) );
 				// subtract SAXS average for all shots or just subtract the SAXS from the specific shot?
 				// second alternative is used here, since that always produces fluctuations with zero mean
-				fluctuations()->set(i, j, polar()->get(i,j)-p_iAvg->get(i) );
+				fluctuations()->set(i, j, polar()->get(i,j)-iAvg()->get(i) );
 			}
 			if (debug() >= 2) 
-				cout << "q: " << p_qAvg->get(i) << ", phi: " << p_phiAvg->get(j) 
+				cout << "q: " << qAvg()->get(i) << ", phi: " << p_phiAvg->get(j) 
 					<< " --> count: " << pixelCount()->get(i, j) << endl;
 		}
 	}			
-	p_calculatePolarCoordinates++;
+	p_tracker_calculatePolarCoordinates++;
 }
 
 
@@ -832,24 +828,24 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 	array1D *counter = new array1D( nQ() );
 	
 	// if calculateSAXS() has already been used, free and recreate p_qAvg, p_iAvg
-	if (p_calculateSAXS) {
+	if (p_tracker_calculateSAXS) {
 		delete p_qAvg;
 		delete p_iAvg;
 		p_qAvg = new array1D(nQ());
 		p_iAvg = new array1D(nQ());
 	}
 	
-	if (!p_calculatePolarCoordinates && !p_calculateSAXS) {
+	if (!p_tracker_calculatePolarCoordinates && !p_tracker_calculateSAXS) {
 		// calculate |q| for each pixel and bin lengths with correct resolution
 		for (int i=0; i<arraySize(); i++) {
 			p_q->set(i, round(sqrt( (qx()->get(i)*qx()->get(i))+(qy()->get(i)*qy()->get(i)) ) / deltaq()) * deltaq() );
 		}
 	}
 	
-	if (!p_calculatePolarCoordinates || p_calculateSAXS) {
+	if (!p_tracker_calculatePolarCoordinates || p_tracker_calculateSAXS) {
 		// calculate vector of output |q|
 		for (int i=0; i<nQ(); i++) {
-			p_qAvg->set( i, qmin()+i*deltaq() );
+			qAvg()->set( i, qmin()+i*deltaq() );
 		}			
 	}
 	
@@ -858,7 +854,7 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 		if (!maskEnable() || mask()->get(i)) {
 			int qIndex = (int) round((p_q->get(i)-qmin())/deltaq()); // the index in qAvg[] that corresponds to q[i]
 			if (p_q->get(i) <= qmax() && p_q->get(i) >= qmin()) {
-				p_iAvg->set( qIndex, p_iAvg->get(qIndex)+data()->get(i) );
+				iAvg()->set( qIndex, iAvg()->get(qIndex)+data()->get(i) );
 				counter->set( qIndex, counter->get(qIndex)+1 );
 			} else if (debug() >= 3) 
 				cout << "POINT EXCLUDED! q: " << p_q->get(i) << ", qmin: " << qmin() << ", qmax: " << qmax() 
@@ -868,19 +864,19 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 	
 	// normalize by number of pixels
 	for (int i=0; i<nQ(); i++) {
-		if (counter->get(i)) p_iAvg->set( i, p_iAvg->get(i)/counter->get(i) );
+		if (counter->get(i)) iAvg()->set( i, iAvg()->get(i)/counter->get(i) );
 	}
 	
 	if (debug() >= 2) {
 		cout << "angular average of the intensity:" << endl;
 		for (int i=0; i<nQ(); i++)
-			cout << "Q: " << p_qAvg->get(i) << ",   \t# pixels: " << counter->get(i) << ",\tI: " << p_iAvg->get(i) << endl;
+			cout << "Q: " << qAvg()->get(i) << ",   \t# pixels: " << counter->get(i) << ",\tI: " << iAvg()->get(i) << endl;
 	}
 	
 	// free counter array
 	delete counter;
 	
-	p_calculateSAXS++;
+	p_tracker_calculateSAXS++;
 }
 
 
@@ -901,9 +897,9 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 	}
 	
 	// function order check
-	if (p_calculatePolarCoordinates) {		
+	if (p_tracker_calculatePolarCoordinates) {		
 		// if calculateXCCA() has already been used, free and recreate p_crossCorrelation, p_autoCorrelation
-		if (p_calculateXCCA) {
+		if (p_tracker_calculateXCCA) {
 			if (xccaEnable()) {
 				delete p_crossCorrelation;
 				p_crossCorrelation = new array3D( nQ(), nQ(), nLag() );
@@ -981,11 +977,11 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 		if (debug() >= 1) 
 			cout << "done calculating cross-correlation..." << endl;
 		
-		p_calculateXCCA++;
+		p_tracker_calculateXCCA++;
 	} else {
 		cerr << "WARNING: polar coordinates must be calculated before XCCA is calculated." << endl;
 		calculatePolarCoordinates();
-		if (p_calculateXCCA){
+		if (p_tracker_calculateXCCA){
 			calculatePolarCoordinates();
 		}else{
 			cerr << "ERROR in CrossCorrelator::calculateXCCA. polar coordinates were not calculated properly prior to use." << endl;
@@ -1206,6 +1202,9 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( double start_q, double stop
     }
 
 //	subtractSAXSmean();
+
+	p_tracker_calculatePolarCoordinates++;
+
 	return retval;
 }
 
@@ -1345,10 +1344,24 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( array1D* cartesian1D, array
 		if (false){ cout << "polar: " << polar2D->getASCIIdata() << endl; }
 		//if (false){ io->writeToTiff( outputdir()+"polar.tif", polar ); }      //(arraydataIO needed for this)      
 	}
-	
+
 	return novalue_ct;		
 }
 
+
+
+//----------------------------------------------------------------------------calculateSAXS_FAST
+int CrossCorrelator::calculateSAXS_FAST(){
+	if (!p_tracker_calculatePolarCoordinates){
+		calculatePolarCoordinates();
+	}
+	array1D *SAXS = iAvg();
+	polar()->calcAvgCol( SAXS );
+	
+	p_tracker_calculateSAXS++;
+	
+	return 0;
+}
 
 
 
@@ -1506,7 +1519,10 @@ int CrossCorrelator::calculateXCCA_FAST(){
 		throw e;	//re-throw
 	}
 
-	if(debug()>1){ cout << endl << "CrossCorrelator::calculateXCCA_FAST done." << endl; }			
+	if(debug()>1){ cout << endl << "CrossCorrelator::calculateXCCA_FAST done." << endl; }	
+	
+	p_tracker_calculateXCCA = 0;
+					
     return 0;
 }
 

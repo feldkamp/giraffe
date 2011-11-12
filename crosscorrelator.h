@@ -96,6 +96,8 @@ public:
 										int number_phi,  double start_phi, double stop_phi, 
 										int number_q, double start_q, double stop_q ) const;
 	
+	int calculateSAXS_FAST();
+
 	// calculate the auto- or cross-correlation function from p_polar and store it in p_corr
     int calculateXCCA_FAST();
 
@@ -257,9 +259,9 @@ private:
 	array2D *p_fluctuations;	// intensity fluctuations in polar coordinates
     
 	// function trackers
-    int p_calculatePolarCoordinates;	// tracker for calculatePolarCoordinates()
-	int p_calculateSAXS;				// tracker for calculateSAXS()
-	int p_calculateXCCA;				// tracker for calculateXCCA()
+    int p_tracker_calculatePolarCoordinates;	// tracker for calculatePolarCoordinates()
+	int p_tracker_calculateSAXS;				// tracker for calculateSAXS()
+	int p_tracker_calculateXCCA;				// tracker for calculateXCCA()
 	
 	//-------------------------------------------------required for alg2
 	array2D *p_mask_polar;
