@@ -10,27 +10,32 @@
 
 #include <iostream>
 using std::cout;
+using std::cerr;
 using std::endl;
+using std::flush;
 
 #include <sstream>
 
 #include "crosscorrelator.h"
-#include "arraydataIO.h"
 
-Analyzer::Analyzer(){
-	p_back = new array2D();
-	p_mask = new array2D();
-	
-	p_back_weight = 1;
-	p_alg = 2;
-	
-	flag_subtract_background = false;
-	flag_single_correlation_output = false;
-	flag_use_mask = false;
+Analyzer::Analyzer()
+	: io()
+	, p_back(0)
+	, p_mask(0)
+	, p_back_weight(1.)
+	, p_out_dir("")
+	, p_alg(1)
+	, p_flag_subtract_background(false)
+	, p_flag_single_correlation_output(false)
+	, p_flag_use_mask(false)
+{
+	io = new arraydataIO;
 }
 
 Analyzer::~Analyzer(){
+	delete io;
 	delete p_back;
+	delete p_mask;
 }
 
 // =============================================================
@@ -54,22 +59,26 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 					double start_q, double stop_q, int LUTx, int LUTy ){
 	
 	string ext = ".h5";			//standard extension for output (alternatives: .edf, .tif, .txt)
+	string outDir = this->outputDirectory();
+	cout << "Output will be written to " << (outDir=="" ? "current directory" : outDir) 
+		<< " with extension '" << ext << "'" << endl;
+
+	if (files.size() == 0){
+		cerr << "no files found. aborting." << endl;
+		return 1;
+	}
 	
 	//prepare array2D's to hold overall averages
-	arraydataIO *io = new arraydataIO;
 	array2D *detavg = new array2D;
 	io->readFromFile( files.at(0), detavg );
-	detavg->zeros();							// this is now an image of correct dimensions, all zeros
 	int imgX = detavg->dim2();
 	int imgY = detavg->dim1();
 	
-	array2D *detavg_copy = new array2D( imgY, imgX );
 	array2D *backavg = new array2D( imgY, imgX );
-	
 	//make a centered q-range
 	//get detector size	(for example, pilatus = 487 * 619)
-	int detX = detavg->dim2();
-	int detY = detavg->dim1();
+	int detX = imgX;
+	int detY = imgY;
 	
 	array2D *qx = new array2D( imgY, imgX );
 	array2D *qy = new array2D( imgY, imgX );
@@ -79,18 +88,22 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 	//cout << "qy: " << qy->getASCIIdata();	
 
 	//prepare lookup table once, so it doesn't have to be done every time
-	CrossCorrelator *lutcc = new CrossCorrelator(detavg, qx, qy, num_phi, num_q);
-	lutcc->createLookupTable(LUTy, LUTx);
-	array2D *LUT = new array2D( *(lutcc->lookupTable()) );
-	io->writeToFile( outputDirectory()+"LUT"+ext, LUT );
+	CrossCorrelator *dummy_cc= new CrossCorrelator(detavg, qx, qy, num_phi, num_q);
+	dummy_cc->createLookupTable(LUTy, LUTx);
+	array2D *LUT = new array2D( *(dummy_cc->lookupTable()) );
+	//io->writeToFile( outDir+"LUT"+ext, LUT );
+	int nQ = dummy_cc->nQ();
+	int nPhi = dummy_cc->nPhi();
+	int nLag = dummy_cc->nLag();
+	delete dummy_cc;
+
+	array2D *polaravg = new array2D( nQ, nPhi );
+	array2D *corravg = new array2D( nQ, nLag );
 	
-	array2D *polaravg = new array2D( lutcc->nQ(), lutcc->nPhi() );
-	array2D *corravg = new array2D( lutcc->nQ(), lutcc->nLag() );
-	
-	delete lutcc;
-	
-	//prepare background file
-	background()->multiplyByValue( backgroundWeight() );
+	if ( flagSubtractBackground() ){
+		//prepare background file
+		background()->multiplyByValue( backgroundWeight() );
+	}
 	
 	//process all files
 	unsigned int num_files = (unsigned int)files.size();
@@ -99,100 +112,70 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 		osst_num << k;
 		string single_desc = osst_num.str();
 		string fn = files.at(k);
-		cout << "#" << k << ": ";// << fn << endl;
+		cout << "#" << k << ": " << std::flush;// << fn << endl;
 		
-		array2D *image = new array2D;
-		io->readFromFile( fn, image );
-		array2D *image_copy = new array2D( *image );
+		array2D *image = 0;
+		if (k != 0){
+			io->readFromFile( fn, image );
+		}else{
+			//this has been read previously in detavg, no need to read again...
+			delete image;
+			image = new array2D(*detavg);
+			detavg->zeros();
+		}
 		
 		
 		CrossCorrelator *cc = new CrossCorrelator(image, qx, qy, num_phi, num_q);
-		if ( flag_use_mask ){
+		if ( flagUseMask() ){
 			cc->setMask( this->mask() );
 		}
-		cc->setOutputdir( outputDirectory() );
+		cc->setOutputdir( outDir );
 		cc->setDebug(0);
 		
-		if (flag_subtract_background){
+		if (flagSubtractBackground()){
 			image->subtractArrayElementwise( background() );
 			backavg->addArrayElementwise( background() );
 		}
 		
-		switch (alg()) {
-			case 1:
-				cout << "DIRECT COORDINATES, DIRECT XCCA (algorithm 1)" << endl;
-				cc->calculatePolarCoordinates( start_q, stop_q );
-				cc->calculateSAXS();
-				cc->calculateXCCA();	
-			break;
-			case 2:
-				cout << "FAST COORDINATES, FAST XCCA (algorithm 2)" << endl;
-				cc->setLookupTable( LUT );
-				cc->calculatePolarCoordinates_FAST( start_q, stop_q );
-				cc->calculateXCCA_FAST();
+		//run the calculation...
+		bool calcSAXS = true;
+		cc->run(start_q, stop_q, alg(), calcSAXS);
 
-				polaravg->addArrayElementwise( cc->polar() );
-				break;
-			case 3:
-				cout << "DIRECT COORDINATES, FAST XCCA (algorithm 3)" << endl;
-				cc->setLookupTable( LUT );
-				cc->calculatePolarCoordinates( start_q, stop_q );
-				cc->calculateXCCA_FAST();
-
-				polaravg->addArrayElementwise( cc->polar() );
-				break;
-			case 4:
-				cout << "FAST COORDINATES, DIRECT XCCA (algorithm 4)" << endl;
-				cc->setLookupTable( LUT );
-				cc->calculatePolarCoordinates_FAST( start_q, stop_q );
-				cc->calculateXCCA();
-
-				polaravg->addArrayElementwise( cc->polar() );
-				break;
-			default:
-				std::cerr << "Choice of algorithm is invalid. Aborting." << endl;
-				return 1; 
+		if ( flagSingleCorrelationOutput() ){
+			io->writeToFile( outDir+"corr"+single_desc+ext, cc->autoCorr() );
+			io->writeToFile( outDir+"polar"+single_desc+ext, cc->polar() );
+			io->writeToFile( outDir+"pixel_count"+single_desc+ext, cc->pixelCount() );
 		}
 		
+		//sum up results
+		polaravg->addArrayElementwise( cc->polar() );
 		corravg->addArrayElementwise( cc->autoCorr() );
-		if ( flag_single_correlation_output ){
-			io->writeToFile( cc->outputdir()+"corr"+single_desc+ext, cc->autoCorr() );
-			io->writeToFile( cc->outputdir()+"polar"+single_desc+ext, cc->polar() );
-		}
-
-						
-		detavg->addArrayElementwise( image );			//sum up
-		detavg_copy->addArrayElementwise( image_copy );
+		detavg->addArrayElementwise( image );
 		
 		delete image;
-		delete image_copy;
 		delete cc;
 	}
 	
 	detavg->divideByValue( num_files );			//normalize
-	detavg_copy->divideByValue( num_files );	//normalize
 	backavg->divideByValue( num_files );		//normalize
 	polaravg->divideByValue( num_files );		//normalize	
 	corravg->divideByValue( num_files );		//normalize
 	
-	io->writeToFile( outputDirectory()+"det_avg"+ext, detavg);			// average background-subtracted detector image
-	io->writeToFile( outputDirectory()+"polar_avg"+ext, polaravg);		// average image in polar coordinates
-	io->writeToFile( outputDirectory()+"corr_avg"+ext, corravg);			// average autocorrelation
-	if ( flag_subtract_background ){
-//		io->writeToFile( outputDirectory()+"det_avg_original"+ext, detavg_copy);		// no background subtraction
-		io->writeToFile( outputDirectory()+"det_background_avg"+ext, backavg);					// just the background
+	io->writeToFile( outDir+"det_avg"+ext, detavg);			// average background-subtracted detector image
+	io->writeToFile( outDir+"polar_avg"+ext, polaravg);		// average image in polar coordinates
+	io->writeToFile( outDir+"corr_avg"+ext, corravg);			// average autocorrelation
+	if ( flagSubtractBackground() ){
+		io->writeToFile( outDir+"det_background_avg"+ext, backavg);					// just the background
 	}
 
 
 	delete qx;
 	delete qy;
 	delete detavg;
-	delete detavg_copy;
 	delete backavg;
 	delete polaravg;
 	delete corravg;		
 	delete LUT;
-	delete io;
 	
 	return 0;
 }
@@ -221,7 +204,7 @@ void Analyzer::setMask( array2D *newmask ){
   		delete p_mask;
 	}
 	p_mask = new array2D(*newmask);
-	flag_use_mask = true;
+	setFlagUseMask(true);
 }
 
 array2D* Analyzer::mask(){
@@ -229,9 +212,12 @@ array2D* Analyzer::mask(){
 }
 
 void Analyzer::setOutputDirectory( string outdir ){
-	const char lastchar = outdir.at( outdir.size()-1 );
-	if( lastchar != '/' ){		//if last character is not a slash, append one
-		outdir += '/';
+	if (outdir != ""){
+		//if last character is not a slash, append one
+		const char lastchar = outdir.at( outdir.size()-1 );
+		if( lastchar != '/' ){		
+			outdir += '/';
+		}
 	}
 	p_out_dir = outdir;
 }
@@ -246,5 +232,29 @@ void Analyzer::setAlg( int alg ){
 
 int Analyzer::alg(){
 	return p_alg;
+}
+
+void Analyzer::setFlagSubtractBackground( bool flag ){
+	p_flag_subtract_background = flag;
+}
+
+bool Analyzer::flagSubtractBackground(){
+	return p_flag_subtract_background;
+}
+
+void Analyzer::setFlagSingleCorrelationOutput( bool flag ){
+	p_flag_single_correlation_output = flag;
+}
+
+bool Analyzer::flagSingleCorrelationOutput(){
+	return p_flag_single_correlation_output;
+}
+
+void Analyzer::setFlagUseMask( bool flag ){
+	p_flag_use_mask = flag;
+}
+
+bool Analyzer::flagUseMask(){
+	return p_flag_use_mask;
 }
 

@@ -15,6 +15,7 @@ using std::string;
 using std::vector;
 
 #include "arrayclasses.h"
+#include "arraydataIO.h"
 
 class Analyzer {
 public:	
@@ -36,16 +37,24 @@ public:
 	void setAlg( int alg );
 	int alg();
 	
-	bool flag_subtract_background;				// subtract background?
-	bool flag_single_correlation_output;		// write every single correlation?
-	bool flag_use_mask;
+	
+	void setFlagSubtractBackground( bool flag );
+	bool flagSubtractBackground();
+	void setFlagSingleCorrelationOutput( bool flag );
+	bool flagSingleCorrelationOutput();
+	void setFlagUseMask( bool flag );
+	bool flagUseMask();
 	
 private:
+	arraydataIO *io;
 	array2D *p_back;
 	array2D *p_mask;
 	double p_back_weight;
 	string p_out_dir;
 	int p_alg;
+	bool p_flag_subtract_background;				// subtract background?
+	bool p_flag_single_correlation_output;		// write every single correlation?
+	bool p_flag_use_mask;
 };
 
 #endif

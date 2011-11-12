@@ -1,8 +1,10 @@
+#include "analyze.h"
 
 #include <iostream>
 using std::cout;
 using std::endl;
 using std::cerr;
+using std::flush;
 
 #include <string>
 using std::string;
@@ -11,171 +13,150 @@ using std::string;
 #include <fstream>		//files
 #include <vector>
 
+#include <boost/program_options.hpp>		//parser for options (commandline and ini-file)
+namespace po = boost::program_options;
+
 #include "crosscorrelator.h"
 #include "arrayclasses.h"
 #include "arraydataIO.h"
 
-#include "analyze.h"
-
-void usage(){
-	cout << "====================usage============================" << endl;
-	cout << " -l<filelist>   : input from a file list " << endl;
-	cout << " -o<directory>  : specify output directory" << endl;
-	cout << " -s             : output of separate correlation for each individual image" << endl;
-	cout << " -b<filename>   : subtract background file " << endl;
-	cout << " -m<filename>   : use mask file " << endl;
-	cout << " -B<factor>     : weighting of background" << endl;
-	cout << " -a<algorithm>  : (1) direct calculation, (2) FFT approach" << endl;
-	cout << "=====================================================" << endl;
-}
-
-string argToString( char * const argument ){
-	//fill argument after the -<option letter> into a string
-	std::ostringstream osst;
-	int j = 2;
-	while ( argument[j] != '\0'){
-		osst << argument[j];
-		j++;
-	}
-	string retstring = osst.str();
-	return retstring;
-}
 
 int main (int argc, char * const argv[]) {
-
     cout << "Hello, World!\n";
 
-//	cout << "argc = " << argc << endl;
-//	for (int i = 0; i < argc; i++){
-//		cout << "argv[" << i << "] = '" << argv[i] << "'" << endl;
-//	}
+	int alg = 0;
+	string list_fn = "";
+	string outdir = "";
+	string back_fn = "";
+	string mask_fn = "";
+	bool singleout = false;
+	double weight = 0.;
 
-	Analyzer *ana = new Analyzer;
-	std::vector<string> files;								// vector to be filled with individual files to process
-				
-	if (argc < 2){
-		usage();
-		return 1;
-	} else {
-		for(int i = 1; i < argc; i++){						// check if all options are valid first
-			if (argv[i][0] != '-')
-			{
-				cout << "'" << argv[i] << "' does not start with a dash: not a valid option. Exiting." << endl;
-				usage();
-				return 1;
+	po::options_description desc("Allowed options");
+	desc.add_options()		
+		("help,h",																"produce help message")		
+		("list,l", 			po::value<string>(&list_fn), 						"file list with input files")
+		("alg,a", 			po::value<int>(&alg),								"set algorithm")
+		("outdir,o", 		po::value<string>(&outdir),							"output directory")
+		("back,b", 			po::value<string>(&back_fn), 						"background file")
+		("mask,m", 			po::value<string>(&mask_fn), 						"mask file")
+		("single,s", 		po::bool_switch(&singleout), 						"single image output?")
+		("weight,B", 		po::value<double>(&weight),					 		"background weighting factor")
+	;
+	
+	po::variables_map vm;
+	try{
+		po::parsed_options parsed = po::parse_command_line(argc, argv, desc);
+		//po::parsed_options parsed = po::command_line_parser(argc, argv).options(desc).allow_unregistered().run();
+		po::store(parsed, vm);
+	}catch(...){
+		cerr << "Exception!" << endl;
+	}
+	po::notify(vm);
+	
+	cout << ">parser done<" << endl;
+	
+	if (vm.count("help")) {
+		cout << desc << endl;
+	}
+	if (vm.count("a")) {
+		//cout << "algorithm " << vm["alg"].as<int>() << "." << endl;
+		cout << "--> using algorithm " << alg << endl;
+	}
+	if (vm.count("s")){
+		cout << "--> using single image output " << endl;
+	}
+	if (vm.count("o")){
+		cout << "--> using output directory '" << outdir << "'" << endl;
+	}
+	if (vm.count("b")){
+		cout << "--> using background file '" << back_fn << "'" << endl;
+	}
+	if (vm.count("m")){
+		cout << "--> using mask file '" << mask_fn << "'" << endl;
+	}
+	if (vm.count("B")){
+		cout << "--> using background weighting factor " << weight << endl;	
+	}
+	
+
+
+	if (list_fn == ""){
+		cerr << "no file list given. use -l to specify a file list" << endl;
+		exit(2);
+	}else{
+		cout << "--> using file list in '" << list_fn << "'" << endl;
+	}
+	
+	//read from file list
+	std::vector<string> files;
+	std::ifstream fin;
+	fin.open(list_fn.c_str());					
+	if( !fin.fail() ){
+		string line;
+		while (fin.good()) {
+			getline(fin, line);
+			if (line != ""){
+				cout << line << endl;
+				files.push_back(line);
 			}
 		}
+	}else{
+		cerr << "could not open file list '" << list_fn << "', aborting..." << endl;
+		exit( 1 );
+	}
+	fin.close();
 
-		for(int i = 1; i < argc; i++){						//if all options are valid, proceed and evaluate
-			
-				if (argv[i][1] == 'l'){
-				string list_fn = argToString(argv[i]);
-				
-				//read from file list
-				std::ifstream fin;
-				fin.open(list_fn.c_str());					
-				if( fin.is_open() ){
-					string line;
-					while (fin.good()) {
-						getline(fin, line);
-						if (line != ""){
-							files.push_back(line);
-						}
-					}
-				}else{
-					cerr << "Could not open file '" << list_fn << "'" << endl;
-					exit( 1 );
-				}
-				fin.close();
-				
 
-				cout << "--> using file list in " << list_fn << endl;
+	arraydataIO *io = new arraydataIO;
 
-			}else if (argv[i][1] == 'a'){
-				string a = argToString(argv[i]);
-				if (a == "1"){
-					ana->setAlg( 1 );
-				}else if (a == "2"){
-					ana->setAlg( 2 );
-				}else if (a == "3"){
-					ana->setAlg( 3 );
-				}else if (a == "4"){
-					ana->setAlg( 4 );
-				}else{
-					cout << "Algorithm unknown." << endl;
-					exit(2);
-				}
-				cout << "--> using algorithm " << a << endl;	
-				
-			}else if (argv[i][1] == 'o'){
-				string outdir = argToString(argv[i]);
-				ana->setOutputDirectory( outdir );
-				cout << "--> using output directory " << outdir << endl;	
-				
-			}else if (argv[i][1] == 's'){
-				ana->flag_single_correlation_output = true;
-				cout << "--> using single image output " << endl;
-				
-			} else if (argv[i][1] == 'b') {				
-				string back_fn = argToString(argv[i]);
-				
-				array2D *back = new array2D;
-				arraydataIO *io = new arraydataIO;
-				io->readFromEDF( back_fn, back);
-				ana->setBackground( back );
-				ana->flag_subtract_background = true;				
-				delete io;
-				delete back;
-				cout << "--> using background file " << back_fn << endl;
-				
-			} else if (argv[i][1] == 'B') {
-				double weight = 1;
-				std::stringstream sst;
-				int j = 2;
-				while ( argv[i][j] != '\0' ){				
-					sst << argv[i][j];
-					j++;
-				}
-				sst >> weight;
-				ana->setBackgroundWeight( weight );
-				cout << "--> using background weighting factor " << weight << endl;	
-			
-			}else if (argv[i][1] == 'm') {				
-				string mask_fn = argToString(argv[i]);
-				
-				array2D *mask = new array2D;
-				arraydataIO *io = new arraydataIO;
-				io->readFromEDF( mask_fn, mask);
-				ana->setMask( mask );			
-				delete io;
-				delete mask;
-				cout << "--> using mask file " << mask_fn << endl;
-				
-			} else {
-				cout << "-" << argv[i][1] << " is not a valid option." << endl;
-				usage();
-				return 2;
-			}
-		}//end for i
-	}//end if
+		
+	//create analyzer object with the given options
+	Analyzer *ana = new Analyzer();
+	ana->setAlg( alg );	
+	ana->setOutputDirectory( outdir );
+	ana->setFlagSingleCorrelationOutput( true );
+	ana->setBackgroundWeight( weight );
 	
+	if (back_fn != ""){
+		array2D *back = new array2D;
+		io->readFromFile( back_fn, back);
+		ana->setBackground( back );
+		ana->setFlagSubtractBackground( true );	
+		delete back;
+	}
+	
+	cout << "." << flush;
+	
+	if (mask_fn != ""){
+		array2D *mask = new array2D;
+		io->readFromFile( mask_fn, mask);
+		ana->setMask( mask );			
+		delete mask;
+	}
+	
+	cout << "." << flush;
 	
 	//define set of variables to pass to the processFiles function, should probabaly go into an ini file or so at some point
 	double shiftX = -7;
 	double shiftY = 1;
-	int num_phi = 2048;
-	int num_q = 250;
+	int num_phi = 512;
+	int num_q = 200;
 	double start_q = 0;
-	double stop_q = num_q;
+	double stop_q = 800;
 	int LUTx = 487;				//pilatus detector x and y values
 	int LUTy = 619;
 
-	ana->processFiles( files, shiftX, shiftY, num_phi, num_q, start_q, stop_q, LUTx, LUTy);
+
+	int fail = ana->processFiles( files, shiftX, shiftY, num_phi, num_q, start_q, stop_q, LUTx, LUTy);
+
+	cout << "Goodbye, " << flush;
 
     delete ana;
+	delete io;
 	
-    cout << "Goodbye, World" << endl;
-    return 0;
+    cout << "World" << endl;
+    return fail;
 }
 
 
