@@ -38,23 +38,25 @@ if (host=='psexport'):
       /reg/neh/home/feldkamp/fftw/include
       /reg/neh/home/feldkamp/hdf5/include
       /reg/neh/home/feldkamp/tiff/include
+      /reg/neh/home/feldkamp/packages_c/boost_1_47_0
       edf_support
       """)
    lib_dirs = Split("""
       /reg/neh/home/feldkamp/fftw/lib
       /reg/neh/home/feldkamp/hdf5/lib
       /reg/neh/home/feldkamp/tiff/lib
+      /reg/neh/home/feldkamp/packages_c/boost_1_47_0/stage/lib
       .
       """)
 elif (host=='jan'):
    include_dirs = Split("""
-      /usr/local/include
       /usr/local/hdf5/include
+      /usr/local/include
       edf_support
       """)
    lib_dirs = Split("""
-      /usr/local/lib
       /usr/local/hdf5/lib
+      /usr/local/lib
       .
       """)
 else:
@@ -69,6 +71,7 @@ libs = Split("""
    hdf5
    fftw3
    tiff
+   libboost_program_options
    """)
 
 
