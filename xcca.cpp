@@ -13,6 +13,7 @@ using std::string;
 #include <fstream>		//files
 #include <vector>
 
+
 #include <boost/program_options.hpp>		//parser for options (commandline and ini-file)
 namespace po = boost::program_options;
 
@@ -22,10 +23,13 @@ namespace po = boost::program_options;
 
 
 int main (int argc, char * const argv[]) {
-    cout << "Hello, World!\n";
+    //cout << "Hello, World!\n";
 
-	int alg = 0;
+	int alg = 1;
 	string list_fn = "";
+	string file_fn = "";
+	string pixx_fn = "";
+	string pixy_fn = "";
 	string outdir = "";
 	string back_fn = "";
 	string mask_fn = "";
@@ -35,7 +39,10 @@ int main (int argc, char * const argv[]) {
 	po::options_description desc("Allowed options");
 	desc.add_options()		
 		("help,h",																"produce help message")		
-		("list,l", 			po::value<string>(&list_fn), 						"file list with input files")
+		("file,f", 			po::value<string>(&file_fn), 						"single primary input file")
+		("list,l", 			po::value<string>(&file_fn), 						"file list with input files")
+		("pixelX", 			po::value<string>(&pixx_fn), 						"input file for pixel values x-coordinate")
+		("pixelY", 			po::value<string>(&pixy_fn), 						"input file for pixel values y-coordinate")
 		("alg,a", 			po::value<int>(&alg),								"set algorithm")
 		("outdir,o", 		po::value<string>(&outdir),							"output directory")
 		("back,b", 			po::value<string>(&back_fn), 						"background file")
@@ -49,15 +56,26 @@ int main (int argc, char * const argv[]) {
 		po::parsed_options parsed = po::parse_command_line(argc, argv, desc);
 		//po::parsed_options parsed = po::command_line_parser(argc, argv).options(desc).allow_unregistered().run();
 		po::store(parsed, vm);
-	}catch(...){
-		cerr << "Exception!" << endl;
-	}
-	po::notify(vm);
-	
-	cout << ">parser done<" << endl;
+		po::notify(vm);
+	}catch( const boost::program_options::error &e ){
+		cerr << "Error in command line arguments: " << e.what() << "." << endl;
+		cerr << "Use option '--help' or '-h' to see a list of valid options." << endl;
+		exit(1);
+	}	
+	//cout << ">parser done<" << endl;
 	
 	if (vm.count("help")) {
 		cout << desc << endl;
+		exit(0);
+	}
+	if (vm.count("f")){
+		cout << "--> using input file " << file_fn << endl;
+	}
+	if (vm.count("pixelX")){
+		cout << "--> using x-values file " << pixx_fn << endl;
+	}
+	if (vm.count("pixelY")){
+		cout << "--> using y-values file " << pixy_fn << endl;
 	}
 	if (vm.count("a")) {
 		//cout << "algorithm " << vm["alg"].as<int>() << "." << endl;
@@ -79,37 +97,34 @@ int main (int argc, char * const argv[]) {
 		cout << "--> using background weighting factor " << weight << endl;	
 	}
 	
-
-
-	if (list_fn == ""){
-		cerr << "no file list given. use -l to specify a file list" << endl;
-		exit(2);
-	}else{
-		cout << "--> using file list in '" << list_fn << "'" << endl;
-	}
-	
-	//read from file list
+	//get primary input file(s) and store them in 'files'
 	std::vector<string> files;
-	std::ifstream fin;
-	fin.open(list_fn.c_str());					
-	if( !fin.fail() ){
-		string line;
-		while (fin.good()) {
-			getline(fin, line);
-			if (line != ""){
-				cout << line << endl;
-				files.push_back(line);
+		
+	if (list_fn == "" && file_fn == ""){
+		cerr << "Error. No input file(s) given. Use -f or -l to specify a (f)ile or a (l)ist of files" << endl;
+		exit(2);
+	}else if (list_fn != ""){
+		cout << "--> using file list in '" << list_fn << "'" << endl;
+		std::ifstream fin;
+		fin.open(list_fn.c_str());					
+		if( !fin.fail() ){
+			string line;
+			while (fin.good()) {
+				getline(fin, line);
+				if (line != ""){
+					cout << line << endl;
+					files.push_back(line);
+				}
 			}
+		}else{
+			cerr << "Error. Could not open file list '" << list_fn << "', aborting..." << endl;
+			exit( 1 );
 		}
+		fin.close();
 	}else{
-		cerr << "could not open file list '" << list_fn << "', aborting..." << endl;
-		exit( 1 );
+		cout << "--> using file '" << file_fn << "'" << endl;
+		files.push_back(file_fn);
 	}
-	fin.close();
-
-
-	arraydataIO *io = new arraydataIO;
-
 		
 	//create analyzer object with the given options
 	Analyzer *ana = new Analyzer();
@@ -118,44 +133,18 @@ int main (int argc, char * const argv[]) {
 	ana->setFlagSingleCorrelationOutput( true );
 	ana->setBackgroundWeight( weight );
 	
-	if (back_fn != ""){
-		array2D *back = new array2D;
-		io->readFromFile( back_fn, back);
-		ana->setBackground( back );
-		ana->setFlagSubtractBackground( true );	
-		delete back;
-	}
-	
-	cout << "." << flush;
-	
-	if (mask_fn != ""){
-		array2D *mask = new array2D;
-		io->readFromFile( mask_fn, mask);
-		ana->setMask( mask );			
-		delete mask;
-	}
-	
-	cout << "." << flush;
-	
 	//define set of variables to pass to the processFiles function, should probabaly go into an ini file or so at some point
-	double shiftX = -7;
-	double shiftY = 1;
 	int num_phi = 512;
 	int num_q = 200;
-	double start_q = 0;
+	double start_q = 0;			//units of these should match those in pixx, pixy!
 	double stop_q = 800;
-	int LUTx = 487;				//pilatus detector x and y values
-	int LUTy = 619;
+	int LUTx = 1000;
+	int LUTy = 1000;
 
-
-	int fail = ana->processFiles( files, shiftX, shiftY, num_phi, num_q, start_q, stop_q, LUTx, LUTy);
-
-	cout << "Goodbye, " << flush;
+	int fail = ana->processFiles( files, num_phi, num_q, start_q, stop_q, LUTx, LUTy, 
+						pixx_fn, pixy_fn, mask_fn, back_fn);
 
     delete ana;
-	delete io;
-	
-    cout << "World" << endl;
     return fail;
 }
 

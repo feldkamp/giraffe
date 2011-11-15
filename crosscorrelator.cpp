@@ -343,8 +343,8 @@ void CrossCorrelator::run(double start_q, double stop_q, int master_algorithm, b
 			break;
 		default:
 			cerr << "Error in CrossCorrelator::run! Master algorithm '" 
-				<< master_algorithm << "' not recognized" << endl;
-			return;
+				<< master_algorithm << "' not recognized. Continuing with algorithm 1." << endl;
+			run(start_q, stop_q, 1, calc_SAXS);
 	}
 }
 
@@ -706,16 +706,12 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 		cerr << "ERROR in CrossCorrelator::calculatePolarCoordinates: Need to specify Q-limits as arguments!" << endl;
 		return;
 	} else if (start_q || stop_q) {
-		//p_qmin = start_q;
-		//p_qmax = stop_q;
-		//updateDependentVariables();
 		setQminQmax( start_q, stop_q );
 	}
 	
-	// calculate |q| for each pixel and bin lengths with correct resolution
-	for (int i=0; i<arraySize(); i++) {
-		p_q->set(i, round(sqrt( (qx()->get(i)*qx()->get(i))+(qy()->get(i)*qy()->get(i)) ) / deltaq()) * deltaq() );
-	}		
+	// create array of the intensities in polar coordinates with the correct binning
+	delete p_polar;
+	p_polar = new array2D( nQ(), nPhi() );
 	
 	// calculate phi for each pixel and bin angles with correct resolution
 	for (int i=0; i<arraySize(); i++) {
@@ -747,6 +743,24 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 		}
 		
 		p_phi->set( i, round(phii/deltaphi()) * deltaphi() );
+		
+		// calculate |q| for each pixel and bin lengths with correct resolution
+		p_q->set(i, round(sqrt(qxi*qxi + qyi*qyi) / deltaq()) * deltaq() );
+		
+		
+		// calculate polar arrays (accept this point if mask says ok, or if there is no mask)
+		if (!maskEnable() || mask()->get(i)) {
+			int qIndex = (int) round((p_q->get(i)-qmin())/deltaq()); // the index in qAvg[] that corresponds to q[i]
+			int phiIndex = (int) round((p_phi->get(i)-phimin())/deltaphi()); // the index in phiAvg[] that corresponds to phi[i]
+			
+			if ( (qIndex >= 0) && (qIndex < nQ()) && phiIndex >= 0 && phiIndex < nPhi()) { // make sure qIndex and phiIndex are not out of array bounds
+				polar()->set(qIndex, phiIndex, polar()->get(qIndex, phiIndex) + data()->get(i) );
+				pixelCount()->set(qIndex, phiIndex, pixelCount()->get(qIndex,phiIndex)+1);
+			} else {
+				if (debug() >= 3) 
+					cout << "POINT EXCLUDED! qIndex: " << qIndex << ", phiIndex: " << phiIndex;
+			}
+		}
 	}
 	
 	// calculate vector of output |q|
@@ -758,34 +772,16 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 	for (int i=0; i<nPhi(); i++) {
 		p_phiAvg->set( i, phimin()+i*deltaphi() );
 	}
-
-	// create array of the intensities in polar coordinates with the correct binning
-	delete p_polar;
-	p_polar = new array2D( nQ(), nPhi() );
 	
-	// create array of the intensity fluctuations in polar coordinates with the correct binning
-	delete p_fluctuations;
-	p_fluctuations = new array2D( nQ(), nPhi() );
-	
-	// calculate polar arrays
-	for (int i=0; i<arraySize(); i++) {
-		if (!maskEnable() || mask()->get(i)) {
-			int qIndex = (int) round((p_q->get(i)-qmin())/deltaq()); // the index in qAvg[] that corresponds to q[i]
-			int phiIndex = (int) round((p_phi->get(i)-phimin())/deltaphi()); // the index in phiAvg[] that corresponds to phi[i]
-			if (qIndex >= 0 && qIndex < nQ() && phiIndex >= 0 && phiIndex < nPhi()) { // make sure qIndex and phiIndex are not out of array bounds
-				polar()->set(qIndex, phiIndex, polar()->get(qIndex, phiIndex) + data()->get(i) );
-				pixelCount()->set(qIndex, phiIndex, pixelCount()->get(qIndex,phiIndex)+1);
-			} else {
-				if (debug() >= 3) 
-					cout << "POINT EXCLUDED! qIndex: " << qIndex << ", phiIndex: " << phiIndex;
-			}
-		}
-	}
 	
 	// calculate SAXS if not already calculated
 	if (!p_tracker_calculateSAXS){
 		calculateSAXS();
 	}
+	
+	// create array of the intensity fluctuations in polar coordinates with the correct binning
+	delete p_fluctuations;
+	p_fluctuations = new array2D( nQ(), nPhi() );
 	
 	// normalize polar array of the intensities and calculate fluctuations
 	for (int i=0; i<nQ(); i++) {

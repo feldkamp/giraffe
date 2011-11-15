@@ -9,10 +9,7 @@
 //
 
 #include <string>
-using std::string;
-
 #include <vector>
-using std::vector;
 
 #include "arrayclasses.h"
 #include "arraydataIO.h"
@@ -22,18 +19,14 @@ public:
 	Analyzer();
 	~Analyzer();
 
-	int processFiles( vector<string> files, double cenX, double cenY, int num_phi, int num_q);
-	int processFiles( vector<string> files, double cenX, double cenY, int num_phi, int num_q, 
-						double start_q, double stop_q, int LUTx, int LUTy );
+	int processFiles( std::vector<std::string> files, int num_phi, int num_q);
+	int processFiles( std::vector<std::string> files, int num_phi, int num_q, double start_q, double stop_q, int LUTx, int LUTy, 
+							std::string qx_fn, std::string qy_fn, std::string mask_fn, std::string back_fn );
 						
-	void setBackground( array2D *back );
-	array2D *background();
 	void setBackgroundWeight( double weight );
 	double backgroundWeight();
-	void setMask( array2D *newmask );
-	array2D *mask();
-	void setOutputDirectory( string outdir );
-	string outputDirectory();
+	void setOutputDirectory( std::string outdir );
+	std::string outputDirectory();
 	void setAlg( int alg );
 	int alg();
 	
@@ -47,10 +40,8 @@ public:
 	
 private:
 	arraydataIO *io;
-	array2D *p_back;
-	array2D *p_mask;
 	double p_back_weight;
-	string p_out_dir;
+	std::string p_out_dir;
 	int p_alg;
 	bool p_flag_subtract_background;				// subtract background?
 	bool p_flag_single_correlation_output;		// write every single correlation?

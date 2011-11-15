@@ -15,13 +15,16 @@ using std::endl;
 using std::flush;
 
 #include <sstream>
+#include <string>
+using std::string;
+
+#include <vector>
+using std::vector;
 
 #include "crosscorrelator.h"
 
 Analyzer::Analyzer()
 	: io()
-	, p_back(0)
-	, p_mask(0)
 	, p_back_weight(1.)
 	, p_out_dir("")
 	, p_alg(1)
@@ -34,8 +37,6 @@ Analyzer::Analyzer()
 
 Analyzer::~Analyzer(){
 	delete io;
-	delete p_back;
-	delete p_mask;
 }
 
 // =============================================================
@@ -47,16 +48,70 @@ Analyzer::~Analyzer(){
 //	int cenX = 260;			//in detector pixels
 //	int cenY = 308;	
 // =============================================================
-int Analyzer::processFiles( vector<string> files, double shiftX, double shiftY, int num_phi, int num_q){
+int Analyzer::processFiles( vector<string> files, int num_phi, int num_q){
 	double start_q = 0;
 	double stop_q = num_q;
 	int LUTx = 200;
 	int LUTy = 200;
-	return processFiles(files, shiftX, shiftY, num_phi, num_q, start_q, stop_q, LUTx, LUTy);
+	return processFiles(files, num_phi, num_q, start_q, stop_q, LUTx, LUTy, 
+							"", "", "", "");
 }
 
-int Analyzer::processFiles( std::vector<string> files, double shiftX, double shiftY, int num_phi, int num_q, 
-					double start_q, double stop_q, int LUTx, int LUTy ){
+int Analyzer::processFiles( vector<string> files, int num_phi, int num_q, double start_q, double stop_q, int LUTx, int LUTy, 
+							string qx_fn, string qy_fn, string mask_fn, string back_fn ){
+	
+	array2D *mask = 0;
+	array2D *back = 0;
+	array2D *qx = 0;
+	array2D *qy = 0;
+	
+	int nQ = 0;
+	int nPhi = 0;
+	int nLag = 0;
+
+	double shiftX = 0.;
+	double shiftY = 0.;
+	
+	//pilatus specifics for P06 July 2011
+	//	shiftX = -7;
+	//	shiftY = 1;
+
+
+	//prepare array2D's to hold overall averages
+	array2D *detavg = new array2D;
+	io->readFromFile( files.at(0), detavg );
+	int imgX = detavg->dim2();
+	int imgY = detavg->dim1();
+	
+	array2D *backavg = new array2D( imgY, imgX );
+	
+			
+	if (mask_fn != ""){
+		io->readFromFile( mask_fn, mask);
+		setFlagUseMask( true );
+	}
+	
+	if (back_fn != ""){
+		io->readFromFile( back_fn, back);
+		setFlagSubtractBackground( true );	
+	}
+	
+	if (qx_fn != ""){
+		io->readFromFile( qx_fn, qx);
+	}else{
+		//generate a qx-distribution
+		qx = new array2D( imgY, imgX );
+		qx->gradientAlongDim1(-imgX/2+shiftX, +imgX/2+shiftX);
+	}
+
+	if (qy_fn != ""){
+		io->readFromFile( qy_fn, qy);
+	}else{
+		//generate a qy-distribution
+		qy = new array2D( imgY, imgX );
+		qy->gradientAlongDim2(-imgY/2+shiftY, +imgY/2+shiftY);
+	}
+	
 	
 	string ext = ".h5";			//standard extension for output (alternatives: .edf, .tif, .txt)
 	string outDir = this->outputDirectory();
@@ -67,42 +122,23 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 		cerr << "no files found. aborting." << endl;
 		return 1;
 	}
-	
-	//prepare array2D's to hold overall averages
-	array2D *detavg = new array2D;
-	io->readFromFile( files.at(0), detavg );
-	int imgX = detavg->dim2();
-	int imgY = detavg->dim1();
-	
-	array2D *backavg = new array2D( imgY, imgX );
-	//make a centered q-range
-	//get detector size	(for example, pilatus = 487 * 619)
-	int detX = imgX;
-	int detY = imgY;
-	
-	array2D *qx = new array2D( imgY, imgX );
-	array2D *qy = new array2D( imgY, imgX );
-	qy->gradientAlongDim1(-detY/2+shiftY, +detY/2+shiftY);
-	qx->gradientAlongDim2(-detX/2+shiftX, +detX/2+shiftX);
-	//cout << "qx: " << qx->getASCIIdata();
-	//cout << "qy: " << qy->getASCIIdata();	
+
 
 	//prepare lookup table once, so it doesn't have to be done every time
 	CrossCorrelator *dummy_cc= new CrossCorrelator(detavg, qx, qy, num_phi, num_q);
 	dummy_cc->createLookupTable(LUTy, LUTx);
 	array2D *LUT = new array2D( *(dummy_cc->lookupTable()) );
 	//io->writeToFile( outDir+"LUT"+ext, LUT );
-	int nQ = dummy_cc->nQ();
-	int nPhi = dummy_cc->nPhi();
-	int nLag = dummy_cc->nLag();
+	nQ = dummy_cc->nQ();
+	nPhi = dummy_cc->nPhi();
+	nLag = dummy_cc->nLag();
 	delete dummy_cc;
-
 	array2D *polaravg = new array2D( nQ, nPhi );
 	array2D *corravg = new array2D( nQ, nLag );
 	
 	if ( flagSubtractBackground() ){
 		//prepare background file
-		background()->multiplyByValue( backgroundWeight() );
+		back->multiplyByValue( backgroundWeight() );
 	}
 	
 	//process all files
@@ -127,14 +163,14 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 		
 		CrossCorrelator *cc = new CrossCorrelator(image, qx, qy, num_phi, num_q);
 		if ( flagUseMask() ){
-			cc->setMask( this->mask() );
+			cc->setMask( mask );
 		}
 		cc->setOutputdir( outDir );
-		cc->setDebug(0);
+		cc->setDebug(1);
 		
 		if (flagSubtractBackground()){
-			image->subtractArrayElementwise( background() );
-			backavg->addArrayElementwise( background() );
+			image->subtractArrayElementwise( back );
+			backavg->addArrayElementwise( back );
 		}
 		
 		//run the calculation...
@@ -168,9 +204,6 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 		io->writeToFile( outDir+"det_background_avg"+ext, backavg);					// just the background
 	}
 
-
-	delete qx;
-	delete qy;
 	delete detavg;
 	delete backavg;
 	delete polaravg;
@@ -180,16 +213,6 @@ int Analyzer::processFiles( std::vector<string> files, double shiftX, double shi
 	return 0;
 }
 
-void Analyzer::setBackground( array2D *back ){
-	if (p_back) {
-  		delete p_back;
-	}
-	p_back = new array2D(*back);
-}
-
-array2D* Analyzer::background(){
-	return p_back;
-}
 
 void Analyzer::setBackgroundWeight( double weight ){
 	p_back_weight = weight;
@@ -199,17 +222,6 @@ double Analyzer::backgroundWeight(){
 	return p_back_weight;
 }
 
-void Analyzer::setMask( array2D *newmask ){
-	if (p_mask) {
-  		delete p_mask;
-	}
-	p_mask = new array2D(*newmask);
-	setFlagUseMask(true);
-}
-
-array2D* Analyzer::mask(){
-	return p_mask;
-}
 
 void Analyzer::setOutputDirectory( string outdir ){
 	if (outdir != ""){
