@@ -520,6 +520,9 @@ void Tester::subtestArraydata(int size){
 	for (int i = 0; i < a.size(); i++){
 		a.set_atIndex(i, double(i));
 		double value = a.get_atIndex(i);
+		cout << value << " " << std::flush;
+		if (!(i%1000))
+			cout << endl;
 	}
 }
 
@@ -529,5 +532,8 @@ void Tester::subtestVector(int size){
 	for (int i = 0; i < v.size(); i++){
 		v.at(i) = double(i);
 		double value = v.at(i);
+		cout << value << " " << std::flush;
+		if (!(i%1000))
+			cout << endl;
 	}
 }
