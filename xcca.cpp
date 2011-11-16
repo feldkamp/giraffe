@@ -135,7 +135,7 @@ int main (int argc, char * const argv[]) {
 	
 	//define set of variables to pass to the processFiles function, should probabaly go into an ini file or so at some point
 	int num_phi = 512;
-	int num_q = 200;
+	int num_q = 400;
 	double start_q = 0;			//units of these should match those in pixx, pixy!
 	double stop_q = 800;
 	int LUTx = 1000;

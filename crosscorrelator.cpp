@@ -330,8 +330,6 @@ void CrossCorrelator::run(double start_q, double stop_q, int master_algorithm, b
 			run(start_q, stop_q, 2, 2, calc_SAXS);
 			break;
 		case 3: 
-			//doesn't work yet, because, as of now, the polar() object 
-			//isn't filled in calculatePolarCoordinates(), but in calculateXCCA()
 			if(debug()) 
 				cout << "DIRECT COORDINATES, FAST XCCA (master algorithm 3)" << endl;
 			run(start_q, stop_q, 1, 2, calc_SAXS);
@@ -431,6 +429,10 @@ void CrossCorrelator::setQx( arraydata *qx ){
 		delete p_qx;
 	}
 	p_qx = new array1D( qx );
+	
+	if (debug()>=1){
+		cout << "CrossCorrelator::setQx(" << qx << "), min: " << qx->calcMin() << ", max: " << qx->calcMax() << endl;
+	}
 }
 
 
@@ -444,6 +446,10 @@ void CrossCorrelator::setQy( arraydata *qy ) {
 		delete p_qy;
 	}
 	p_qy = new array1D( qy );
+	
+	if (debug()>=1){
+		cout << "CrossCorrelator::setQy(" << qy << "), min: " << qy->calcMin() << ", max: " << qy->calcMax() << endl;
+	}
 }
 
 
@@ -539,8 +545,8 @@ void CrossCorrelator::setQminQmax( double qmin_val, double qmax_val ){
 	}
 	
 	//calculate variables that depend on qmax and qmin
-	p_deltaq = (qmax()-qmin())/(nQ()-1);		// make sure deltaq samples start and stop
-	p_deltaphi = (double) 2.0*M_PI/(nPhi());	// make sure deltaphi samples exactly an interval of 2PI
+	p_deltaq = (qmax()-qmin())/(double)(nQ()-1);		// make sure deltaq samples start and stop
+	p_deltaphi = (double) 2.0*M_PI/(double)(nPhi());	// make sure deltaphi samples exactly an interval of 2PI
 	
 	//check update variables
 	if (debug() >= 1) {
@@ -555,8 +561,6 @@ double CrossCorrelator::qmin() const{
 }
 
 void CrossCorrelator::setQmin( double qmin_val ){
-//	p_qmin = qmin_val;
-//	updateDependentVariables();
 	setQminQmax( qmin_val, qmax() );
 }
 
@@ -565,8 +569,6 @@ double CrossCorrelator::qmax() const{
 }
 
 void CrossCorrelator::setQmax( double qmax_val ){
-//	p_qmax = qmax_val;
-//	updateDependentVariables();
 	setQminQmax( qmin(), qmax_val );
 }
 
@@ -714,6 +716,7 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 	p_polar = new array2D( nQ(), nPhi() );
 	
 	// calculate phi for each pixel and bin angles with correct resolution
+	int exclude_count = 0;
 	for (int i=0; i<arraySize(); i++) {
 		double phii = 0;
 		double qxi = qx()->get(i);
@@ -742,6 +745,7 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 				cout << "phii: " << phii << ", nAngle(phii): " << round(phii/deltaphi()) << endl;
 		}
 		
+		// calculate phi for each pixel
 		p_phi->set( i, round(phii/deltaphi()) * deltaphi() );
 		
 		// calculate |q| for each pixel and bin lengths with correct resolution
@@ -753,14 +757,26 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 			int qIndex = (int) round((p_q->get(i)-qmin())/deltaq()); // the index in qAvg[] that corresponds to q[i]
 			int phiIndex = (int) round((p_phi->get(i)-phimin())/deltaphi()); // the index in phiAvg[] that corresponds to phi[i]
 			
-			if ( (qIndex >= 0) && (qIndex < nQ()) && phiIndex >= 0 && phiIndex < nPhi()) { // make sure qIndex and phiIndex are not out of array bounds
+			// make sure qIndex and phiIndex are not out of array bounds
+			if ( (qIndex >= 0) && (qIndex < nQ()) 
+					&& (phiIndex >= 0) && (phiIndex < nPhi())) { 
+				//add data value to existing array
 				polar()->set(qIndex, phiIndex, polar()->get(qIndex, phiIndex) + data()->get(i) );
+				//increment pixel count 
 				pixelCount()->set(qIndex, phiIndex, pixelCount()->get(qIndex,phiIndex)+1);
 			} else {
-				if (debug() >= 3) 
-					cout << "POINT EXCLUDED! qIndex: " << qIndex << ", phiIndex: " << phiIndex;
+				if (debug() >= 3){
+					cout << "POINT EXCLUDED! qIndex " << qIndex << " (nQ:" << nQ() 
+						<< "), phiIndex " << phiIndex << " (nPhi:" << nPhi() << ")" << endl;
+				}
+				exclude_count++;
 			}
 		}
+	}
+	
+	double exclude_ratio = exclude_count / ((double)arraySize());
+	if ( exclude_ratio > 0.9 ){
+		cout << "Warning from CrossCorrelator::calculatePolarCoordinates(): " << exclude_ratio*100 << "% of points excluded." << endl;
 	}
 	
 	// calculate vector of output |q|
@@ -792,9 +808,10 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 				// second alternative is used here, since that always produces fluctuations with zero mean
 				fluctuations()->set(i, j, polar()->get(i,j)-iAvg()->get(i) );
 			}
-			if (debug() >= 2) 
+			if (debug() >= 2){
 				cout << "q: " << qAvg()->get(i) << ", phi: " << p_phiAvg->get(j) 
 					<< " --> count: " << pixelCount()->get(i, j) << endl;
+			}
 		}
 	}			
 	p_tracker_calculatePolarCoordinates++;

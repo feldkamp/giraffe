@@ -166,7 +166,7 @@ int Analyzer::processFiles( vector<string> files, int num_phi, int num_q, double
 			cc->setMask( mask );
 		}
 		cc->setOutputdir( outDir );
-		cc->setDebug(1);
+		cc->setDebug(0);
 		
 		if (flagSubtractBackground()){
 			image->subtractArrayElementwise( back );
