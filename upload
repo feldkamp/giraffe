@@ -8,7 +8,7 @@ switch ($1)
 	breaksw
 
 	case sellberg:
-	rsync -av --exclude 'libgiraffe*' --exclude 'testsuite' --exclude 'xcca' --exclude '*.o' --exclude '*.os' --exclude '*.dylib' --exclude 'xcode' --exclude 'giraffe.xcodeproj' --exclude '.DS_Store' --exclude '.git*' --exclude '.sconsign.dblite' --exclude 'edf_support/*.o' --exclude 'edf_support/*.os' . sellberg@psexport.slac.stanford.edu:~/source/giraffe/
+	rsync -av --delete --exclude 'libgiraffe*' --exclude 'testsuite' --exclude 'xcca' --exclude '*.o' --exclude '*.os' --exclude '*.dylib' --exclude '*~' --exclude 'xcode' --exclude 'giraffe.xcodeproj' --exclude '.DS_Store' --exclude '.git*' --exclude '.sconsign.dblite' --exclude 'edf_support/*.o' --exclude 'edf_support/*.os' . sellberg@psexport.slac.stanford.edu:~/source/giraffe/
 	breaksw
 
 endsw
