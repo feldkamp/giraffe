@@ -100,6 +100,8 @@ public:
 	double calcMax(int &pos) const;
 	double calcSum() const;
 	double calcAvg() const;
+	double calcStDev() const;
+	double calcStDev( double &avg ) const;
 	
     std::string getASCIIdataAsRow() const;                         //can/should be overridden by subclasses
     std::string getASCIIdataAsColumn() const;

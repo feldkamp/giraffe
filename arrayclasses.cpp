@@ -285,6 +285,23 @@ double arraydata::calcAvg() const{
 	return avg;
 }
 
+//------------------------------------------------------------- calcStDev
+double arraydata::calcStDev() const{
+	double avg = 0.;	//value is effectively discarded
+	return calcStDev(avg);
+}
+
+double arraydata::calcStDev( double &avg ) const{
+	double sum_sqrd = 0.;
+	avg = this->calcAvg();
+	for (int i = 0; i < size(); i++){
+		double x = this->get_atIndex(i) - avg;
+		sum_sqrd += x*x;
+	}
+	double sigma = sqrt( sum_sqrd/((double)size()) );
+	return sigma;
+}
+
 //------------------------------------------------------------- getASCIIdataAsRow
 string arraydata::getASCIIdataAsRow() const{
     ostringstream osst;
