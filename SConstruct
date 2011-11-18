@@ -107,6 +107,7 @@ sources_filehandler = Split("""
 
 
 ##### go to work
+print "using host >>>", host, "<<< (change this with option host=<value>)"
 
 env = Environment(CPPPATH=include_dirs, LIBPATH=lib_dirs, LIBS=libs )
 
@@ -131,4 +132,4 @@ env.SharedLibrary( 'libgiraffe_shared', objs_giraffe_shared+objs_edf_shared, RPA
 
 env.Program( 'xcca', objs_xcca+objs_giraffe_static+objs_edf_static )
 env.Program( 'testsuite', objs_testsuite+objs_giraffe_static+objs_edf_static )
-env.Program( 'filehandler', objs_filehandler+objs_giraffe_static+objs_edf_static )
+env.Program( 'filehandler', objs_filehandler+objs_giraffe_static+objs_edf_static,RPATH=lib_dirs )
