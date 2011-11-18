@@ -54,7 +54,7 @@
 		
 		// scaleFlag = 0 --> do not scale data
 		// scaleFlag = 1 --> scale data to 0..65535
-		int writeToTiff( std::string filename, array2D *src, int scaleFlag = 0, int verbose = 0 ) const;
+		int writeToTiff( std::string filename, array2D *src, int scaleFlag = 0) const;
 		
 		
 		//------------------------------------------------------------------------------HDF5
@@ -66,8 +66,8 @@
 		// dataType = 2 --> write as int     (H5T_NATIVE_INT)
 		// dataType = 3 --> write as int16_t (H5T_STD_I16LE)
 		// dataType = 4 --> write as long    (H5T_NATIVE_LONG)
-		int writeToHDF5( std::string filename, array1D *src, int dataType = 1, int verbose = 0 ) const;
-		int writeToHDF5( std::string filename, array2D *src, int dataType = 1, int verbose = 0 ) const;	
+		int writeToHDF5( std::string filename, array1D *src, int dataType = 1) const;
+		int writeToHDF5( std::string filename, array2D *src, int dataType = 1) const;	
 		
 		//------------------------------------------------------------------------------ASCII
 		int readFromASCII( std::string filename, array1D *&dest ) const;
@@ -75,13 +75,18 @@
 		int writeToASCII( std::string filename, array1D *src, int format=0 ) const;
 		int writeToASCII( std::string filename, array2D *src, int format=0 ) const;
 		int writeToASCII( std::string filename, array3D *src, int format=0 ) const;
-		
+
+
 		//------------------------------------------------------------------------------general support functions
 		bool transposeForIO() const;
 		void setTransposeForIO( bool t );
+		int verbose() const;
+		void setVerbose( int level );
+		
 		
 	private:
 		bool p_transposeForIO;	 // transpose 2D files to conform with matrix (rows, cols) convention (default: true)
+		int p_verbose;
 		
 	};
 	
