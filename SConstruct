@@ -27,7 +27,7 @@ build_giraffe_static_lib=ARGUMENTS.get('static', True)
 build_giraffe_shared_lib=ARGUMENTS.get('shared', True)
 build_xcca=ARGUMENTS.get('xcca', True)
 build_testsuite=ARGUMENTS.get('testsuite', True)
-
+build_filehandler=ARGUMENTS.get('filehandler', True)
 
 
 
@@ -100,7 +100,9 @@ sources_testsuite = Split("""
   tester.cpp
   """)
 
-
+sources_filehandler = Split("""
+  filehandler.cpp
+  """)
 
 
 
@@ -121,6 +123,7 @@ objs_edf_static = env.StaticObject(sources_edf)
 objs_edf_shared = env.SharedObject(sources_edf)
 objs_xcca = env.StaticObject(sources_xcca)
 objs_testsuite = env.StaticObject(sources_testsuite)
+objs_filehandler = env.StaticObject(sources_filehandler)
 
 
 env.StaticLibrary( 'libgiraffe_static', objs_giraffe_static+objs_edf_static )
@@ -128,4 +131,4 @@ env.SharedLibrary( 'libgiraffe_shared', objs_giraffe_shared+objs_edf_shared, RPA
 
 env.Program( 'xcca', objs_xcca+objs_giraffe_static+objs_edf_static )
 env.Program( 'testsuite', objs_testsuite+objs_giraffe_static+objs_edf_static )
-
+env.Program( 'filehandler', objs_filehandler+objs_giraffe_static+objs_edf_static )
