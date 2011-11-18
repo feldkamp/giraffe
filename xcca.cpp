@@ -40,7 +40,7 @@ int main (int argc, char * const argv[]) {
 	desc.add_options()		
 		("help,h",																"produce help message")		
 		("file,f", 			po::value<string>(&file_fn), 						"single primary input file")
-		("list,l", 			po::value<string>(&file_fn), 						"file list with input files")
+		("list,l", 			po::value<string>(&list_fn), 						"file list with input files")
 		("pixelX", 			po::value<string>(&pixx_fn), 						"input file for pixel values x-coordinate")
 		("pixelY", 			po::value<string>(&pixy_fn), 						"input file for pixel values y-coordinate")
 		("alg,a", 			po::value<int>(&alg),								"set algorithm")
