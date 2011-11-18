@@ -41,8 +41,10 @@ std::string getExt(std::string filename){
 }
 
 
-arraydataIO::arraydataIO(){
-	p_transposeForIO = true;			//should be 'true', generally. see note in header
+arraydataIO::arraydataIO()
+	: p_transposeForIO(true)	//should be 'true', generally. see note in header
+	, p_verbose(2)
+{
 }
 
 
@@ -50,7 +52,6 @@ arraydataIO::arraydataIO(){
 arraydataIO::~arraydataIO(){
 
 }
-
 
 int arraydataIO::readFromFile( std::string filename, array1D *&dest) const{
 	string ext = getExt( filename );
@@ -61,11 +62,11 @@ int arraydataIO::readFromFile( std::string filename, array1D *&dest) const{
 		fail = readFromEDF( filename, dest );
 	}else if (ext == "h5" || ext == "hdf5" || ext == "H5" || ext == "HDF5"){		
 		fail = readFromHDF5( filename, dest );
-	}else if (ext == "txt" || ext == "TXT"){		
+	}else if (ext == "txt" || ext == "TXT" || ext == "dat"){		
 		fail = readFromASCII( filename, dest );
 	}else{
-		cout << "Error in arraydataIO::readFromFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
-		cout << "valid options include 'edf', 'h5' and 'txt'" << endl;
+		cerr << "Error in arraydataIO::readFromFile(1D)! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
+		cerr << "valid options include 'edf', 'h5' and 'txt/dat'" << endl;
 		fail = 100;
 	}
 	return fail;
@@ -80,11 +81,11 @@ int arraydataIO::readFromFile( std::string filename, array2D *&dest) const{
 		fail = readFromEDF( filename, dest );
 	}else if (ext == "h5" || ext == "hdf5" || ext == "H5" || ext == "HDF5"){		
 		fail = readFromHDF5( filename, dest );
-	}else if (ext == "txt" || ext == "TXT"){		
+	}else if (ext == "txt" || ext == "TXT" || ext == "dat"){		
 		fail = readFromASCII( filename, dest );
 	}else{
-		cout << "Error in arraydataIO::readFromFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
-		cout << "valid options include 'edf', 'h5' and 'txt'" << endl;
+		cerr << "Error in arraydataIO::readFromFile(2D)! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
+		cerr << "valid options include 'edf', 'h5' and 'txt/dat'" << endl;
 		fail = 100;
 	}
 	return fail;
@@ -99,11 +100,11 @@ int arraydataIO::writeToFile( std::string filename, array1D *src) const{
 		fail = writeToEDF( filename, src );
 	}else if (ext == "h5" || ext == "hdf5" || ext == "H5" || ext == "HDF5"){		
 		fail = writeToHDF5( filename, src );
-	}else if (ext == "txt" || ext == "TXT"){		
+	}else if (ext == "txt" || ext == "TXT" || ext == "dat"){		
 		fail = writeToASCII( filename, src );
 	}else{
-		cout << "Error in arraydataIO::writeToFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
-		cout << "valid options include 'edf', 'h5' and 'txt'" << endl;
+		cerr << "Error in arraydataIO::writeToFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
+		cerr << "valid options include 'edf', 'h5' and 'txt/dat'" << endl;
 		fail = 100;
 	}
 	return fail;
@@ -118,11 +119,11 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		fail = writeToEDF( filename, src );
 	}else if (ext == "h5" || ext == "hdf5" || ext == "H5" || ext == "HDF5"){		
 		fail = writeToHDF5( filename, src );
-	}else if (ext == "txt" || ext == "TXT"){		
+	}else if (ext == "txt" || ext == "TXT" || ext == "dat"){		
 		fail = writeToASCII( filename, src );
 	}else{
-		cout << "Error in arraydataIO::writeToFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
-		cout << "valid options include 'edf', 'h5' and 'txt'" << endl;
+		cerr << "Error in arraydataIO::writeToFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
+		cerr << "valid options include 'edf', 'h5' and 'txt/dat'" << endl;
 		fail = 100;
 	}
 	return fail;
@@ -147,14 +148,15 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			cerr << "Warning in arraydataIO::readFromEDF! EDF-file is not 1D!" << endl;			
 		int dim1 = (int)file->get_Dim_x();
 		
-		cout << "Reading '" << filename << "' (EDF file type " << file->get_FileType_str() << ")"
+		if (verbose()){
+			cout << "Reading '" << filename << "' (EDF file type " << file->get_FileType_str() << ")"
 			<< ", dimension " << dim1 << "" << endl;
-		
+		}
 		double *temp = new double[dim1];
 		
 		int fail = file->read_data( temp, filename );
 		if ( fail ){
-			cout << "ERROR. In arraydataIO::readFromEDF - Could not load EDF data file '" << filename << "'." << endl;
+			cerr << "ERROR. In arraydataIO::readFromEDF - Could not load EDF data file '" << filename << "'." << endl;
 			return 2;
 		}
 		
@@ -183,14 +185,15 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		int dim1 = (int)file->get_Dim_x();
 		int dim2 = (int)file->get_Dim_y();
 		
-		cout << "Reading '" << filename << "' (EDF file type " << file->get_FileType_str() << ")"
+		if(verbose()){
+			cout << "Reading '" << filename << "' (EDF file type " << file->get_FileType_str() << ")"
 			<< ", dimensions (" << dim1 << ", " << dim2 << ")" << endl;
-		
+		}	
 		double *temp = new double[dim1*dim2];
 		
 		int fail = file->read_data( temp, filename );
 		if ( fail ){
-			cout << "ERROR. In arraydataIO::readFromEDF - Could not load EDF data file '" << filename << "'." << endl;
+			cerr << "ERROR. In arraydataIO::readFromEDF - Could not load EDF data file '" << filename << "'." << endl;
 			return 2;
 		}
 		
@@ -279,19 +282,19 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 
 #else
 	int arraydataIO::readFromEDF( string filename, array1D *&dest ) const{
-		cout << "======== WARNING! Dummy function. Nothing read from EDF. ======== " << endl; 
+		cerr << "======== WARNING! Dummy function. Nothing read from EDF. ======== " << endl; 
 		return 1;
 	}
 	int arraydataIO::readFromEDF( string filename, array2D *&dest ) const{
-		cout << "======== WARNING! Dummy function. Nothing read from EDF. ======== " << endl; 
+		cerr << "======== WARNING! Dummy function. Nothing read from EDF. ======== " << endl; 
 		return 1;
 	}
 	int arraydataIO::writeToEDF( string filename, array1D *src ) const {
-		cout << "======== WARNING! Dummy function. Nothing written to EDF.======== " << endl; 
+		cerr << "======== WARNING! Dummy function. Nothing written to EDF.======== " << endl; 
 		return 1;
 	}
 	int arraydataIO::writeToEDF( string filename, array2D *src ) const {
-		cout << "======== WARNING! Dummy function. Nothing written to EDF.======== " << endl; 
+		cerr << "======== WARNING! Dummy function. Nothing written to EDF.======== " << endl; 
 		return 1;
 	}
 #endif
@@ -321,10 +324,12 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			//allocate data to write image to		
 			delete dest;
 			dest = new array2D(width, height);
-
-			cout << "Reading '" << filename << "' (TIFF file)"
+			
+			if(verbose()){
+				cout << "Reading '" << filename << "' (TIFF file)"
 				<< ", dimensions (" << dest->dim1() << ", " << dest->dim2() << ")" << endl;
-
+			}
+			
 			npixels = width * height;
 			raster = (uint32*) _TIFFmalloc( npixels * sizeof(uint32) );
 			if (raster != NULL){
@@ -367,7 +372,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	// implementation borrowed following matrixdata::tiff16out 
 	// of the tomo/matlib package (see http://xray-lens.de )
 	//--------------------------------------------------------------------------
-	int arraydataIO::writeToTiff( string filename, array2D *src, int scaleFlag, int verbose ) const {
+	int arraydataIO::writeToTiff( string filename, array2D *src, int scaleFlag ) const {
 		if ( !src ){
 			cerr << "ERROR. In arraydataIO::writeToTiff. No source data. Could not write to file " << filename << endl;
 			return 1;
@@ -447,7 +452,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			}
 			
 			
-			if (verbose){
+			if (verbose()){
 				cout << "Tiff image '" << filename << "' written to disc." << endl;
 				if (scaleFlag) cout << "Scaled output. "; else cout << "Unscaled output. ";
 				cout << "Data min: " << MinValue << ", max: " << MaxValue << ", range: " << MaxMinRange << endl;
@@ -468,11 +473,11 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 
 #else
 	int arraydataIO::readFromTiff( string filename, array2D *&dest ) const {
-		cout << "======== WARNING! Dummy function. Nothing read from Tiff. ======== " << endl; 
+		cerr << "======== WARNING! Dummy function. Nothing read from Tiff. ======== " << endl; 
 		return 1;
 	}
-	int arraydataIO::writeToTiff( string filename, array2D *src, int scaleFlag, int verbose ) const {
-		cout << "======== WARNING! Dummy function. Nothing written to Tiff. ======== " << endl; 
+	int arraydataIO::writeToTiff( string filename, array2D *src, int scaleFlag ) const {
+		cerr << "======== WARNING! Dummy function. Nothing written to Tiff. ======== " << endl; 
 		return 1;
 	}
 #endif
@@ -485,8 +490,13 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	//-------------------------------------------------------------- readFromHDF5 (generic case)
 	//
 	//-------------------------------------------------------------- 
-	int readFromHDF5_generic( string filename, arraydata *&dest, int &rank, hsize_t *&dims ) {
-		cout << "Reading " << filename << " (HDF5 file)" << endl;
+	int readFromHDF5_generic( string filename, arraydata *&dest, int &rank, hsize_t *&dims, int verbose ) {
+		
+		if (verbose){
+			cout << "Reading " << filename << " (HDF5 file)" << endl;
+		}	
+		
+		std::ostringstream info;
 		
 		string dataset_name = "data/data";
 		unsigned int access_mode = H5F_ACC_RDONLY;			// file mode, read-only, other option: H5F_ACC_RDWR
@@ -514,65 +524,65 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		dims = new hsize_t[rank];
 		int status_n = H5Sget_simple_extent_dims(dataspace, dims, NULL);
 		
-		cout << "rank " << rank << ". " << flush;
+		info << "rank " << rank << ". " << flush;
 		int n, rows, cols = 0;
 		if (rank == 1){
 			rows = (int)(dims[0]);
 			n = rows;
-			cout << "rows = " << rows << ". " << flush;
+			info << "rows = " << rows << ". " << flush;
 		}else if (rank == 2){
 			rows = (int)(dims[0]);
 			cols = (int)(dims[1]);
 			n = rows * cols;
-			cout << "rows,cols = " << rows << "," << cols << ". " << flush;
+			info << "rows,cols = " << rows << "," << cols << ". " << flush;
 		}else{
 			cerr << "--> can't handle that rank. Aborting." << endl;
 			return 1;
 		}
-		cout << "(" << n << "). status: " << status_n << ". " << flush;
+		info << "(" << n << "). status: " << status_n << ". " << flush;
 
 		H5T_order_t order = H5Tget_order(typeID);
 		if (order == H5T_ORDER_LE){
-			cout << "LE. " << flush;	//little endian byte order
+			info << "LE. " << flush;	//little endian byte order
 		}else if (order == H5T_ORDER_BE){
-			cout << "BE. " << flush;	//big endian byte order
+			info << "BE. " << flush;	//big endian byte order
 		}
 		size_t varSize = H5Tget_size(typeID);
 
 		//allocate data to hold what comes out of the file
 		void *buffer = NULL;
 		if (varClass == H5T_FLOAT){
-			cout << "H5type FLOAT, size " << (int)varSize << " " << flush;
+			info << "H5type FLOAT, size " << (int)varSize << " " << flush;
 			if (varSize == sizeof(double)){
-				cout << "--> double " << flush;
+				info << "--> double " << flush;
 				buffer = new double[n];
 				memTypeID = H5T_NATIVE_DOUBLE;
 			}else if (varSize == sizeof(float)){
-				cout << "--> float " << flush;
+				info << "--> float " << flush;
 				buffer = new float[n];
 				memTypeID = H5T_NATIVE_FLOAT;
 			}
 		}else if (varClass == H5T_INTEGER){
-			cout << "H5type INTEGER, size " << (int)varSize << " " << flush;
+			info << "H5type INTEGER, size " << (int)varSize << " " << flush;
 			if (varSize == sizeof(int)){
-				cout << "--> int " << flush;
+				info << "--> int " << flush;
 				buffer = new int[n];
 				memTypeID = H5T_NATIVE_INT;
 			}else if (varSize == sizeof(int16_t)){
-				cout << "--> int16_t " << flush;
+				info << "--> int16_t " << flush;
 				buffer = new int16_t[n];
 				memTypeID = H5T_STD_I16LE;
 			}else if (varSize == sizeof(long int)){
-				cout << "--> long " << flush;
+				info << "--> long " << flush;
 				buffer = new long int[n];
 				memTypeID = H5T_NATIVE_LONG;
 			}
 			
 			H5T_sign_t sign = H5Tget_sign(typeID);
 			if (sign == H5T_SGN_NONE){
-				cout << "unsigned " << flush;
+				info << "unsigned " << flush;
 			}else if (sign == H5T_SGN_2){
-				cout << "signed " << flush;
+				info << "signed " << flush;
 			}
 		}else{
 			cerr << "Error in arraydataIO::readFromHDF5. Unknown HDF5 class type '" << varClass << "'" << endl;
@@ -584,19 +594,13 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			return 2;
 		}
 
-		cout << "." << flush; // dot no. 1
-
 		// read the data using the default properties.
 		//hid_t status = H5Dread (dataset, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &buffer[0]);
 		hid_t status = H5Dread (datasetID, memTypeID, memSpaceID, fileSpaceID, xfer_prp, buffer);
 		
-		cout << "." << flush; // dot no. 2
-		
 		// close and release resources.
 		status = H5Dclose(datasetID);
 		status = H5Fclose(fileID);
-
-		cout << "." << flush; // dot no. 3
 				
 		//copy data back to dest, then delete buffer memory
 		//-----ATTENTION-------
@@ -626,9 +630,10 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			cerr << "Error in arraydataIO::readFromHDF5. Type not found. " << endl;
 			return 1;
 		}
-
-		cout << "." << flush; // dot no. 4
-		cout << endl;		
+		
+		if (verbose>1){
+			cout << info.str() << endl;
+		}
 		return 0;
 	}
 
@@ -637,7 +642,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		int img_rank = 0;
 		hsize_t *dims = 0;
 		arraydata *readarray = new arraydata;
-		int fail = readFromHDF5_generic( filename, readarray, img_rank, dims );
+		int fail = readFromHDF5_generic( filename, readarray, img_rank, dims, verbose() );
 		if (!fail){
 			delete dest;
 			dest = new array1D( readarray );
@@ -651,7 +656,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		int img_rank = 0;
 		hsize_t *dims = 0;
 		arraydata *readarray = new arraydata;
-		int fail = readFromHDF5_generic( filename, readarray, img_rank, dims );
+		int fail = readFromHDF5_generic( filename, readarray, img_rank, dims, verbose() );
 		if (!fail){
 			delete dest;
 			int cols = (int)dims[0];
@@ -679,7 +684,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	// dataType = 4 --> write as long    (H5T_NATIVE_LONG)
 	//-------------------------------------------------------------- 
 	//-------------------------------------------------------------- writeToHDF5 (generic case)
-	int writeToHDF5_generic( string filename, arraydata *src, int img_rank, hsize_t *dims, int internalType, int debug ) {
+	int writeToHDF5_generic( string filename, arraydata *src, int img_rank, hsize_t *dims, int internalType, int verbose ) {
 		if ( !src ){
 			cerr << "ERROR. In arraydataIO::writeToHDF5. No source data. Could not write to file " << filename << endl;
 			return 1;
@@ -826,16 +831,18 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		} else if (memTypeID == H5T_NATIVE_LONG) { 
 			delete[] ((long*)data);
 		} else { 
-			cout << "Error in arraydataIO::writeToHDF5. Unsupported data format!" << endl;
+			cerr << "Error in arraydataIO::writeToHDF5. Unsupported data format!" << endl;
 			return 1;
 		}
 
-		cout << info.str() << endl;
+		if (verbose){
+			cout << info.str() << endl;
+		}
 		return 0;
 	}
 			
 	//-------------------------------------------------------------- writeToHDF5 (1D case)
-	int arraydataIO::writeToHDF5( string filename, array1D *src, int internalType, int debug ) const {
+	int arraydataIO::writeToHDF5( string filename, array1D *src, int internalType ) const {
 
 		//create dataspace of the right dimensions, pass that down to the more generic function
 		int n = src->dim1();
@@ -843,13 +850,13 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		hsize_t	dims[img_rank];
 		dims[0] = n;
 		
-		int fail = writeToHDF5_generic( filename, src, img_rank, dims, internalType, debug );
+		int fail = writeToHDF5_generic( filename, src, img_rank, dims, internalType, verbose() );
 
 		return fail;
 	}
 
 	//-------------------------------------------------------------- writeToHDF5 (2D case)
-	int arraydataIO::writeToHDF5( string filename, array2D *src, int internalType, int debug ) const {
+	int arraydataIO::writeToHDF5( string filename, array2D *src, int internalType ) const {
 		if (transposeForIO()) { src->transpose(); }
 
 		//create dataspace of the right dimensions, pass that down to the more generic function
@@ -860,7 +867,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		dims[0] = ny;
 		dims[1] = nx;		
 
-		int fail = writeToHDF5_generic( filename, src, img_rank, dims, internalType, debug );
+		int fail = writeToHDF5_generic( filename, src, img_rank, dims, internalType, verbose() );
 		
 		if (transposeForIO()) { src->transpose(); }		//transpose back before returning (preserve original data)
 		
@@ -905,11 +912,11 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	
 #else //define empty dummy functions
 	int arraydataIO::readFromHDF5( string filename, array2D *&dest ) const { 
-		cout << "======== WARNING! Dummy function. Nothing read from HDF5. ======== " << endl;
+		cerr << "======== WARNING! Dummy function. Nothing read from HDF5. ======== " << endl;
 		return 1;
 	}
 	int arraydataIO::writeToHDF5( string filename, array2D *src, int type, int debug ) const { 
-		cout << "======== WARNING! Dummy function. Nothing written to HDF5. ======== " << endl; 
+		cerr << "======== WARNING! Dummy function. Nothing written to HDF5. ======== " << endl; 
 		return 1;
 	}
 #endif
@@ -936,6 +943,9 @@ int arraydataIO::readFromASCII( std::string filename, array1D *&dest ) const {
 //
 //-------------------------------------------------------------- 
 int arraydataIO::readFromASCII( std::string filename, array2D *&dest ) const {
+	if (verbose()) {
+		cout << "Reading from ASCII file " << filename << endl;
+	}
 	std::ifstream fin( filename.c_str() );
 	if (!fin.fail()) {
 		unsigned int linecount = 0; 
@@ -958,7 +968,9 @@ int arraydataIO::readFromASCII( std::string filename, array2D *&dest ) const {
 		}//while
 		linecount--;
 		
-		cout << "read lines: " << linecount << ", columns: " << colcount << endl;
+		if (verbose()>1) {
+			cout << "read lines: " << linecount << ", columns: " << colcount << endl;
+		}
 		
 		// transfer to 'dest'
 		delete dest;
@@ -1093,6 +1105,13 @@ void arraydataIO::setTransposeForIO( bool t ){
 	p_transposeForIO = t;
 }
 
+void arraydataIO::setVerbose( int level ){
+	p_verbose = level;
+}
+
+int arraydataIO::verbose() const{
+	return p_verbose;
+}
 
 
 
