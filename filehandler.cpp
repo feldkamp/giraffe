@@ -157,7 +157,11 @@ int main (int argc, char * const argv[]) {
 	//========================================================================== one-file operations
 	if (mode == "mask_thresh" || mode == "mask_invert"){ 
 		if (num_files > 0){
-			io->readFromFile( in_fn.at(0), first );
+			int fail = io->readFromFile( in_fn.at(0), first );
+			if (fail){
+				cerr << "Error reading file" << endl;
+				return 3;
+			}
 		}else{
 			cerr << "Not enough input files for this mode" << endl;
 			return 3;
@@ -218,8 +222,13 @@ int main (int argc, char * const argv[]) {
 	if (mode == "add" || mode == "sub" || mode == "mult" || mode == "div"
 			|| mode == "mask_apply" ){ 
 		if (num_files > 1){
-			io->readFromFile( in_fn.at(0), first );
-			io->readFromFile( in_fn.at(1), second );
+			int fail = 0;
+			fail += io->readFromFile( in_fn.at(0), first );
+			fail += io->readFromFile( in_fn.at(1), second );
+			if (fail){
+				cerr << "Error reading file" << endl;
+				return 3;
+			}
 		}else{
 			cerr << "Not enough input files for this mode" << endl;
 			return 3;
@@ -282,7 +291,11 @@ int main (int argc, char * const argv[]) {
 		for (int i = 0; i < num_files; i++){
 			std::ostringstream info;	
 			array2D *data = 0;
-			io->readFromFile( in_fn.at(i), data );
+			int fail = io->readFromFile( in_fn.at(i), data );
+			if (fail){
+				cerr << "Error reading file" << endl;
+				return 3;
+			}
 			
 			if (mode == "avg"){
 				if (i == 0){
