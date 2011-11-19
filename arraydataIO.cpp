@@ -140,7 +140,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	int arraydataIO::readFromEDF( string filename, array1D *&dest ) const{
 		ns_edf::edf *file = new ns_edf::edf;
 		if (file->read_header(filename)){
-			cerr << "Error in arraydataIO::readFromEDF! Could not read file '" << filename << "'." << endl;
+			cerr << "Error in arraydataIO::readFromEDF! Could not read EDF file '" << filename << "'." << endl;
 			return 1;
 		}
 		
@@ -178,7 +178,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		ns_edf::edf *file = new ns_edf::edf;
 
 		if (file->read_header(filename)){
-			cerr << "Error in arraydataIO::readFromEDF! Could not read file '" << filename << "'." << endl;
+			cerr << "Error in arraydataIO::readFromEDF! Could not read EDF file '" << filename << "'." << endl;
 			return 1;
 		}
 		
@@ -504,7 +504,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		
 		hid_t fileID = H5Fopen(filename.c_str(), access_mode, access_prp);			// open file
 		if (fileID <= 0){
-			cerr << "ERROR in arraydataIO::readFromHDF5. Could not read HDF5 from file '" << filename << "'!" << endl;
+			cerr << "ERROR in arraydataIO::readFromHDF5. Could not read HDF5 file '" << filename << "'!" << endl;
 			return 1;
 		}
 		hid_t datasetID = H5Dopen(fileID, dataset_name.c_str(), access_prp);		// open dataset in that file
@@ -641,7 +641,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	int arraydataIO::readFromHDF5( string filename, array1D *&dest ) const {
 		int img_rank = 0;
 		hsize_t *dims = 0;
-		arraydata *readarray = new arraydata;
+		arraydata *readarray = 0;
 		int fail = readFromHDF5_generic( filename, readarray, img_rank, dims, verbose() );
 		if (!fail){
 			delete dest;
@@ -655,7 +655,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	int arraydataIO::readFromHDF5( string filename, array2D *&dest ) const {
 		int img_rank = 0;
 		hsize_t *dims = 0;
-		arraydata *readarray = new arraydata;
+		arraydata *readarray = 0;
 		int fail = readFromHDF5_generic( filename, readarray, img_rank, dims, verbose() );
 		if (!fail){
 			delete dest;
@@ -663,16 +663,18 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			int rows = (int)dims[1];
 			if (img_rank == 1){ cols = 1; }
 			dest = new array2D( readarray, rows, cols );
-			//cout << "dest: " << dest << ", dims " << dest->dim1() << " x " << dest->dim2() 
-			//	<< ", rows:" << rows << ", cols:" << cols << endl;
-			//cout << dest->getASCIIdata();
+			if (verbose()>2){
+				cout << "dest: " << dest << ", dims " << dest->dim1() << " x " << dest->dim2() 
+					<< ", rows:" << rows << ", cols:" << cols << endl;
+				cout << dest->getASCIIdata();
+			}
+			
+			if (transposeForIO()){
+				dest->transpose();
+			}
 		}
 		delete readarray;
-				
-		if (transposeForIO()){
-			dest->transpose();
-		}
-		
+
 		return fail;
 	}	
 

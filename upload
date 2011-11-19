@@ -1,14 +1,21 @@
-#!/bin/tcsh
+#!/bin/bash
 
 
-switch ($1)
+case $1 in 
 
-	case feldkamp:
-	rsync -av --exclude 'libgiraffe*' --exclude 'testsuite' --exclude 'xcca' --exclude '*.o' --exclude '*.os' --exclude '*.dylib' --exclude 'xcode' --exclude 'giraffe.xcodeproj' --exclude '.DS_Store' --exclude '.git' --exclude '.sconsign.dblite' --exclude 'edf_support/*.o' --exclude 'edf_support/*.os' . feldkamp@psexport.slac.stanford.edu:giraffe/
-	breaksw
+	"feldkamp" )
+		rsync -av --exclude 'libgiraffe*' --exclude 'testsuite' --exclude 'xcca' --exclude '*.o' --exclude '*.os' --exclude '*.dylib' --exclude 'xcode' --exclude 'giraffe.xcodeproj' --exclude '.DS_Store' --exclude '.git' --exclude '.sconsign.dblite' --exclude 'edf_support/*.o' --exclude 'edf_support/*.os' . feldkamp@psexport.slac.stanford.edu:giraffe/
+	;;
 
-	case sellberg:
-	rsync -av --delete --exclude 'libgiraffe*' --exclude 'testsuite' --exclude 'xcca' --exclude '*.o' --exclude '*.os' --exclude '*.dylib' --exclude '*~' --exclude 'xcode' --exclude 'giraffe.xcodeproj' --exclude '.DS_Store' --exclude '.git*' --exclude '.sconsign.dblite' --exclude 'edf_support/*.o' --exclude 'edf_support/*.os' . sellberg@psexport.slac.stanford.edu:~/source/giraffe/
-	breaksw
+	"sellberg" )
+		rsync -av --delete --exclude 'libgiraffe*' --exclude 'testsuite' --exclude 'xcca' --exclude '*.o' --exclude '*.os' --exclude '*.dylib' --exclude '*~' --exclude 'xcode' --exclude 'giraffe.xcodeproj' --exclude '.DS_Store' --exclude '.git*' --exclude '.sconsign.dblite' --exclude 'edf_support/*.o' --exclude 'edf_support/*.os' . sellberg@psexport.slac.stanford.edu:~/source/giraffe/
+	;;
 
-endsw
+	* )
+		echo "Usage: $0 <argument>"
+		echo "Allowed arguments include:"
+		echo "   feldkamp"
+		echo "   sellberg"      
+	;;
+
+esac

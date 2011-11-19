@@ -92,7 +92,6 @@ sources_edf = Split("""
 
 sources_xcca = Split("""
   xcca.cpp
-  analyze.cpp
   """)
 
 sources_testsuite = Split("""
