@@ -734,15 +734,8 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 			phii += M_PI;
 		}
 		
-		if (phii < -deltaphi()/2) { // make sure the binned angle is between 0 and 2PI-deltaphi()
+		if (phii < -deltaphi()/2) { // make sure the binned angle is between 0-deltaphi()/2 and 2PI-deltaphi()/2
 			phii += 2*M_PI;
-		}
-		
-		if (debug() >= 3) {				
-			if (phii < 0) 	//by JF: why this distinction of cases...?
-				cout << "phii: " << phii << ", nAngle(phii): " << round(phii/deltaphi()) << endl;
-			else if (phii > (nPhi()-1)*deltaphi()) 
-				cout << "phii: " << phii << ", nAngle(phii): " << round(phii/deltaphi()) << endl;
 		}
 		
 		// calculate phi for each pixel
