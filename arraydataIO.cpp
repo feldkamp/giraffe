@@ -554,26 +554,26 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		if (varClass == H5T_FLOAT){
 			info << "H5type FLOAT, size " << (int)varSize << " " << flush;
 			if (varSize == sizeof(double)){
-				info << "--> double " << flush;
+				info << "(double) " << flush;
 				buffer = new double[n];
 				memTypeID = H5T_NATIVE_DOUBLE;
 			}else if (varSize == sizeof(float)){
-				info << "--> float " << flush;
+				info << "(float) " << flush;
 				buffer = new float[n];
 				memTypeID = H5T_NATIVE_FLOAT;
 			}
 		}else if (varClass == H5T_INTEGER){
 			info << "H5type INTEGER, size " << (int)varSize << " " << flush;
 			if (varSize == sizeof(int)){
-				info << "--> int " << flush;
+				info << "(int) " << flush;
 				buffer = new int[n];
 				memTypeID = H5T_NATIVE_INT;
 			}else if (varSize == sizeof(int16_t)){
-				info << "--> int16_t " << flush;
+				info << "(int16_t) " << flush;
 				buffer = new int16_t[n];
 				memTypeID = H5T_STD_I16LE;
 			}else if (varSize == sizeof(long int)){
-				info << "--> long " << flush;
+				info << "(long) " << flush;
 				buffer = new long int[n];
 				memTypeID = H5T_NATIVE_LONG;
 			}
