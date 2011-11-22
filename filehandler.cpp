@@ -28,6 +28,7 @@ namespace po = boost::program_options;
 
 #include "arrayclasses.h"
 #include "arraydataIO.h"
+#include "util.h"
 
 
 
@@ -48,7 +49,7 @@ string defaultDir(){
 int main (int argc, char * const argv[]) {
 
 	arraydataIO *io = new arraydataIO;
-	std::ofstream fout("filehandler.log");
+	std::ostringstream info;					// contents of info string are written to logfile
 	
 	string mode = "";	
 	vector<string> in_fn;
@@ -64,18 +65,20 @@ int main (int argc, char * const argv[]) {
 	desc.add_options()		
 		("mode,m", 		po::value<string>(&mode),								"mode of operation,"
 									"\nchoose a keyword:"
-									"\n   add           (2 files)"
-									"\n   sub           (2 files)"
-									"\n   mult          (2 files)"
-									"\n   div           (2 files)"
-									"\n   mask_thresh   (1 file) --p1 --p2"
+									"\n   add                         (2 files)"
+									"\n   sub                         (2 files)"
+									"\n   mult                        (2 files)"
+									"\n   div                         (2 files)"
+									"\n   thresholding --p1 --p2      (1 file)"
 									"\n       p1 = lower threshold, p2 = upper threshold"
-									"\n   mask_invert   (1 file)"
-									"\n   mask_apply    (2 files)"
-									"\n   stats         (x files)"
-									"\n   avg           (x files)"
-									"\n   IO            (x files)"
+									"\n   mask_invert                  (1 file)"
+									"\n   mask_apply                   (2 files)"
+									"\n   mask_combine                 (x files)"
+									"\n   stats                        (x files)"
+									"\n   avg                          (x files)"
+									"\n   IO                           (x files)"
 									"\n      output file type is determined by extension"
+									"\n   cspad_rawimg                 (x files)"
 									)
 		("param_one", 	po::value<double>(&p1), 								"generic parameter 1 (use depends on chosen mode)")
 		("param_two", 	po::value<double>(&p2), 								"generic parameter 2 (use depends on chosen mode)")
@@ -155,7 +158,7 @@ int main (int argc, char * const argv[]) {
 	
 
 	//========================================================================== one-file operations
-	if (mode == "mask_thresh" || mode == "mask_invert"){ 
+	if (mode == "thresholding" || mode == "mask_invert"){ 
 		if (num_files > 0){
 			int fail = io->readFromFile( in_fn.at(0), first );
 			if (fail){
@@ -167,34 +170,34 @@ int main (int argc, char * const argv[]) {
 			return 3;
 		}
 
-		if (mode == "mask_thresh"){
+		if (mode == "thresholding"){
 			cout << "THRESHOLDING" << endl;
 			double lower = p1;
 			double upper = p2;
 			int keep, use_high, use_low = 0;
-			array2D *mask_after_thresholding = new array2D( first->dim1(), first->dim2() );
+			array2D *rejected = new array2D( first->dim1(), first->dim2() );
 			for (int i=0; i<first->size(); i++){
 				if (first->get_atIndex(i) > lower){
 					if (first->get_atIndex(i) <= upper){
 						//keep original value
-						mask_after_thresholding->set_atIndex(i, 1);
+						rejected->set_atIndex(i, 1);
 						keep++;
 					} else {
 						//use upper value
 						first->set_atIndex(i, upper);
-						mask_after_thresholding->set_atIndex(i, 0);
+						rejected->set_atIndex(i, 0);
 						use_high++;
 					}
 				} else {
 					//use lower value
 					first->set_atIndex(i, lower);
-					mask_after_thresholding->set_atIndex(i, 0);
+					rejected->set_atIndex(i, 0);
 					use_low++;
 				}
 			}
-			string mask_fn = "mask_after_thresholding.h5";
-			io->writeToHDF5( mask_fn, mask_after_thresholding );
-			delete mask_after_thresholding;
+			string rejected_fn = "rejected_px_after_thresholding.h5";
+			io->writeToHDF5( rejected_fn, rejected );
+			delete rejected;
 			cout << first->size() << " values. " << keep << " kept, " 
 				<< use_high << " replaced by '" << upper << "' (high limit), "
 				<< use_low << " replaced by '" << lower << "' (low limit)" << endl;
@@ -265,15 +268,17 @@ int main (int argc, char * const argv[]) {
 
 	
 	//========================================================================== any-number operations
-	if (mode == "stats" || mode == "avg" || mode == "IO"){
+	if (mode == "stats" || mode == "avg" || mode == "IO" || mode == "mask_combine" || mode == "cspad_rawimg"){
 	
 		// 1) do some general setup before entering the loop
 		array2D *sum = 0;
+		int dim1 = 0;
+		int dim2 = 0;
 		if (mode == "stats"){
+			std::ostringstream header;	
 			io->setVerbose(0);
-			//write header
-			std::ostringstream info_global;	
-			info_global << "no "  
+
+			header << "no "  
 				<< std::setw(10) << "min" 
 				<< std::setw(10) << "max" 
 				<< std::setw(10) << "mean" 
@@ -283,20 +288,37 @@ int main (int argc, char * const argv[]) {
 				<< std::setw(10) << "pix3"
 				<< " filename "
 				;
-			cout << info_global.str() << endl;
-			fout << info_global.str() << endl;
+				
+			cout << header.str() << endl;
+			info << header.str() << endl;
 		}
 		
 		// 2) main loop: go through all files
 		for (int i = 0; i < num_files; i++){
-			std::ostringstream info;	
+			std::ostringstream osst;
+			osst << in_fn.at(i) << "_" << out_fn;
+			string current_out_fn = osst.str();
+			if (num_files == 1){
+				current_out_fn = out_fn;		// if there's only one file, don't change the output file name
+			}
+			
+			std::ostringstream stat;	
 			array2D *data = 0;
 			int fail = io->readFromFile( in_fn.at(i), data );
 			if (fail){
 				cerr << "Error reading file" << endl;
 				return 3;
 			}
+			if (i == 0){
+				dim1 = data->dim1();
+				dim2 = data->dim2();
+			}else if (dim1 != data->dim1() || dim2 != data->dim2()) {
+				cerr << "WARNING in filehandler: Dimensions of all input files don't match! " 
+					<< "First file: " << dim1 << "," << dim2 
+					<< ", this file: " << data->dim1() << "," << data->dim2() << endl;
+			}
 			
+	
 			if (mode == "avg"){
 				if (i == 0){
 					sum = new array2D(*data);
@@ -314,7 +336,7 @@ int main (int argc, char * const argv[]) {
 				double pixel2 = data->get_atIndex(2000);
 				double pixel3 = data->get_atIndex(3000);
 				
-				info << i
+				stat << i
 					<< std::setw(10) << min
 					<< std::setw(10) << max
 					<< std::setw(10) << mean
@@ -325,14 +347,31 @@ int main (int argc, char * const argv[]) {
 					<< " " << in_fn.at(i)
 					;
 					
-				cout << info.str() << endl;
-				fout << info.str() << endl;
+				cout << stat.str() << endl;
+				info << stat.str() << endl;
 			}
 			
 			if (mode == "IO"){
-				std::ostringstream osst;
-				osst << in_fn.at(i) << "_" << out_fn;
-				io->writeToFile( osst.str(), data );
+				io->writeToFile( current_out_fn, data );
+			}
+			
+			if (mode == "mask_combine"){
+				//multiple execution of applyMask
+				if (i == 0){
+					sum = new array2D(*data);
+				}else{
+					sum->applyMask( data );				
+				}
+			}
+			
+			if (mode == "cspad_rawimg"){
+				//transpose() causes to essentially read rows in the file first
+				//this is the way it needs to be, for example, with the files generated by the pedestal module
+				data->transpose();		
+				array2D *img = 0;
+				ns_cspad_util::createRawImageCSPAD( data, img );
+				io->writeToFile( current_out_fn, img );
+				delete img;
 			}
 			
 			delete data;
@@ -345,10 +384,19 @@ int main (int argc, char * const argv[]) {
 			delete sum;
 		}
 		
+		if (mode == "mask_combine"){
+			io->writeToFile( out_fn, sum );
+		}
+		
 	}//end of any-number file operations
 
+	if (info.str() != ""){
+		std::ofstream fout("filehandler.log");
+		fout << info.str() << endl;	
+		fout.close();
+	}
+	
 	//clean up
-	fout.close();
 	delete first;
 	delete second;
 	delete io;
