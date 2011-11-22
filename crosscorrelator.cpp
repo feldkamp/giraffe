@@ -744,7 +744,6 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 		// calculate |q| for each pixel and bin lengths with correct resolution
 		p_q->set(i, round(sqrt(qxi*qxi + qyi*qyi) / deltaq()) * deltaq() );
 		
-		
 		// calculate polar arrays (accept this point if mask says ok, or if there is no mask)
 		if (!maskEnable() || mask()->get(i)) {
 			int qIndex = (int) round((p_q->get(i)-qmin())/deltaq()); // the index in qAvg[] that corresponds to q[i]
@@ -782,9 +781,8 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 		p_phiAvg->set( i, phimin()+i*deltaphi() );
 	}
 	
-	
 	// calculate SAXS if not already calculated
-	if (!p_tracker_calculateSAXS){
+	if (!p_tracker_calculateSAXS) {
 		calculateSAXS();
 	}
 	
@@ -824,9 +822,6 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 		cerr << "ERROR in CrossCorrelator::calculateSAXS: Need to specify Q-limits as arguments before running calculateSAXS()" << endl;
 		return;
 	} else if (start_q || stop_q) {
-		//p_qmin = start_q;
-		//p_qmax = stop_q;
-		//updateDependentVariables();
 		setQminQmax( start_q, stop_q );
 	}
 	
@@ -987,9 +982,9 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 	} else {
 		cerr << "WARNING: polar coordinates must be calculated before XCCA is calculated." << endl;
 		calculatePolarCoordinates();
-		if (p_tracker_calculateXCCA){
-			calculatePolarCoordinates();
-		}else{
+		if (p_tracker_calculatePolarCoordinates) {
+			calculateXCCA();
+		} else {
 			cerr << "ERROR in CrossCorrelator::calculateXCCA. polar coordinates were not calculated properly prior to use." << endl;
 		}
 	}	
