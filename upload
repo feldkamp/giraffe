@@ -4,7 +4,7 @@
 case $1 in 
 
 	"feldkamp" )
-		rsync -av --exclude 'libgiraffe*' --exclude 'testsuite' --exclude 'xcca' --exclude '*.o' --exclude '*.os' --exclude '*.dylib' --exclude 'xcode' --exclude 'giraffe.xcodeproj' --exclude '.DS_Store' --exclude '.git' --exclude '.sconsign.dblite' --exclude 'edf_support/*.o' --exclude 'edf_support/*.os' . feldkamp@psexport.slac.stanford.edu:giraffe/
+		rsync -av --exclude 'libgiraffe*' --exclude 'testsuite' --exclude 'filehandler' --exclude 'xcca' --exclude '*.o' --exclude '*.os' --exclude '*.dylib' --exclude 'xcode' --exclude 'giraffe.xcodeproj' --exclude '.DS_Store' --exclude '.git' --exclude '.sconsign.dblite' --exclude 'edf_support/*.o' --exclude 'edf_support/*.os' . feldkamp@psexport.slac.stanford.edu:giraffe/
 	;;
 
 	"sellberg" )
