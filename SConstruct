@@ -81,6 +81,7 @@ sources_giraffe = Split("""
    arrayclasses.cpp
    arraydataIO.cpp
    fouriertransformer.cpp
+   util.cpp
    """)
   
 sources_edf = Split("""
