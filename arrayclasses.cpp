@@ -359,13 +359,50 @@ int arraydata::multiplyByValue( double value ){
 int arraydata::divideByValue( double value ){
 	if (value != 0){
 		for (int i = 0; i<this->size(); i++) {
-			this->set_atIndex(i, ((double) this->get_atIndex(i)) / value);
+			this->set_atIndex(i, ((double) this->get_atIndex(i)) / (double)value);
 		}
 	}else{
 		cerr << "Error in arraydata::divideByValue. Division by zero requested! Nothing done." << endl;
+		return 1;
 	}
     return 0;
 }
+
+int arraydata::addValue_atIndex( unsigned int i, double value ){
+	set_atIndex( i, get_atIndex(i) + value );
+	return 0;
+}
+
+int arraydata::subtractValue_atIndex( unsigned int i, double value ){
+	set_atIndex( i, get_atIndex(i) - value );
+	return 0;
+}
+
+int arraydata::multiplyByValue_atIndex( unsigned int i, double value ){
+	set_atIndex( i, get_atIndex(i) * value );
+	return 0;
+}
+
+int arraydata::divideByValue_atIndex( unsigned int i, double value ){
+	if (value != 0){
+		set_atIndex( i, get_atIndex(i) / (double)value );
+	}else{
+		cerr << "Error in arraydata::divideByValue_atIndex("<< i << "). Division by zero requested! Nothing done." << endl;
+		return 1;		
+	}
+	return 0;
+}
+
+int arraydata::increment_atIndex( unsigned int i ){
+	set_atIndex( i, get_atIndex(i) - 1 );
+	return 0;
+}
+
+int arraydata::decrement_atIndex( unsigned int i ){
+	set_atIndex( i, get_atIndex(i) + 1 );
+	return 0;
+}
+
 
 
 //add each element by an element from a second array
@@ -711,6 +748,12 @@ void array2D::set( unsigned int i, unsigned int j, double value ){
 	assert(i < dim1());
 	assert(j < dim2());
 	arraydata::set_atIndex( j*dim1() + i, value);
+}
+
+//-----------------------------------------------------arrayIndex
+//returns the arraydata index corresponding to the pair i, j
+unsigned int array2D::arrayIndex( unsigned int i, unsigned int j ) const {
+	return (unsigned int)(j * dim1() + i);
 }
 
 

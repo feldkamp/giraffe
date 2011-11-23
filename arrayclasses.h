@@ -30,7 +30,7 @@ class array4D;
 class arraydata {
 protected:
 	double *p_data;												//pointer to the data array
-	unsigned int p_size;	
+	unsigned int p_size;
 	
 public:
 	arraydata( const unsigned int sizeval = 1 );
@@ -107,15 +107,25 @@ public:
     std::string getASCIIdataAsColumn() const;
     
     //perform some basic math on array
-    int addValue( double val );
-	int subtractValue( double val );
+    int addValue( double value );
+	int subtractValue( double value );
     int multiplyByValue( double value );
 	int divideByValue( double value );
- 
+ 	
+	int addValue_atIndex( unsigned int i, double value );
+	int subtractValue_atIndex( unsigned int i, double value );
+    int multiplyByValue_atIndex( unsigned int i, double value );
+	int divideByValue_atIndex( unsigned int i, double value );
+	int increment_atIndex( unsigned int i );
+	int decrement_atIndex( unsigned int i );
+		
 	int addArrayElementwise( const arraydata *secondArray );
 	int subtractArrayElementwise( const arraydata *secondArray );
     int multiplyByArrayElementwise( const arraydata *secondArray );
     int divideByArrayElementwise( const arraydata *secondArray );
+		 	
+
+
 	
 	// application of a mask (usually ones and zeros)
 	// set values below 'checkval' to 'rejectval'
@@ -208,7 +218,9 @@ public:
 	
 	double get( unsigned int i, unsigned int j ) const;                 //returns single pixel value
 	void set( unsigned int i, unsigned int j, double value );
-
+	
+	unsigned int arrayIndex( unsigned int i, unsigned int j ) const;	//returns the arraydata index corresponding to the pair i, j
+	
     std::string getASCIIdata( bool annotate=1 ) const;
 	
 	//-------------functions special to 2D case-----------------
