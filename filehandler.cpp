@@ -57,6 +57,7 @@ int main (int argc, char * const argv[]) {
 	string out_fn = "";
 	double p1 = 0.;
 	double p2 = 0.;
+	int verbose = 0;
 
 	po::positional_options_description p;
 	p.add("mode", -1);
@@ -78,14 +79,15 @@ int main (int argc, char * const argv[]) {
 									"\n   avg                          (x files)"
 									"\n   IO                           (x files)"
 									"\n      output file type is determined by extension"
-									"\n   cspad_rawimg                 (x files)"
+									"\n   cspad_raw_img                 (x files)"
 									)
 		("param_one", 	po::value<double>(&p1), 								"generic parameter 1 (use depends on chosen mode)")
 		("param_two", 	po::value<double>(&p2), 								"generic parameter 2 (use depends on chosen mode)")
 		("output,o",	po::value<string>(&out_fn), 							"output filename")	
 		("input,i", 	po::value< vector<string> >(&in_fn)->multitoken(),		"input filename")
 		("list,l", 		po::value<string>(&list_fn),							"input filelist")
-		("help,h",																"produce help message")	
+		("verbose,v", 	po::value<int>(&verbose), 								"set verbosity level")
+		("help,h",																"display help message")	
 	;
 	
 	po::variables_map vm;
@@ -139,6 +141,10 @@ int main (int argc, char * const argv[]) {
 	}
 	if (vm.count("output")){
 		cout << "--> using output file " << out_fn << endl;
+	}	
+
+	if (vm.count("verbose")){
+		cout << "--> using verbosity " << verbose << endl;
 	}	
 	
 	if (out_fn == ""){

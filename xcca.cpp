@@ -33,9 +33,10 @@ int main (int argc, char * const argv[]) {
 	string mask_fn = "";
 	bool single_out = false;
 	double back_weight = 0.;
+	int verbose = 0;
 	
-	int nPhi = 512;
-	int nLag = nPhi/2. + 1;
+	int nPhi = 2048;
+	int nLag = (int)(nPhi/2. + 1);
 	int nQ = 400;
 	int LUTx = 1000;
 	int LUTy = 1000;
@@ -53,7 +54,7 @@ int main (int argc, char * const argv[]) {
 	po::options_description desc("Allowed options");
 	desc.add_options()		
 		("help,h",																"produce help message")		
-		("file,f", 			po::value<string>(&file_fn), 						"single primary input file")
+		("input,i", 			po::value<string>(&file_fn), 					"single primary input file")
 		("list,l", 			po::value<string>(&list_fn), 						"file list with input files")
 		("pixelX", 			po::value<string>(&pixx_fn), 						"input file for pixel values x-coordinate")
 		("pixelY", 			po::value<string>(&pixy_fn), 						"input file for pixel values y-coordinate")
@@ -65,6 +66,7 @@ int main (int argc, char * const argv[]) {
 		("mask,m", 			po::value<string>(&mask_fn), 						"mask file")
 		("single,s", 		po::bool_switch(&single_out), 						"single image output?")
 		("weight,B", 		po::value<double>(&back_weight),					"background weighting factor")
+		("verbose,v", 		po::value<int>(&verbose), 							"set verbosity level")
 	;
 	
 	po::variables_map vm;
@@ -84,7 +86,7 @@ int main (int argc, char * const argv[]) {
 		cout << desc << endl;
 		exit(0);
 	}
-	if (vm.count("f")){
+	if (vm.count("input")){
 		cout << "--> using input file " << file_fn << endl;
 	}
 	if (vm.count("pixelX")){
@@ -112,6 +114,9 @@ int main (int argc, char * const argv[]) {
 	if (vm.count("B")){
 		cout << "--> using background weighting factor " << back_weight << endl;	
 	}
+	if (vm.count("verbose")){
+		cout << "--> using verbosity " << verbose << endl;
+	}	
 	
 	//get primary input file(s) and store them in 'files'
 	std::vector<string> files;
@@ -231,7 +236,7 @@ int main (int argc, char * const argv[]) {
 			cc->setMask( mask );
 		}
 		cc->setOutputdir( outdir );
-		cc->setDebug(0);
+		cc->setDebug(verbose);
 		
 		if (back){
 			image->subtractArrayElementwise( back );
