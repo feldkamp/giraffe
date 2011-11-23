@@ -896,10 +896,6 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 
 //----------------------------------------------------------------------------calculateXCCA
 void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
-	if (debug() >= 1){
-		string mode = xccaEnable() ? "full cross-correlation" : "auto-correlation";
-		cout << "CrossCorrelator::calculateXCCA. calculating " << mode << endl;
-	}
 	
 	// sanity limit check
 	if (!qmax() && !stop_q) {
@@ -921,7 +917,12 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 				p_autoCorrelation = new array2D( nQ(), nLag() );
 			}
 		}
-		
+	
+		if (debug() >= 1){
+			string mode = xccaEnable() ? "full cross-correlation" : "auto-correlation";
+			cout << "CrossCorrelator::calculateXCCA. calculating " << mode << endl;
+		}
+			
 		// calculate cross-correlation array and normalization array for cross-correlation	
 		if (xccaEnable()) {
 			//full cross-correlation
@@ -961,31 +962,38 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 			} // for q1
 		} else {
 			//auto-correlation only
+			
+			
+			//do the calculation (3-fold for loop)
 			for (int i=0; i<nQ(); i++) { // q index
 				double variance = 0;
 				for (int k=0; k<nLag(); k++) { // phi lag => phi2 index = (l+k)%nPhi
-					double norm = 0;
+					int norm = 0;
+					unsigned int ik = autoCorr()->arrayIndex(i,k);
+					double autoCorr_at_ik = autoCorr()->get(i,k);
 					for (int l=0; l<nPhi(); l++) { // phi1 index
 						int phi2_index = (l+k)%nPhi();
-						autoCorr()->set(i,k, autoCorr()->get(i,k) + fluctuations()->get(i,l)*fluctuations()->get(i, phi2_index) );
+						autoCorr()->set_atIndex(ik, autoCorr_at_ik + fluctuations()->get(i,l)*fluctuations()->get(i, phi2_index) );
 						int norm_contribution = pixelCount()->get(i,l)*pixelCount()->get(i,phi2_index) > 0 ? 1 : 0;
 						norm += norm_contribution;
-					}
+					}//l
+					
 					if (norm != 0) {
 						if (k == 0) {
-							variance = autoCorr()->get(i, 0)/norm;
+							variance = autoCorr()->get(i, 0)/(double)norm;
 						}
 						if (variance != 0) {
 							// normalize by variance (or the zeroth element of the correlation)
-							autoCorr()->set(i, k, autoCorr()->get(i,k) / (norm*variance) );
+							autoCorr()->set_atIndex(ik, autoCorr()->get(i,k) / (double)(norm*variance) );
 						} else { // fail code if variance is 0
-							autoCorr()->set(i, k, -1.5);
+							autoCorr()->set_atIndex(ik, -1.5);
 						}
 					} else { // fail code if no information exists about the specific element in the cross-correlation array
-						autoCorr()->set(i, k, -2);
+						autoCorr()->set_atIndex(ik, -2);
 					}
-				}		
-			} // for q
+					
+				}//k		
+			}//l (for q)
 		}
 		if (debug() >= 1) 
 			cout << "done calculating cross-correlation..." << endl;
