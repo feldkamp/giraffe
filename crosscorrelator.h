@@ -122,8 +122,8 @@ public:
 	array1D *phiAvg() const;
 	array2D *pixelCount() const;
 	array1D *iAvg() const;
-	array2D *fluctuations() const;	// intensity fluctuations in polar coordinates produced by calculateXCCA()
-	array2D *polar() const;			// intensities in polar coordinates produced by calculateXCCA()/calculatePolarCoordinates_FAST()
+	array2D *fluctuations() const;	// intensity fluctuations in polar coordinates produced by calculatePolarCoordinates()
+	array2D *polar() const;			// intensities in polar coordinates produced by calculatePolarCoordinates()/calculatePolarCoordinates_FAST()
 	array2D *mask_polar() const;	// mask in polar coordinates produced by calculatePolarCoordinates_FAST()
 	array2D *autoCorr() const;
 	double getAutoCorrelation(unsigned index1, unsigned index2) const;
