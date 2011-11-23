@@ -8,18 +8,19 @@ Help("""
     host=psexport    :   SLAC's psexport
     host=jan         :   Jan's computer
     
-    debug=0          :   no debug flags, optimize code
-    debug=1          :   compile with debug flags --> slower code
+    debug=False      :   no debug flags, optimize code
+    debug=True       :   compile with debug flags --> slower code
     
-    static=true      :   build static library 'giraffe.a'
-    shared=true      :   build shared library 'giraffe.so'
-    xcca=true        :   build executable 'xcca'
-    testsuite=true   :   build executable 'testsuite'
+    static=True      :   build static library 'giraffe.a'
+    shared=True      :   build shared library 'giraffe.so'
+    xcca=True        :   build executable 'xcca'
+    testsuite=True   :   build executable 'testsuite'
+    filehandler=True :   build executable 'filehandler'
 -----------------------------------------------------------------------------
 """)
 
 host=ARGUMENTS.get('host', 'psexport')
-debug=ARGUMENTS.get('debug', 0)
+debug=ARGUMENTS.get('debug', False)
 
 
 # define what to build
