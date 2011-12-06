@@ -163,7 +163,6 @@ namespace ns_cspad_util{
 			}
 		}
 		
-		output->transpose();
 		return 0;
 	}
 
