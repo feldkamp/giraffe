@@ -46,14 +46,14 @@ public:
 	//		(2) calc coordinates with alg. 2, calc correlation with alg. 2
 	//		(3) calc coordinates with alg. 1, calc correlation with alg. 2
 	//		(4) calc coordinates with alg. 2, calc correlation with alg. 1
-	void run(int master_algorithm = 1, bool calc_SAXS = true);
-	void run(double start_q, double stop_q, int master_algorithm = 1, bool calc_SAXS = true);
+	void run(int master_algorithm = 1);
+	void run(double start_q, double stop_q, int master_algorithm = 1);
 	
 	// alg_coords: (1) full data with interpolation
 	//             (2) only lookup certain values, FAST, but no interpolation
 	// alg_corr:   (1) direct correlation calculation, works on data with gaps, slow
 	//             (2) correlation via Fourier transform, fast, strong artifacts on data with gaps
-	void run(double start_q, double stop_q, int alg_coords, int alg_corr, bool calc_SAXS);
+	void run(double start_q, double stop_q, int alg_coords, int alg_corr);
 	
 	
 	//---------------------------------------------calculations (Jonas's way)
