@@ -131,6 +131,6 @@ objs_filehandler = env.StaticObject(sources_filehandler)
 env.StaticLibrary( 'libgiraffe_static', objs_giraffe_static+objs_edf_static )
 env.SharedLibrary( 'libgiraffe_shared', objs_giraffe_shared+objs_edf_shared, RPATH=lib_dirs )
 
-env.Program( 'xcca', objs_xcca+objs_giraffe_static+objs_edf_static )
-env.Program( 'testsuite', objs_testsuite+objs_giraffe_static+objs_edf_static )
+env.Program( 'xcca', objs_xcca+objs_giraffe_static+objs_edf_static, RPATH=lib_dirs )
+env.Program( 'testsuite', objs_testsuite+objs_giraffe_static+objs_edf_static, RPATH=lib_dirs )
 env.Program( 'filehandler', objs_filehandler+objs_giraffe_static+objs_edf_static,RPATH=lib_dirs )
