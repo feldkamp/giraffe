@@ -35,14 +35,14 @@ int main (int argc, char * const argv[]) {
 	double back_weight = 0.;
 	int verbose = 0;
 	
-	int nPhi = 2048;
+	int nPhi = 512;
 	int nLag = (int)(nPhi/2. + 1);
-	int nQ = 400;
+	int nQ = 700;
 	int LUTx = 1000;
 	int LUTy = 1000;
 	
-	double start_q = 0;			//units of these should match those in pixx, pixy!
-	double stop_q = nQ;
+	double start_q = 100;			//units of these should match those in pixx, pixy!
+	double stop_q = start_q+nQ;
 
 	double shiftX = 0.;
 	double shiftY = 0.;
@@ -162,20 +162,22 @@ int main (int argc, char * const argv[]) {
 	array2D *back = 0;
 	array2D *qx = 0;
 	array2D *qy = 0;
+	
+	int iofail = 0;
 				
 	if (mask_fn != ""){
-		io->readFromFile( mask_fn, mask);
+		iofail += io->readFromFile( mask_fn, mask);
 	}
 	
 	if (back_fn != ""){
-		io->readFromFile( back_fn, back);
+		iofail += io->readFromFile( back_fn, back);
 		if ( back_weight != 1 ){
 			back->multiplyByValue( back_weight );
 		}
 	}
 	
 	if (pixx_fn != ""){
-		io->readFromFile( pixx_fn, qx);
+		iofail += io->readFromFile( pixx_fn, qx);
 	}else{
 		//generate a qx-distribution
 		qx = new array2D( imgY, imgX );
@@ -183,11 +185,16 @@ int main (int argc, char * const argv[]) {
 	}
 
 	if (pixy_fn != ""){
-		io->readFromFile( pixy_fn, qy);
+		iofail += io->readFromFile( pixy_fn, qy);
 	}else{
 		//generate a qy-distribution
 		qy = new array2D( imgY, imgX );
 		qy->gradientAlongDim2(-imgY/2+shiftY, +imgY/2+shiftY);
+	}
+	
+	if (iofail){
+		cerr << "I/O failure. Aborting." << endl;
+		return 1;
 	}
 	
 	
@@ -247,33 +254,43 @@ int main (int argc, char * const argv[]) {
 		bool calcSAXS = true;
 		cc->run(start_q, stop_q, alg, calcSAXS);
 
-		if ( single_out ){
+		if ( single_out || num_files == 1 ){
 			io->writeToFile( outdir+"corr"+single_desc+ext, cc->autoCorr() );
 			io->writeToFile( outdir+"polar"+single_desc+ext, cc->polar() );
+			io->writeToFile( outdir+"fluct"+single_desc+ext, cc->fluctuations() );
 			io->writeToFile( outdir+"pixel_count"+single_desc+ext, cc->pixelCount() );
+			
+			io->writeToFile( outdir+"q"+single_desc+ext, cc->qAvg() );	
+			io->writeToFile( outdir+"i"+single_desc+ext, cc->iAvg() );	
 		}
 		
 		//sum up results
-		polaravg->addArrayElementwise( cc->polar() );
-		corravg->addArrayElementwise( cc->autoCorr() );
-		detavg->addArrayElementwise( image );
-		
+		if (num_files > 1){
+			polaravg->addArrayElementwise( cc->polar() );
+			corravg->addArrayElementwise( cc->autoCorr() );
+			detavg->addArrayElementwise( image );
+		}
+			
 		delete image;
 		delete cc;
 	}
 	
-	detavg->divideByValue( num_files );			//normalize
-	backavg->divideByValue( num_files );		//normalize
-	polaravg->divideByValue( num_files );		//normalize	
-	corravg->divideByValue( num_files );		//normalize
 	
-	io->writeToFile( outdir+"det_avg"+ext, detavg);			// average background-subtracted detector image
-	io->writeToFile( outdir+"polar_avg"+ext, polaravg);		// average image in polar coordinates
-	io->writeToFile( outdir+"corr_avg"+ext, corravg);			// average autocorrelation
-	if ( back ){
-		io->writeToFile( outdir+"det_background_avg"+ext, backavg);		// just the background
+	//compute and output average if there was more than one file
+	if (num_files > 1){
+		detavg->divideByValue( num_files );			//normalize
+		backavg->divideByValue( num_files );		//normalize
+		polaravg->divideByValue( num_files );		//normalize	
+		corravg->divideByValue( num_files );		//normalize
+		
+		io->writeToFile( outdir+"det_avg"+ext, detavg);			// average background-subtracted detector image
+		io->writeToFile( outdir+"polar_avg"+ext, polaravg);		// average image in polar coordinates
+		io->writeToFile( outdir+"corr_avg"+ext, corravg);			// average autocorrelation
+		if ( back ){
+			io->writeToFile( outdir+"det_background_avg"+ext, backavg);		// just the background
+		}
 	}
-
+	
 	delete detavg;
 	delete backavg;
 	delete polaravg;
