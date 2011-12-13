@@ -66,20 +66,20 @@ int main (int argc, char * const argv[]) {
 	desc.add_options()		
 		("mode,m", 		po::value<string>(&mode),								"mode of operation,"
 									"\nchoose a keyword:"
-									"\n   add                         (2 files)"
-									"\n   sub                         (2 files)"
-									"\n   mult                        (2 files)"
-									"\n   div                         (2 files)"
-									"\n   thresholding --p1 --p2      (1 file)"
-									"\n       p1 = lower threshold, p2 = upper threshold"
-									"\n   mask_invert                  (1 file)"
-									"\n   mask_apply                   (2 files)"
-									"\n   mask_combine                 (x files)"
-									"\n   stats                        (x files)"
-									"\n   avg                          (x files)"
-									"\n   IO                           (x files)"
+									"\n   add                                       (2 files)"
+									"\n   sub                                       (2 files)"
+									"\n   mult                                      (2 files)"
+									"\n   div                                       (2 files)"
+									"\n   thresholding --param_one --param_two      (1 file)"
+									"\n       param_one = lower threshold, param_two = upper threshold"
+									"\n   mask_invert                               (1 file)"
+									"\n   mask_apply                                (2 files)"
+									"\n   mask_combine                              (x files)"
+									"\n   stats                                     (x files)"
+									"\n   avg                                       (x files)"
+									"\n   IO                                        (x files)"
 									"\n      output file type is determined by extension"
-									"\n   cspad_raw_img                 (x files)"
+									"\n   cspad_raw_img                             (x files)"
 									)
 		("param_one", 	po::value<double>(&p1), 								"generic parameter 1 (use depends on chosen mode)")
 		("param_two", 	po::value<double>(&p2), 								"generic parameter 2 (use depends on chosen mode)")
@@ -204,9 +204,10 @@ int main (int argc, char * const argv[]) {
 			string rejected_fn = "rejected_px_after_thresholding.h5";
 			io->writeToHDF5( rejected_fn, rejected );
 			delete rejected;
-			cout << first->size() << " values. " << keep << " kept, " 
-				<< use_high << " replaced by '" << upper << "' (high limit), "
-				<< use_low << " replaced by '" << lower << "' (low limit)" << endl;
+			double total = (double)first->size();
+			cout << total << " values: " << keep << " kept, " 
+				<< use_high << " (" << use_high/total*100. << "%) replaced by high limit " << upper << ", "
+				<< use_low << " (" << use_low/total*100. << "%) replaced by low limit " << lower << "." << endl;
 		}
 		
 		if (mode == "mask_invert"){
