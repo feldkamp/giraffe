@@ -22,6 +22,12 @@ Help("""
 host=ARGUMENTS.get('host', 'psexport')
 debug=ARGUMENTS.get('debug', False)
 
+print "using host >>>", host, "<<< (change this with option host=<value>)"
+if debug:
+   print "using debug flags (change this with option debug=false)"
+else:
+   print "using compiler optimization flags (change this with option debug=true)"
+
 
 # define what to build
 build_giraffe_static_lib=ARGUMENTS.get('static', True)
@@ -29,9 +35,6 @@ build_giraffe_shared_lib=ARGUMENTS.get('shared', True)
 build_xcca=ARGUMENTS.get('xcca', True)
 build_testsuite=ARGUMENTS.get('testsuite', True)
 build_filehandler=ARGUMENTS.get('filehandler', True)
-
-
-
 
 ##### define include directories
 if (host=='psexport'):
@@ -108,10 +111,7 @@ sources_filehandler = Split("""
 
 
 ##### go to work
-print "using host >>>", host, "<<< (change this with option host=<value>)"
-
 env = Environment(CPPPATH=include_dirs, LIBPATH=lib_dirs, LIBS=libs )
-
 
 if debug:
    env.Append(CCFLAGS = "-g")
