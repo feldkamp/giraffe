@@ -42,8 +42,7 @@ using std::vector;
 
 //----------------------------------------------------------------------------constructor with C-style arrays
 CrossCorrelator::CrossCorrelator( float *dataCArray, float *qxCArray, float *qyCArray, 
-									int arraylength, int nphi, int nq1, 
-									int nq2, int16_t *maskCArray){
+									int arraylength, int nphi, int nq1, int nq2){
     initPrivateVariables();
     
 	if (!dataCArray || !qxCArray || !qyCArray) {
@@ -65,23 +64,13 @@ CrossCorrelator::CrossCorrelator( float *dataCArray, float *qxCArray, float *qyC
 	if (nq2 == 0 || nq2 == 1){
 		setXccaEnable(false);
 		p_nQ = nq1;
-		p_autoCorrelation = new array2D( nQ(), nLag() );
 	} else {
 		setXccaEnable(true);
 		p_nQ = (nq1 > nq2) ? nq1 : nq2;
-		p_crossCorrelation = new array3D( nQ(), nQ(), nLag() );
 	}
 	
 	//set default start and stop values for q
 	setQminQmax( 0, nQ() ); 
-	
-	//check, if a mask was given
-	if (maskCArray == NULL){
-		setMaskEnable( false );
-	}else{
-		setMaskEnable( true );
-		setMask(maskCArray, arraylength);	
-	}
 	
     //copy data from array over to internal data structure
 	setData(dataCArray, arraylength);
@@ -99,8 +88,7 @@ CrossCorrelator::CrossCorrelator( float *dataCArray, float *qxCArray, float *qyC
 
 //----------------------------------------------------------------------------constructor with arraydata objects
 CrossCorrelator::CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arraydata *qyArray, 
-									int nphi, int nq1,
-									int nq2, arraydata *maskArray ){
+									int nphi, int nq1, int nq2){
 	initPrivateVariables();
 	
 	if (!dataArray || !qxArray || !qyArray) {
@@ -126,23 +114,13 @@ CrossCorrelator::CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arra
 	if (nq2 == 0 || nq2 == 1){
 		setXccaEnable(false);
 		p_nQ = nq1;
-		p_autoCorrelation = new array2D( nQ(), nLag() );
 	} else {
 		setXccaEnable(true);
 		p_nQ = (nq1 > nq2) ? nq1 : nq2;
-		p_crossCorrelation = new array3D( nQ(), nQ(), nLag() );
 	}
 
 	//set default start and stop values for q
 	setQminQmax( 0, nQ() );
-	
-	//check, if a mask was given
-	if (maskArray == NULL){
-		setMaskEnable( false );
-	}else{
-		setMaskEnable( true );
-		setMask(maskArray);	
-	}
 	
     //copy data from array over to internal data structure
     setData( dataArray );
@@ -912,23 +890,15 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 				}
 			}
 		}
-	
-		// if calculateXCCA() has already been used, free and recreate p_crossCorrelation, p_autoCorrelation
-		if (p_tracker_calculateXCCA) {
-			if (xccaEnable()) {
-				delete p_crossCorrelation;
-				p_crossCorrelation = new array3D( nQ(), nQ(), nLag() );
-			} else {
-				delete p_autoCorrelation;
-				p_autoCorrelation = new array2D( nQ(), nLag() );
-			}
-		}
-	
+
 		if (debug() >= 1) cout << "calculating " << xccaEnable_str << std::flush;
 			
 		// calculate cross-correlation array and normalization array for cross-correlation	
 		if (xccaEnable()) {
 			//FULL CROSS-CORRELATION (4-fold for-loop)
+			delete p_crossCorrelation;
+			p_crossCorrelation = new array3D( nQ(), nQ(), nLag() );
+			
 			for (int i=0; i<nQ(); i++) { // q1 index
 				if (debug() && i%100 == 0) cout << "." << flush;
 				for (int j=0; j<nQ(); j++) { // q2 index
@@ -966,6 +936,8 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 			} // for q1
 		} else {
 			//AUTO-CORRELATION ONLY (3-fold for-loop)
+			delete p_autoCorrelation;
+			p_autoCorrelation = new array2D( nQ(), nLag() );
 			for (int i=0; i<nQ(); i++) { 							// for i (q)
 				if (debug() && i%100 == 0) cout << "." << flush;
 				double variance = 0;
@@ -1524,10 +1496,14 @@ int CrossCorrelator::calculateXCCA_FAST(){
 	try {
 		if (!xccaEnable()){											
 			// autocorrelation only
+			delete p_autoCorrelation;
+			p_autoCorrelation = new array2D( nQ(), nLag() );
 			autocorrelateFFT( polar(), autoCorr() );
 		}else{														
 			// full-blown cross-correlationp
 			cerr << "CROSS-CORRELATE 3D USING FFT. PROCEED WITH CAUTION! Some features may not be implemented or fully tested." << endl;
+			delete p_crossCorrelation;
+			p_crossCorrelation = new array3D( nQ(), nQ(), nLag() );
 			crosscorrelateFFT( polar(), crossCorr() );
 		}//if
 	} catch(int e) {

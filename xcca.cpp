@@ -123,6 +123,7 @@ int main (int argc, char * const argv[]) {
 		
 	if (list_fn == "" && file_fn == ""){
 		cerr << "Error. No input file(s) given. Use -f or -l to specify a (f)ile or a (l)ist of files" << endl;
+		cout << desc << endl;
 		exit(2);
 	}else if (list_fn != ""){
 		cout << "--> using file list in '" << list_fn << "'" << endl;
@@ -251,8 +252,7 @@ int main (int argc, char * const argv[]) {
 		}
 		
 		//run the calculation...
-		bool calcSAXS = true;
-		cc->run(start_q, stop_q, alg, calcSAXS);
+		cc->run(start_q, stop_q, alg);
 
 		if ( single_out || num_files == 1 ){
 			io->writeToFile( outdir+"corr"+single_desc+ext, cc->autoCorr() );

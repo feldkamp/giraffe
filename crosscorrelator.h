@@ -27,13 +27,11 @@ public:
 	//   nphi: number of phi values, becomes length of the calculated correlation
 	//   nq1: number of q values for which to calculate correlation
 	//   nq2 (optional): causes computation of full 3D cross-correlation of nphi*nq1*nq2 values
-	//   mask(C)Array: array that contains a mask of pixels to use or disregard
 	CrossCorrelator( float *dataCArray, float *qxCArray, float *qyCArray, int arraylength, 
-						int nphi, int nq1, int nq2 = 0, int16_t *maskCArray = NULL );
+						int nphi, int nq1, int nq2 = 0 );
 	CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arraydata *qyArray, 
-						int nphi, int nq1, int nq2 = 0, arraydata *maskArray = NULL  );
-	~CrossCorrelator();
-	
+						int nphi, int nq1, int nq2 = 0 );
+	~CrossCorrelator();	
 
     void initPrivateVariables();
 	void initInternalArrays();
