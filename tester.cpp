@@ -472,6 +472,8 @@ int Tester::testDataTypes(){
 	cout << "sizeof(unsigned int) =       " << sizeof(unsigned int) << endl;	
 	cout << "sizeof(unsigned short int) = " << sizeof(unsigned short int) << endl;	
 	cout << "sizeof(unsigned long int)  = " << sizeof(unsigned long int) << endl;		
+	cout << "sizeof(int16_t)  =           " << sizeof(int16_t) << endl;
+	cout << "sizeof(int32_t)  =           " << sizeof(int32_t) << endl;
 	cout << "sizeof(float) =              " << sizeof(float) << endl;
 	cout << "sizeof(double) =             " << sizeof(double) << endl;
 	cout << "-----------------------------------------" << endl;

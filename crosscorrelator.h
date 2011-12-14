@@ -27,13 +27,11 @@ public:
 	//   nphi: number of phi values, becomes length of the calculated correlation
 	//   nq1: number of q values for which to calculate correlation
 	//   nq2 (optional): causes computation of full 3D cross-correlation of nphi*nq1*nq2 values
-	//   mask(C)Array: array that contains a mask of pixels to use or disregard
 	CrossCorrelator( float *dataCArray, float *qxCArray, float *qyCArray, int arraylength, 
-						int nphi, int nq1, int nq2 = 0, int16_t *maskCArray = NULL );
+						int nphi, int nq1, int nq2 = 0 );
 	CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arraydata *qyArray, 
-						int nphi, int nq1, int nq2 = 0, arraydata *maskArray = NULL  );
-	~CrossCorrelator();
-	
+						int nphi, int nq1, int nq2 = 0 );
+	~CrossCorrelator();	
 
     void initPrivateVariables();
 	void initInternalArrays();
@@ -46,14 +44,14 @@ public:
 	//		(2) calc coordinates with alg. 2, calc correlation with alg. 2
 	//		(3) calc coordinates with alg. 1, calc correlation with alg. 2
 	//		(4) calc coordinates with alg. 2, calc correlation with alg. 1
-	void run(int master_algorithm = 1, bool calc_SAXS = true);
-	void run(double start_q, double stop_q, int master_algorithm = 1, bool calc_SAXS = true);
+	void run(int master_algorithm = 1);
+	void run(double start_q, double stop_q, int master_algorithm = 1);
 	
 	// alg_coords: (1) full data with interpolation
 	//             (2) only lookup certain values, FAST, but no interpolation
 	// alg_corr:   (1) direct correlation calculation, works on data with gaps, slow
 	//             (2) correlation via Fourier transform, fast, strong artifacts on data with gaps
-	void run(double start_q, double stop_q, int alg_coords, int alg_corr, bool calc_SAXS);
+	void run(double start_q, double stop_q, int alg_coords, int alg_corr);
 	
 	
 	//---------------------------------------------calculations (Jonas's way)
