@@ -56,6 +56,7 @@ CrossCorrelator::CrossCorrelator( float *dataCArray, float *qxCArray, float *qyC
 	//check consistency of input arguments
 	if (nphi > 0) {
 		p_nPhi = nphi;
+		p_deltaphi = (double) 2.0*M_PI/(double)(nPhi());	// make sure deltaphi samples exactly an interval of 2PI
 		p_nLag = (int) ceil(p_nPhi/2.0+1);		
 	} else cerr << "ERROR in CrossCorrelator::constructor: nphi must be a positive integer." << endl;
 	if (nq1 < 2) cerr << "ERROR in CrossCorrelator::constructor: nq1 must be a positive integer larger than 1." << endl;
@@ -69,16 +70,13 @@ CrossCorrelator::CrossCorrelator( float *dataCArray, float *qxCArray, float *qyC
 		p_nQ = (nq1 > nq2) ? nq1 : nq2;
 	}
 	
-	//set default start and stop values for q
-	setQminQmax( 0, nQ() ); 
-	
     //copy data from array over to internal data structure
 	setData(dataCArray, arraylength);
 
 	//set q-calibration arrays (or generate a default)
 	if ( qxCArray && qyCArray ){
 		setQx(qxCArray, arraylength);
-		setQy(qyCArray, arraylength);	
+		setQy(qyCArray, arraylength);
 	}else{
 		initDefaultQ();
 	}
@@ -108,6 +106,7 @@ CrossCorrelator::CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arra
     //set basic properties for the size of the arrays
     setArraySize(dataArray->size());
 	p_nPhi = nphi;
+	p_deltaphi = (double) 2.0*M_PI/(double)(nPhi());	// make sure deltaphi samples exactly an interval of 2PI
 	p_nLag = (int) ceil(p_nPhi/2.0+1);
 	
 	//check, user wants to run in 2D xaca or full 3D xcca mode
@@ -118,9 +117,6 @@ CrossCorrelator::CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arra
 		setXccaEnable(true);
 		p_nQ = (nq1 > nq2) ? nq1 : nq2;
 	}
-
-	//set default start and stop values for q
-	setQminQmax( 0, nQ() );
 	
     //copy data from array over to internal data structure
     setData( dataArray );
@@ -128,7 +124,7 @@ CrossCorrelator::CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arra
 	//set q-calibration arrays (or generate a default)
 	if ( qxArray && qyArray ){
 		setQx( qxArray );
-		setQy( qyArray );	  
+		setQy( qyArray );
 	}else{
 		initDefaultQ();
 	}
@@ -508,25 +504,45 @@ void CrossCorrelator::setMatrixSize( int matrixSize_val ){
 }
 
 //----------------------------------------------------------------------------qmin/qmax
-void CrossCorrelator::setQminQmax( double qmin_val, double qmax_val ){
-	if (p_qmin == qmin_val && p_qmax == qmax_val){
-		//private variables won't get new values, just return
+void CrossCorrelator::setQminQmax( double user_qmin, double user_qmax ){
+	if (p_qmin == user_qmin && p_qmax == user_qmax){
+		//private variables won't get new values, just return without doing anything
 		return;
 	}
 	
-	p_qmin = qmin_val;
-	p_qmax = qmax_val;
+	p_qmin = user_qmin;
+	p_qmax = user_qmax;
 	
-	if (qmax_val <= qmin_val) {
-		cout << "WARNING in CrossCorrelator::setQminQmax(). " 
-			<< "Qmax:" << qmax_val << "  <=  Qmin:" << qmin_val << " -- switching values around." << endl;
-		p_qmin = qmax_val;
-		p_qmax = qmin_val;		
+	if (user_qmax <= user_qmin) {
+		cerr << "WARNING in CrossCorrelator::setQminQmax(). " 
+			<< "Qmax:" << user_qmax << "  <=  Qmin:" << user_qmin << " -- switching values around." << endl;
+		p_qmin = user_qmax;
+		p_qmax = user_qmin;		
 	}
 	
 	//calculate variables that depend on qmax and qmin
 	p_deltaq = (qmax()-qmin())/(double)(nQ()-1);		// make sure deltaq samples start and stop
-	p_deltaphi = (double) 2.0*M_PI/(double)(nPhi());	// make sure deltaphi samples exactly an interval of 2PI
+	
+	
+	//check to see if these user given values are in the range of the pixel vectors
+	double qx_max = qx()->calcMax();
+	double qx_min = qx()->calcMin();
+	double qy_max = qy()->calcMax();
+	double qy_min = qy()->calcMin();
+	
+	if ( abs(qx_max) < user_qmax || abs(qy_max) < user_qmax || abs(qx_min) < user_qmax || abs(qy_min) < user_qmax ){
+		cerr << "WARNING in CrossCorrelator::setQminQmax(). " << endl;
+		cerr << "  Max q-value given by user (" << user_qmax << ") exceeds the largest values in the given pixel arrays!" << endl;
+		cerr << "  qx_min=" << qx_min << ", qx_max=" << qx_max << ", qy_min=" << qy_min << ", qy_max=" << qy_max << endl;
+
+		if ( abs(qx_max) < user_qmin || abs(qy_max) < user_qmin || abs(qx_min) < user_qmin || abs(qy_min) < user_qmin ){
+			cerr << "ERROR in CrossCorrelator::setQminQmax(). " << endl;
+			cerr << "  Even the minimum q-value given by user (" << user_qmin << ") exceeds the largest values in the given pixel arrays!" << endl;
+			cerr << "  Aborting due to invalid conditions" << endl;
+			cerr << "  Check that the given pixel arrays and q-limits are sensible " << endl;
+			throw "User q-value boundaries too large for pixel arrays.";
+		}
+	}
 	
 	//check update variables
 	if (debug() >= 1) {
@@ -767,7 +783,7 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 			if (pixelCount()->get(i,j) > 0.1) {	//compare to 0.1 to make sure float inaccuracies don't make this 'true'
 				polar()->set(i, j, polar()->get(i,j)/pixelCount()->get(i,j) );
 			}
-			if (debug() >= 2){
+			if (debug() > 2){
 				cout << "q: " << qAvg()->get(i) << ", phi: " << p_phiAvg->get(j) 
 					<< " --> count: " << pixelCount()->get(i, j) << endl;
 			}
@@ -875,8 +891,8 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 		}
 
 		//----different options to get the SAXS subtraction needed to generate the fluctuations()
-		//calculateSAXS_FAST();
-		//subtractSAXSmean();
+		//calculateSAXS_FAST();			//instead of calculateSAXS above
+		//subtractSAXSmean();			//instead of calucation loop below
 	
 		//calculate fluctuations
 		delete p_fluctuations;
@@ -1161,7 +1177,9 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( double start_q, double stop
 	if (stop_q < start_q){
 		cerr << "Warning in CrossCorrelator::calculatePolarCoordinates_FAST. stop_q not well defined." << endl;
 		cerr << "(start_q, stop_q) was = (" << start_q << ", " << stop_q << ") ";
-		stop_q = start_q + nQ();
+		double temp = stop_q;
+		stop_q = start_q;
+		start_q = temp;
 		cerr << "is now (" << start_q << ", " << stop_q << ")" << endl;
 	}
 

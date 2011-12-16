@@ -37,12 +37,11 @@ int main (int argc, char * const argv[]) {
 	
 	int nPhi = 512;
 	int nLag = (int)(nPhi/2. + 1);
-	int nQ = 700;
-	int LUTx = 1000;
-	int LUTy = 1000;
+	int nQ = 100;
 	
-	double start_q = 100;			//units of these should match those in pixx, pixy!
-	double stop_q = start_q+nQ;
+	//units of start_q, stop_q should match those in pixx, pixy!
+	double start_q = 0;			
+	double stop_q = 0;
 
 	double shiftX = 0.;
 	double shiftY = 0.;
@@ -54,12 +53,14 @@ int main (int argc, char * const argv[]) {
 	po::options_description desc("Allowed options");
 	desc.add_options()		
 		("help,h",																"produce help message")		
-		("input,i", 			po::value<string>(&file_fn), 					"single primary input file")
+		("input,i", 		po::value<string>(&file_fn), 						"single primary input file")
 		("list,l", 			po::value<string>(&list_fn), 						"file list with input files")
 		("pixelX", 			po::value<string>(&pixx_fn), 						"input file for pixel values x-coordinate")
 		("pixelY", 			po::value<string>(&pixy_fn), 						"input file for pixel values y-coordinate")
 		("numPhi", 			po::value<int>(&nPhi),								"number of angles phi")
 		("numQ", 			po::value<int>(&nQ),								"number of q-values")
+		("startQ", 			po::value<double>(&start_q),							"start value for q")
+		("stopQ", 			po::value<double>(&stop_q),							"stop value for q")
 		("alg,a", 			po::value<int>(&alg),								"set algorithm")
 		("outdir,o", 		po::value<string>(&outdir),							"output directory")
 		("back,b", 			po::value<string>(&back_fn), 						"background file")
@@ -95,8 +96,19 @@ int main (int argc, char * const argv[]) {
 	if (vm.count("pixelY")){
 		cout << "--> using y-values file " << pixy_fn << endl;
 	}
+	if (vm.count("numPhi")){
+		cout << "--> using numPhi value " << nPhi << endl;
+	}
+	if (vm.count("numQ")){
+		cout << "--> using numQ value " << nQ << endl;
+	}
+	if (vm.count("startQ")){
+		cout << "--> using startQ value " << start_q << endl;
+	}
+	if (vm.count("stopQ")){
+		cout << "--> using stopQ value " << stop_q << endl;
+	}
 	if (vm.count("a")) {
-		//cout << "algorithm " << vm["alg"].as<int>() << "." << endl;
 		cout << "--> using algorithm " << alg << endl;
 	}
 	if (vm.count("s")){
@@ -180,7 +192,7 @@ int main (int argc, char * const argv[]) {
 	if (pixx_fn != ""){
 		iofail += io->readFromFile( pixx_fn, qx);
 	}else{
-		//generate a qx-distribution
+		cout << "using a generic qx-distribution" << endl;
 		qx = new array2D( imgY, imgX );
 		qx->gradientAlongDim1(-imgX/2+shiftX, +imgX/2+shiftX);
 	}
@@ -188,7 +200,7 @@ int main (int argc, char * const argv[]) {
 	if (pixy_fn != ""){
 		iofail += io->readFromFile( pixy_fn, qy);
 	}else{
-		//generate a qy-distribution
+		cout << "using a generic qy-distribution" << endl;
 		qy = new array2D( imgY, imgX );
 		qy->gradientAlongDim2(-imgY/2+shiftY, +imgY/2+shiftY);
 	}
@@ -198,24 +210,38 @@ int main (int argc, char * const argv[]) {
 		return 1;
 	}
 	
+	//if stop_q is still zero, give it a reasonable default value
+	if ( stop_q == 0){
+		stop_q = qx->calcMax();
+	}
 	
 	string ext = ".h5";			//standard extension for output (alternatives: .edf, .tif, .txt)
 	cout << "Output will be written to " << (outdir=="" ? "current directory" : outdir) 
 		<< " with extension '" << ext << "'" << endl;
 
 	if (files.size() == 0){
-		cerr << "no files found. aborting." << endl;
-		return 1;
+		cerr << "no input files found. aborting." << endl;
+		exit(2);
 	}
 
 
 	//prepare lookup table once, so it doesn't have to be done every time
-	CrossCorrelator *dummy_cc= new CrossCorrelator(detavg, qx, qy, nPhi, nQ);
-	dummy_cc->createLookupTable(LUTy, LUTx);
-	array2D *LUT = new array2D( *(dummy_cc->lookupTable()) );
-	//io->writeToFile( outDir+"LUT"+ext, LUT );
-	nLag = dummy_cc->nLag();
-	delete dummy_cc;
+	CrossCorrelator *cc= new CrossCorrelator(detavg, qx, qy, nPhi, nQ);
+	
+	if ( mask ){
+		cc->setMask( mask );
+	}
+	cc->setOutputdir( outdir );
+	cc->setDebug(verbose);
+		
+	if (alg == 2 || alg == 4) {
+		int LUTx = 1000;
+		int LUTy = 1000;
+		cc->createLookupTable(LUTy, LUTx);
+	}
+
+	nLag = cc->nLag();
+	
 	array2D *polaravg = new array2D( nQ, nPhi );
 	array2D *corravg = new array2D( nQ, nLag );
 	
@@ -238,21 +264,20 @@ int main (int argc, char * const argv[]) {
 			detavg->zeros();
 		}
 		
-		
-		CrossCorrelator *cc = new CrossCorrelator(image, qx, qy, nPhi, nQ);
-		if ( mask ){
-			cc->setMask( mask );
-		}
-		cc->setOutputdir( outdir );
-		cc->setDebug(verbose);
-		
 		if (back){
 			image->subtractArrayElementwise( back );
 			backavg->addArrayElementwise( back );
 		}
 		
 		//run the calculation...
-		cc->run(start_q, stop_q, alg);
+		try{
+			cc->setData(image);
+			cc->run(start_q, stop_q, alg);
+		}
+		catch(...){
+			cerr << "\nException caught while running the cross correlation. Aborting..." << endl;
+			exit(1);
+		}
 
 		if ( single_out || num_files == 1 ){
 			io->writeToFile( outdir+"corr"+single_desc+ext, cc->autoCorr() );
@@ -295,7 +320,6 @@ int main (int argc, char * const argv[]) {
 	delete backavg;
 	delete polaravg;
 	delete corravg;		
-	delete LUT;	
 	delete io;
 	
     return 0;
