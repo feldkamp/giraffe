@@ -12,11 +12,9 @@
 
 #include "arrayclasses.h"
 
-
 #include <string>
 
-class CrossCorrelator {   
-
+class CrossCorrelator {
 public:
 	//---------------------------------------------constructors & destructor
 	//arguments:
@@ -28,9 +26,9 @@ public:
 	//   nq1: number of q values for which to calculate correlation
 	//   nq2 (optional): causes computation of full 3D cross-correlation of nphi*nq1*nq2 values
 	CrossCorrelator( float *dataCArray, float *qxCArray, float *qyCArray, int arraylength, 
-						int nphi, int nq1, int nq2 = 0 );
+						int nphi, int nq1, int nq2 = 0);
 	CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arraydata *qyArray, 
-						int nphi, int nq1, int nq2 = 0 );
+						int nphi, int nq1, int nq2 = 0);
 	~CrossCorrelator();	
 
     void initPrivateVariables();
@@ -205,7 +203,7 @@ public:
 	
     bool xccaEnable() const;
 	void setXccaEnable( bool enable );
-	
+
 	// general output directory for the class
     std::string outputdir();
     void setOutputdir( std::string dir );
@@ -231,7 +229,7 @@ private:
 	
 	array2D *p_autoCorrelation;
 	array3D *p_crossCorrelation;
-	
+		
 	int p_debug;
 	clock_t p_creation_time;
 	
