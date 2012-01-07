@@ -688,7 +688,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	//-------------------------------------------------------------- writeToHDF5 (generic case)
 	int writeToHDF5_generic( string filename, arraydata *src, int img_rank, hsize_t *dims, int internalType, int verbose ) {
 		if ( !src ){
-			cerr << "ERROR. In arraydataIO::writeToHDF5. No source data. Could not write to file " << filename << endl;
+			cerr << "ERROR. In arraydataIO::writeToHDF5_generic. No source data. Could not write to file " << filename << endl;
 			return 1;
 		}
 		
@@ -845,7 +845,11 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			
 	//-------------------------------------------------------------- writeToHDF5 (1D case)
 	int arraydataIO::writeToHDF5( string filename, array1D *src, int internalType ) const {
-
+		if ( !src ){
+			cerr << "ERROR. In arraydataIO::writeToHDF5 (1D). No source data. Could not write to file " << filename << endl;
+			return 1;
+		}
+		
 		//create dataspace of the right dimensions, pass that down to the more generic function
 		int n = src->dim1();
 		int img_rank = 1;
@@ -859,6 +863,11 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 
 	//-------------------------------------------------------------- writeToHDF5 (2D case)
 	int arraydataIO::writeToHDF5( string filename, array2D *src, int internalType ) const {
+		if ( !src ){
+			cerr << "ERROR. In arraydataIO::writeToHDF5 (2D). No source data. Could not write to file " << filename << endl;
+			return 1;
+		}
+		
 		if (transposeForIO()) { src->transpose(); }
 
 		//create dataspace of the right dimensions, pass that down to the more generic function

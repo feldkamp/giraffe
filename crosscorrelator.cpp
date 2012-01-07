@@ -227,8 +227,8 @@ void CrossCorrelator::destroyInternalArrays(){
 	
 	delete p_q;
 	delete p_phi;	
-	delete qAvg();
-	delete iAvg();
+	delete p_qAvg;
+	delete p_iAvg;
 	delete p_phiAvg;
 	delete p_pixelCount;
 	delete p_fluctuations;
@@ -396,6 +396,10 @@ array1D *CrossCorrelator::qx() const {
 }
 
 void CrossCorrelator::setQx( arraydata *qx ){
+	if (!qx){
+		cerr << "ERROR in CrossCorrelator::setQx! No input array given." << endl;
+		throw;
+	}
 	if (p_qx) {
 		delete p_qx;
 	}
@@ -413,6 +417,10 @@ array1D *CrossCorrelator::qy() const {
 }
 
 void CrossCorrelator::setQy( arraydata *qy ) {
+	if (!qy){
+		cerr << "ERROR in CrossCorrelator::setQy! No input array given." << endl;
+		throw;
+	}
 	if (p_qy) {
 		delete p_qy;
 	}
@@ -530,12 +538,12 @@ void CrossCorrelator::setQminQmax( double user_qmin, double user_qmax ){
 	double qy_max = qy()->calcMax();
 	double qy_min = qy()->calcMin();
 	
-	if ( abs(qx_max) < user_qmax || abs(qy_max) < user_qmax || abs(qx_min) < user_qmax || abs(qy_min) < user_qmax ){
+	if ( fabs(qx_max) < user_qmax || fabs(qy_max) < user_qmax || fabs(qx_min) < user_qmax || fabs(qy_min) < user_qmax ){
 		cerr << "WARNING in CrossCorrelator::setQminQmax(). " << endl;
 		cerr << "  Max q-value given by user (" << user_qmax << ") exceeds the largest values in the given pixel arrays!" << endl;
 		cerr << "  qx_min=" << qx_min << ", qx_max=" << qx_max << ", qy_min=" << qy_min << ", qy_max=" << qy_max << endl;
 
-		if ( abs(qx_max) < user_qmin || abs(qy_max) < user_qmin || abs(qx_min) < user_qmin || abs(qy_min) < user_qmin ){
+		if ( fabs(qx_max) < user_qmin || fabs(qy_max) < user_qmin || fabs(qx_min) < user_qmin || fabs(qy_min) < user_qmin ){
 			cerr << "ERROR in CrossCorrelator::setQminQmax(). " << endl;
 			cerr << "  Even the minimum q-value given by user (" << user_qmin << ") exceeds the largest values in the given pixel arrays!" << endl;
 			cerr << "  Aborting due to invalid conditions" << endl;
