@@ -53,7 +53,7 @@ arraydataIO::~arraydataIO(){
 
 }
 
-int arraydataIO::readFromFile( std::string filename, array1D *&dest) const{
+int arraydataIO::readFromFile( std::string filename, array1D<double> *&dest) const{
 	string ext = getExt( filename );
 	int fail = 0;
 	
@@ -72,7 +72,7 @@ int arraydataIO::readFromFile( std::string filename, array1D *&dest) const{
 	return fail;
 }
 
-int arraydataIO::readFromFile( std::string filename, array2D *&dest) const{
+int arraydataIO::readFromFile( std::string filename, array2D<double> *&dest) const{
 	string ext = getExt( filename );
 	int fail = 0;
 	
@@ -91,7 +91,7 @@ int arraydataIO::readFromFile( std::string filename, array2D *&dest) const{
 	return fail;
 }
 
-int arraydataIO::writeToFile( std::string filename, array1D *src) const{
+int arraydataIO::writeToFile( std::string filename, array1D<double> *src) const{
 	string ext = getExt( filename );
 	int fail = 0;
 	
@@ -110,7 +110,7 @@ int arraydataIO::writeToFile( std::string filename, array1D *src) const{
 	return fail;
 }
 
-int arraydataIO::writeToFile( std::string filename, array2D *src) const{
+int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 	string ext = getExt( filename );
 	int fail = 0;
 	
@@ -137,7 +137,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	// implementation borrowed following vectordata/matrixdata::in() 
 	// of the tomo/matlib package (see http://xray-lens.de )
 	//--------------------------------------------------------------
-	int arraydataIO::readFromEDF( string filename, array1D *&dest ) const{
+	int arraydataIO::readFromEDF( string filename, array1D<double> *&dest ) const{
 		ns_edf::edf *file = new ns_edf::edf;
 		if (file->read_header(filename)){
 			cerr << "Error in arraydataIO::readFromEDF! Could not read EDF file '" << filename << "'." << endl;
@@ -162,7 +162,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		
 		//feed back into dest
 		delete dest;
-		dest = new array1D( temp, dim1 );
+		dest = new array1D<double>( temp, dim1 );
 		
 		delete []temp;
 		delete file;
@@ -173,7 +173,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	//
 	//
 	//--------------------------------------------------------------------------
-	int arraydataIO::readFromEDF( string filename, array2D *&dest ) const{
+	int arraydataIO::readFromEDF( string filename, array2D<double> *&dest ) const{
 		ns_edf::edf *file = new ns_edf::edf;
 
 		if (file->read_header(filename)){
@@ -198,7 +198,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		
 		//feed back into dest
 		delete dest;
-		dest = new array2D( temp, dim1, dim2 );
+		dest = new array2D<double>( temp, dim1, dim2 );
 		//dest->arraydata::copy( temp, dim1*dim2);
 		
 		delete []temp;
@@ -238,7 +238,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	//-------------------------------------------------------------- writeToEDF (1D)
 	//
 	//--------------------------------------------------------------
-	int arraydataIO::writeToEDF( string filename, array1D *src ) const {
+	int arraydataIO::writeToEDF( string filename, array1D<double> *src ) const {
 		if ( !src ){
 			cerr << "ERROR. In arraydataIO::writeToEDF(1D). No source data. Could not write to file " << filename << endl;
 			return 1;
@@ -258,7 +258,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	//-------------------------------------------------------------- writeToEDF (2D)
 	//
 	//--------------------------------------------------------------
-	int arraydataIO::writeToEDF( string filename, array2D *src ) const {
+	int arraydataIO::writeToEDF( string filename, array2D<double> *src ) const {
 		if ( !src ){
 			cerr << "ERROR. In arraydataIO::writeToEDF(2D). No source data. Could not write to file " << filename << endl;
 			return 1;
@@ -283,19 +283,19 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	}
 
 #else
-	int arraydataIO::readFromEDF( string filename, array1D *&dest ) const{
+	int arraydataIO::readFromEDF( string filename, array1D<double> *&dest ) const{
 		cerr << "======== WARNING! Dummy function. Nothing read from EDF. ======== " << endl; 
 		return 1;
 	}
-	int arraydataIO::readFromEDF( string filename, array2D *&dest ) const{
+	int arraydataIO::readFromEDF( string filename, array2D<double> *&dest ) const{
 		cerr << "======== WARNING! Dummy function. Nothing read from EDF. ======== " << endl; 
 		return 1;
 	}
-	int arraydataIO::writeToEDF( string filename, array1D *src ) const {
+	int arraydataIO::writeToEDF( string filename, array1D<double> *src ) const {
 		cerr << "======== WARNING! Dummy function. Nothing written to EDF.======== " << endl; 
 		return 1;
 	}
-	int arraydataIO::writeToEDF( string filename, array2D *src ) const {
+	int arraydataIO::writeToEDF( string filename, array2D<double> *src ) const {
 		cerr << "======== WARNING! Dummy function. Nothing written to EDF.======== " << endl; 
 		return 1;
 	}
@@ -311,7 +311,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	// implementation borrowed following matrixdata::tiffin 
 	// of the tomo/matlib package (see http://xray-lens.de )
 	//--------------------------------------------------------------------------
-	int arraydataIO::readFromTiff( string filename, array2D *&dest ) const {
+	int arraydataIO::readFromTiff( string filename, array2D<double> *&dest ) const {
 		int retval = 0;
 		TIFF *tiff= TIFFOpen( filename.c_str(), "r" );
 
@@ -325,7 +325,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 
 			//allocate data to write image to		
 			delete dest;
-			dest = new array2D(width, height);
+			dest = new array2D<double>(width, height);
 			
 			if(verbose()){
 				cout << "Reading '" << filename << "' (TIFF file)"
@@ -374,7 +374,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	// implementation borrowed following matrixdata::tiff16out 
 	// of the tomo/matlib package (see http://xray-lens.de )
 	//--------------------------------------------------------------------------
-	int arraydataIO::writeToTiff( string filename, array2D *src, int scaleFlag ) const {
+	int arraydataIO::writeToTiff( string filename, array2D<double> *src, int scaleFlag ) const {
 		if ( !src ){
 			cerr << "ERROR. In arraydataIO::writeToTiff. No source data. Could not write to file " << filename << endl;
 			return 1;
@@ -463,17 +463,17 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			}
 			return 0;
 		}else{
-			cerr << "Error in array2D::writeToTiff! Could not open '" << filename << "' for writing!" << endl;
+			cerr << "Error in array2D<double>::writeToTiff! Could not open '" << filename << "' for writing!" << endl;
 			return 1;	
 		}
 	}
 
 #else
-	int arraydataIO::readFromTiff( string filename, array2D *&dest ) const {
+	int arraydataIO::readFromTiff( string filename, array2D<double> *&dest ) const {
 		cerr << "======== WARNING! Dummy function. Nothing read from Tiff. ======== " << endl; 
 		return 1;
 	}
-	int arraydataIO::writeToTiff( string filename, array2D *src, int scaleFlag ) const {
+	int arraydataIO::writeToTiff( string filename, array2D<double> *src, int scaleFlag ) const {
 		cerr << "======== WARNING! Dummy function. Nothing written to Tiff. ======== " << endl; 
 		return 1;
 	}
@@ -634,22 +634,22 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		return 0;
 	}
 
-	//-------------------------------------------------------------- readFromHDF5 (return array1D object)
-	int arraydataIO::readFromHDF5( string filename, array1D *&dest ) const {
+	//-------------------------------------------------------------- readFromHDF5 (return array1D<double> object)
+	int arraydataIO::readFromHDF5( string filename, array1D<double> *&dest ) const {
 		int img_rank = 0;
 		hsize_t *dims = 0;
 		arraydata<double> *readarray = 0;
 		int fail = readFromHDF5_generic( filename, readarray, img_rank, dims, verbose() );
 		if (!fail){
 			delete dest;
-			dest = new array1D( readarray );
+			dest = new array1D<double>( readarray );
 		}
 		delete readarray;
 		return fail;		
 	}
 
-	//-------------------------------------------------------------- readFromHDF5 (return array2D object)
-	int arraydataIO::readFromHDF5( string filename, array2D *&dest ) const {
+	//-------------------------------------------------------------- readFromHDF5 (return array2D<double> object)
+	int arraydataIO::readFromHDF5( string filename, array2D<double> *&dest ) const {
 		int img_rank = 0;
 		hsize_t *dims = 0;
 		arraydata<double> *readarray = 0;
@@ -659,7 +659,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			int cols = (int)dims[0];
 			int rows = (int)dims[1];
 			if (img_rank == 1){ cols = 1; }
-			dest = new array2D( readarray, rows, cols );
+			dest = new array2D<double>( readarray, rows, cols );
 			if (verbose()>2){
 				cout << "dest: " << dest << ", dims " << dest->dim1() << " x " << dest->dim2() 
 					<< ", rows:" << rows << ", cols:" << cols << endl;
@@ -841,7 +841,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	}
 			
 	//-------------------------------------------------------------- writeToHDF5 (1D case)
-	int arraydataIO::writeToHDF5( string filename, array1D *src, int internalType ) const {
+	int arraydataIO::writeToHDF5( string filename, array1D<double> *src, int internalType ) const {
 		if ( !src ){
 			cerr << "ERROR. In arraydataIO::writeToHDF5 (1D). No source data. Could not write to file " << filename << endl;
 			return 1;
@@ -859,7 +859,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	}
 
 	//-------------------------------------------------------------- writeToHDF5 (2D case)
-	int arraydataIO::writeToHDF5( string filename, array2D *src, int internalType ) const {
+	int arraydataIO::writeToHDF5( string filename, array2D<double> *src, int internalType ) const {
 		if ( !src ){
 			cerr << "ERROR. In arraydataIO::writeToHDF5 (2D). No source data. Could not write to file " << filename << endl;
 			return 1;
@@ -919,11 +919,11 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	}
 	
 #else //define empty dummy functions
-	int arraydataIO::readFromHDF5( string filename, array2D *&dest ) const { 
+	int arraydataIO::readFromHDF5( string filename, array2D<double> *&dest ) const { 
 		cerr << "======== WARNING! Dummy function. Nothing read from HDF5. ======== " << endl;
 		return 1;
 	}
-	int arraydataIO::writeToHDF5( string filename, array2D *src, int type, int debug ) const { 
+	int arraydataIO::writeToHDF5( string filename, array2D<double> *src, int type, int debug ) const { 
 		cerr << "======== WARNING! Dummy function. Nothing written to HDF5. ======== " << endl; 
 		return 1;
 	}
@@ -934,12 +934,12 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 //-------------------------------------------------------------- readFromASCII (1D)
 //
 //-------------------------------------------------------------- 
-int arraydataIO::readFromASCII( std::string filename, array1D *&dest ) const {
-	array2D *twoD = 0;
+int arraydataIO::readFromASCII( std::string filename, array1D<double> *&dest ) const {
+	array2D<double> *twoD = 0;
 	int fail = readFromASCII( filename, twoD );
 	if (!fail){
 		delete dest;
-		dest = new array1D( twoD );
+		dest = new array1D<double>( twoD );
 	}else{
 		return fail;
 	}
@@ -950,7 +950,7 @@ int arraydataIO::readFromASCII( std::string filename, array1D *&dest ) const {
 //-------------------------------------------------------------- readFromASCII (12D)
 //
 //-------------------------------------------------------------- 
-int arraydataIO::readFromASCII( std::string filename, array2D *&dest ) const {
+int arraydataIO::readFromASCII( std::string filename, array2D<double> *&dest ) const {
 	if (verbose()) {
 		cout << "Reading from ASCII file " << filename << endl;
 	}
@@ -982,7 +982,7 @@ int arraydataIO::readFromASCII( std::string filename, array2D *&dest ) const {
 		
 		// transfer to 'dest'
 		delete dest;
-		dest = new array2D( linecount, colcount );
+		dest = new array2D<double>( linecount, colcount );
 		for( unsigned int row = 0; row < linecount; row++ ){
 			for( unsigned col = 0; col < colcount; col++ ){
 				std::istringstream isst( matrix_str.at(row).at(col) );
@@ -1003,7 +1003,7 @@ int arraydataIO::readFromASCII( std::string filename, array2D *&dest ) const {
 //-------------------------------------------------------------- writeToASCII (1D)
 //
 //-------------------------------------------------------------- 
-int arraydataIO::writeToASCII( std::string filename, array1D *src, int format ) const {
+int arraydataIO::writeToASCII( std::string filename, array1D<double> *src, int format ) const {
 	if ( !src ){
 		cerr << "ERROR in arraydataIO::writeToASCII (1D). No source data. Could not write to file " << filename << endl;
 		return 1;
@@ -1032,7 +1032,7 @@ int arraydataIO::writeToASCII( std::string filename, array1D *src, int format ) 
 //-------------------------------------------------------------- writeToASCII (2D)
 //
 //-------------------------------------------------------------- 
-int arraydataIO::writeToASCII( std::string filename, array2D *src, int format ) const {
+int arraydataIO::writeToASCII( std::string filename, array2D<double> *src, int format ) const {
 	if ( !src ){
 		cerr << "ERROR in arraydataIO::writeToASCII (2D). No source data. Could not write to file " << filename << endl;
 		return 1;
@@ -1062,7 +1062,7 @@ int arraydataIO::writeToASCII( std::string filename, array2D *src, int format ) 
 //-------------------------------------------------------------- writeToASCII (3D)
 //
 //-------------------------------------------------------------- 
-int arraydataIO::writeToASCII( std::string filename, array3D *src, int format ) const {
+int arraydataIO::writeToASCII( std::string filename, array3D<double> *src, int format ) const {
 	if ( !src ){
 		cerr << "ERROR in arraydataIO::writeToASCII (3D). No source data. Could not write to file " << filename << endl;
 		return 1;
@@ -1109,7 +1109,7 @@ int arraydataIO::verbose() const{
 
 
 //-----------------------------------------------------test pattern
-void arraydataIO::generateTestPattern( array2D *img, int type ){
+void arraydataIO::generateTestPattern( array2D<double> *img, int type ){
 	if (img == 0){
 		cerr << "Error in arraydataIO::generateTestPattern. Image not allocated." << endl;
 	}

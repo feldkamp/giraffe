@@ -67,18 +67,18 @@ public:
 	// and then handed to the CrossCorrelator for each shot)
 	int createLookupTable( int Ny, int Nx );
 	void calcLookupTableVariables( int lutNy, int lutNx );
-	array2D *lookupTable() const;  
-	void setLookupTable( array2D *LUT );
+	array2D<double> *lookupTable() const;  
+	void setLookupTable( array2D<double> *LUT );
 
 	template <class T>
 	void setLookupTable( T *cLUT, unsigned int LUT_dim1, unsigned int LUT_dim2 ){
 		calcLookupTableVariables( LUT_dim1, LUT_dim2 );	
 		delete p_table;
-		p_table = new array2D(cLUT, LUT_dim1, LUT_dim2);
+		p_table = new array2D<double>(cLUT, LUT_dim1, LUT_dim2);
 		}
 		
     // looks up the value closest to xcoord, ycoord in the data
-    double lookup( double xcoord, double ycoord, array1D *dataArray ) const;
+    double lookup( double xcoord, double ycoord, array1D<double> *dataArray ) const;
 	
 	//normalize the scattering data with the average for that specific q
 	int subtractSAXSmean();
@@ -88,7 +88,7 @@ public:
     int calculatePolarCoordinates_FAST(double start_q, double stop_q );
 	
 	// "worker" function for the one above
-	int calculatePolarCoordinates_FAST( array1D* image, array2D* polar2D, 
+	int calculatePolarCoordinates_FAST( array1D<double>* image, array2D<double>* polar2D, 
 										int number_phi,  double start_phi, double stop_phi, 
 										int number_q, double start_q, double stop_q ) const;
 	
@@ -100,8 +100,8 @@ public:
 	// "worker" functions for the one above:	
 	// compute correlations in a 2D polar coordinate matrix
 	// both functions do not change internal data in the class
-	int autocorrelateFFT(array2D *polar2D, array2D *corr2D) const;
-	int crosscorrelateFFT(array2D *polar2D, array3D *corr3D) const;
+	int autocorrelateFFT(array2D<double> *polar2D, array2D<double> *corr2D) const;
+	int crosscorrelateFFT(array2D<double> *polar2D, array3D<double> *corr3D) const;
 	
 	
 	//---------------------------------------------setters & getters
@@ -114,51 +114,51 @@ public:
 	double deltaphi() const;	
 	
 	//---------------------------------------------getters for calculated arrays
-	array1D *qAvg() const;
-	array1D *phiAvg() const;
-	array2D *pixelCount() const;
-	array1D *iAvg() const;
-	array2D *fluctuations() const;	// intensity fluctuations in polar coordinates produced by calculatePolarCoordinates()
-	array2D *polar() const;			// intensities in polar coordinates produced by calculatePolarCoordinates()/calculatePolarCoordinates_FAST()
-	array2D *mask_polar() const;	// mask in polar coordinates produced by calculatePolarCoordinates_FAST()
-	array2D *autoCorr() const;
+	array1D<double> *qAvg() const;
+	array1D<double> *phiAvg() const;
+	array2D<double> *pixelCount() const;
+	array1D<double> *iAvg() const;
+	array2D<double> *fluctuations() const;	// intensity fluctuations in polar coordinates produced by calculatePolarCoordinates()
+	array2D<double> *polar() const;			// intensities in polar coordinates produced by calculatePolarCoordinates()/calculatePolarCoordinates_FAST()
+	array2D<double> *mask_polar() const;	// mask in polar coordinates produced by calculatePolarCoordinates_FAST()
+	array2D<double> *autoCorr() const;
 	double getAutoCorrelation(unsigned index1, unsigned index2) const;
-	array3D *crossCorr() const;	
+	array3D<double> *crossCorr() const;	
 	double getCrossCorrelation(unsigned index1, unsigned index2, unsigned index3) const;
 	
 	//---------------------------------------------setters & getters for input data
-	array1D *data() const;
+	array1D<double> *data() const;
 	void setData( arraydata<double> *data );
 	template <class T>
 		void setData( T *dataCArray, unsigned int size ){
 			if (p_data) {
 				delete p_data;
 			}
-			p_data = new array1D( dataCArray, size );
+			p_data = new array1D<double>( dataCArray, size );
 			setArraySize( size );
 		}
 	
-	array1D *qx() const;
+	array1D<double> *qx() const;
 	void setQx( arraydata<double> *qx );
 	template <class T>
 		void setQx( T *qxArray, unsigned int size ){
 			if (p_qx) {
 				delete p_qx;
 			}
-			p_qx = new array1D( qxArray, size );
+			p_qx = new array1D<double>( qxArray, size );
 		}
 
-	array1D *qy() const;
+	array1D<double> *qy() const;
 	void setQy( arraydata<double> *qy );
 	template <class T>
 		void setQy( T *qyArray, unsigned int size ){
 			if (p_qy) {
 				delete p_qy;
 			}
-			p_qy = new array1D( qyArray, size );
+			p_qy = new array1D<double>( qyArray, size );
 		}
 
-	array1D *mask() const;
+	array1D<double> *mask() const;
 	void setMask( arraydata<double> *mask );
 	template <class T>
 		void setMask(T *maskCArray, unsigned int size){
@@ -166,7 +166,7 @@ public:
 				delete p_mask;
 			}
 			if (maskCArray) {
-				p_mask = new array1D( maskCArray, size );
+				p_mask = new array1D<double>( maskCArray, size );
 				setMaskEnable( true );
 				normalizeMask();
 			}else{
@@ -194,7 +194,7 @@ public:
 	double phimax() const;
 	void setPhimax( double phimax_val );
 	
-	// jas: qmaxCArray() could easily be rewritten to use array1D qx, qy instead of CArrays if preferable
+	// jas: qmaxCArray() could easily be rewritten to use array1D<double> qx, qy instead of CArrays if preferable
 	double qmax2CArray( float *qxCArray, float *qyCArray, int arraylength ); // calculates qmax from 2 CArrays
     double qmax1CArray( float *qCArray, int arraylength ); // calculates qmax from 1 CArray
 	
@@ -221,14 +221,14 @@ private:
 	bool p_xcca_enable;			// enables/disables cross-correlations (if disabled only autocorrelations are calculated)
     std::string p_outputdir;  	// the output directory if anything is dumped from withing this class (default is working dir)
 
-	array1D *p_data;			// data storage
-	array1D *p_qx;				// pixel x coordinate
-	array1D *p_qy;				// pixel y coordinate
-	array1D *p_mask;			// mask used to remove bad pixels
-	array2D *p_polar;			// intensities in polar coordinates
+	array1D<double> *p_data;			// data storage
+	array1D<double> *p_qx;				// pixel x coordinate
+	array1D<double> *p_qy;				// pixel y coordinate
+	array1D<double> *p_mask;			// mask used to remove bad pixels
+	array2D<double> *p_polar;			// intensities in polar coordinates
 	
-	array2D *p_autoCorrelation;
-	array3D *p_crossCorrelation;
+	array2D<double> *p_autoCorrelation;
+	array3D<double> *p_crossCorrelation;
 		
 	int p_debug;
 	clock_t p_creation_time;
@@ -244,15 +244,15 @@ private:
 	int p_nPhi;					// formerly samplingAngle
 	int p_nLag;					// formerly samplingLag
 
-	array1D *p_q;				// magnitude of q-vector (1st dimension in correlation) for each pixel
-	array1D *p_phi;				// angle (2nd dimension in correlation) for each pixel
+	array1D<double> *p_q;				// magnitude of q-vector (1st dimension in correlation) for each pixel
+	array1D<double> *p_phi;				// angle (2nd dimension in correlation) for each pixel
 	
-	array1D *p_qAvg;			// vector of output magnitudes of q-vector
-	array1D *p_iAvg;			// vector of output average intensities for magnitudes of q-vector
-	array1D *p_phiAvg;			// vector of output angles
-	array2D *p_pixelCount;		// pixel counts in polar coordinates
+	array1D<double> *p_qAvg;			// vector of output magnitudes of q-vector
+	array1D<double> *p_iAvg;			// vector of output average intensities for magnitudes of q-vector
+	array1D<double> *p_phiAvg;			// vector of output angles
+	array2D<double> *p_pixelCount;		// pixel counts in polar coordinates
 	
-	array2D *p_fluctuations;	// intensity fluctuations in polar coordinates
+	array2D<double> *p_fluctuations;	// intensity fluctuations in polar coordinates
     
 	// function trackers
     int p_tracker_calculatePolarCoordinates;	// tracker for calculatePolarCoordinates()
@@ -260,8 +260,8 @@ private:
 	int p_tracker_calculateXCCA;				// tracker for calculateXCCA()
 	
 	//-------------------------------------------------required for alg2
-	array2D *p_mask_polar;
-	array2D *p_table;					//lookup table
+	array2D<double> *p_mask_polar;
+	array2D<double> *p_table;					//lookup table
 
 	double p_qxmax;
 	double p_qymax;	

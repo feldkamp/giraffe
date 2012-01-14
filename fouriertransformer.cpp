@@ -32,7 +32,7 @@ FourierTransformer::~FourierTransformer(){
 
 
 //------------------------------------------------------------- transformForward
-int FourierTransformer::transformForward( array1D *&f_real, array1D *&f_imag ){
+int FourierTransformer::transformForward( array1D<double> *&f_real, array1D<double> *&f_imag ){
 	int fail = 0;
 	setData( f_real, f_imag );
 	fail = forwardFFT();
@@ -42,7 +42,7 @@ int FourierTransformer::transformForward( array1D *&f_real, array1D *&f_imag ){
 }
 
 //------------------------------------------------------------- transformInverse
-int FourierTransformer::transformInverse( array1D *&f_real, array1D *&f_imag ){
+int FourierTransformer::transformInverse( array1D<double> *&f_real, array1D<double> *&f_imag ){
 	int fail = 0;
 	setData( f_real, f_imag );
 	fail = forwardFFT();
@@ -56,7 +56,7 @@ int FourierTransformer::transformInverse( array1D *&f_real, array1D *&f_imag ){
 }
 
 //------------------------------------------------------------- powerDensity
-int FourierTransformer::magnitudeSquared( array1D *&f_real, array1D *&f_imag ){
+int FourierTransformer::magnitudeSquared( array1D<double> *&f_real, array1D<double> *&f_imag ){
 	int fail = 0;
 	setData( f_real, f_imag );
 	fail = forwardFFT();
@@ -80,7 +80,7 @@ int FourierTransformer::magnitudeSquared( array1D *&f_real, array1D *&f_imag ){
 //   of the absolute square of F
 //   http://mathworld.wolfram.com/Wiener-KhinchinTheorem.html
 //-------------------------------------------------------------------------
-int FourierTransformer::autocorrelation( array1D *&f_real, array1D *&f_imag ){
+int FourierTransformer::autocorrelation( array1D<double> *&f_real, array1D<double> *&f_imag ){
 	int fail = 0;
 	fail += magnitudeSquared( f_real, f_imag);
 	fail += transformInverse( f_real, f_imag);
@@ -95,15 +95,15 @@ int FourierTransformer::autocorrelation( array1D *&f_real, array1D *&f_imag ){
 //
 //   http://mathworld.wolfram.com/Cross-CorrelationTheorem.html
 //-------------------------------------------------------------------------
-int FourierTransformer::crosscorrelation( array1D *&f_real, array1D *&f_imag , array1D *&g_real, array1D *&g_imag ){
+int FourierTransformer::crosscorrelation( array1D<double> *&f_real, array1D<double> *&f_imag , array1D<double> *&g_real, array1D<double> *&g_imag ){
 	int fail = 0;
 	fail += transformForward( f_real, f_imag );
 	fail += transformForward( g_real, g_imag );	
 
     // compute F * G_cc (complex conjugate)
     // if F = a+ib, G = c+id, then FG_cc = ac + bd + ibc - iad
-    array1D *FG_real = new array1D( f_real->size() );
-    array1D *FG_imag = new array1D( f_real->size() );
+    array1D<double> *FG_real = new array1D<double>( f_real->size() );
+    array1D<double> *FG_imag = new array1D<double>( f_real->size() );
     for (int i=0; i<f_real->size(); i++) {
         FG_real->set( i,   ( f_real->get(i)*g_real->get(i) + f_imag->get(i)*g_imag->get(i) ) );   // ac + bd
         FG_imag->set( i,   ( f_imag->get(i)*g_real->get(i) - f_real->get(i)*g_imag->get(i) ) );   // i(bc - ad)
@@ -158,7 +158,7 @@ int FourierTransformer::crosscorrelation( array1D *&f_real, array1D *&f_imag , a
 //=================================================================================
 
 //-------------------------------------------------------------setData
-void FourierTransformer::setData( const array1D *real, const array1D *imag ){
+void FourierTransformer::setData( const array1D<double> *real, const array1D<double> *imag ){
 	p_n = real->size();
 	
 	if ( p_n != imag->size() ){
@@ -200,15 +200,15 @@ void FourierTransformer::setData( const array1D *real, const array1D *imag ){
 
 //------------------------------------------------------------- getData
 //feed 'out' vector back into the argument arrays that were passed
-void FourierTransformer::getData( array1D *&real, array1D *&imag ) const {
+void FourierTransformer::getData( array1D<double> *&real, array1D<double> *&imag ) const {
     
 	if (real->size() != p_n){						//if input array has wrong size, resize
 		delete real;
-		real = new array1D(p_n);
+		real = new array1D<double>(p_n);
 	}
 	if (imag->size() != p_n){
 		delete imag;
-		imag = new array1D(p_n);
+		imag = new array1D<double>(p_n);
 	}
     
     for (int i=0; i<p_n; i++) {               
@@ -224,8 +224,8 @@ void FourierTransformer::getData( array1D *&real, array1D *&imag ) const {
 
 //------------------------------------------------------------- getReal
 //return by copying the real part of p_out
-array1D FourierTransformer::getReal() const {
-    array1D real = array1D(p_n);
+array1D<double> FourierTransformer::getReal() const {
+    array1D<double> real = array1D<double>(p_n);
     for (int i=0; i<p_n; i++) {               
         real.set(i, p_out[i][0]);
     }
@@ -238,8 +238,8 @@ array1D FourierTransformer::getReal() const {
 
 //------------------------------------------------------------- getImag
 // return by copying the imaginary part of p_out
-array1D FourierTransformer::getImag() const {
-    array1D imag = array1D(p_n);
+array1D<double> FourierTransformer::getImag() const {
+    array1D<double> imag = array1D<double>(p_n);
     for (int i=0; i<p_n; i++) {               
         imag.set(i, p_out[i][1]);
     }

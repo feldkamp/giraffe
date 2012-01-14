@@ -498,11 +498,11 @@ public:
 
 //=================================================================================
 //
-// array1 -- 1-dimensional array
+// array1D -- 1-dimensional array
 //
 //=================================================================================
 template<typename T>
-class array1 : public arraydata<T>{
+class array1D : public arraydata<T>{
 	
 private:
 	int p_dim1;
@@ -513,25 +513,25 @@ private:
 			
 public:
 	//-----------------------------------------------------------------------------------------constructors
-	array1( unsigned int size_dim1 = 1) 
+	array1D( unsigned int size_dim1 = 1) 
 			: arraydata<T>(size_dim1){
 		setDim( size_dim1 );
 	}                          
-    array1( arraydata<T>* array )
+    array1D( arraydata<T>* array )
 			: arraydata<T>( array ) {
 		setDim( array->size() );
 	}
-	array1( std::vector<T> vec )
+	array1D( std::vector<T> vec )
 			: arraydata<T>( vec ) {
 		setDim( (int) vec.size() );
 	}
-	template <typename arrayT> array1( arrayT *CArray, unsigned int size_dim1 )
+	template <typename arrayT> array1D( arrayT *CArray, unsigned int size_dim1 )
         	: arraydata<T>( CArray, size_dim1 ){
 		setDim( size_dim1 );
 	}
 
 	//-----------------------------------------------------------------------------------------copy functions    
-    void copy( const array1& src ){
+    void copy( const array1D& src ){
 		setDim( src.size() );
 		arraydata<T>::copy( src );
 	}
@@ -564,13 +564,13 @@ public:
 
 //=================================================================================
 //
-// array2 -- 2-dimensional array
+// array2D -- 2-dimensional array
 //
 // this class, while as generic as possible, adopts the convention (rows, columns)
 // of packages like matlab or python for its arguments
 //=================================================================================
 template<typename T>
-class array2 : public arraydata<T>{
+class array2D : public arraydata<T>{
 private:
 	int p_dim1;
 	int p_dim2;
@@ -583,26 +583,26 @@ private:
 public:
 	//-----------------------------------------------------------------------------------------constructors
 	//empty 2D array 
-	array2( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1 )
+	array2D( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1 )
 			: arraydata<T>(size_dim1*size_dim2){
 		setDim( size_dim1, size_dim2 );
 	}
 	
 	//init with copy of input 2D array
-	array2( array2<T>* array ) 
+	array2D( array2D<T>* array ) 
 			: arraydata<T>(array){
 		setDim( array->dim1(), array->dim2() );
 	}
 	
 	//init with any type of pointer to array (and two given dimensions), intended for classic C-arrays
 	template <typename pointerT> 
-	array2( pointerT *dataCArray, unsigned int size_dim1, unsigned int size_dim2 )
+	array2D( pointerT *dataCArray, unsigned int size_dim1, unsigned int size_dim2 )
 			: arraydata<T>( dataCArray, size_dim1*size_dim2 ){
 		setDim( size_dim1, size_dim2 );
 	}
 
 	//-----------------------------------------------------------------------------------------copy functions
-    void copy( const array2<T>& src ){
+    void copy( const array2D<T>& src ){
 		setDim( src.dim1(), src.dim2() );
 		arraydata<T>::copy( src.data() );
 	}
@@ -631,7 +631,7 @@ public:
 	
 	//-----------------------------------------------------------------------------------------data extraction
 	//returns one dimensional column, extracted at the specified column number
-    int getCol( int colnum, array1<double> *&col ) const						
+    int getCol( int colnum, array1D<double> *&col ) const						
 	{
 		if (colnum >= dim2() || colnum < 0){ 
 			std::cerr << "Error in array2D::getCol. column number " << colnum << " too big or below zero." << std::endl; 
@@ -646,7 +646,7 @@ public:
 		if (col->size() != this->dim1()) {		
 			delete col;
 			try{
-				col = new array1<double>( dim1() );
+				col = new array1D<double>( dim1() );
 			}catch (std::exception& e){
 				std::cerr << "Error in array2D::getCol. Could not allocate column." << std::endl; 
 				std::cerr << "Standard exception: " << e.what() << std::endl;
@@ -661,7 +661,7 @@ public:
 	}
 	
 	//sets a one-dimensional column, beginning at a 'start' value
-	void setCol( int colnum, const array1<double> *col, int start=0 )				
+	void setCol( int colnum, const array1D<double> *col, int start=0 )				
 	{
 		if (!col){
 			std::cerr << "Error in array2D::setCol. Passed 'col' not allocated." << std::endl;
@@ -677,7 +677,7 @@ public:
 	}		
     
 	//returns one-dimensional 'row' or 'col'
-    int getRow( int rownum, array1<double> *&row ) const 	                   
+    int getRow( int rownum, array1D<double> *&row ) const 	                   
 	{
 		if (rownum >= dim1() || rownum < 0){ 
 			std::cerr << "Error in array2D::getRow. row number " << rownum << " too big or below zero." << std::endl; 
@@ -692,7 +692,7 @@ public:
 		if (row->size() != this->dim2()) {
 			delete row;
 			try{
-				row = new array1<double>( this->dim2() );
+				row = new array1D<double>( this->dim2() );
 			}catch (std::exception& e){
 				std::cerr << "Error in array2D::getRow. Could not allocate row." << std::endl;
 				std::cerr << "Standard exception: " << e.what() << std::endl;
@@ -706,7 +706,7 @@ public:
 		return 0;
 	}
 	
-	void setRow( int rownum, const array1<double> *row, int start=0 ){
+	void setRow( int rownum, const array1D<double> *row, int start=0 ){
 		if (!row){
 			std::cerr << "Error in array2D::setRow. Passed 'row' not allocated." << std::endl;
 			throw;
@@ -720,9 +720,9 @@ public:
 		}
 	}
 	
-	int calcAvgRow( array1<double> *&row ) const{
+	int calcAvgRow( array1D<double> *&row ) const{
 		delete row;
-		row = new array1<double>( this->dim1() );
+		row = new array1D<double>( this->dim1() );
 		for (int c = 0; c < dim2(); c++){
 			double sum = 0;
 			for (int r = 0; r < dim1(); r++){
@@ -733,12 +733,12 @@ public:
 		return 0;
 	}
 	
-	int calcAvgCol( array1<double> *&col ) const{
+	int calcAvgCol( array1D<double> *&col ) const{
 		delete col;
-		col = new array1<double>( this->dim1() );
-		for (int r = 0; r < dim1(); r++){
+		col = new array1D<double>( this->dim1() );
+		for (unsigned int r = 0; r < dim1(); r++){
 			double sum = 0;
-			for (int c = 0; c < dim2(); c++){
+			for (unsigned int c = 0; c < dim2(); c++){
 				sum += get(r,c);
 			}
 			col->set(r, sum/dim2());
@@ -753,7 +753,7 @@ public:
 			return;
 		}
 		
-		array2<double> *old = new array2<double>(*this);
+		array2D<double> *old = new array2D<double>(*this);
 		
 		//swap dimensions, total arraydata length stays the same
 		setDim( old->dim2(),old->dim1() );
@@ -767,7 +767,7 @@ public:
 	
 	void flipud()														//flip up-down
 	{
-		array2<double> *old = new array2<double>(*this);
+		array2D<double> *old = new array2D<double>(*this);
 		for ( int j = 0; j < dim2(); j++ ){
 			for ( int i = 0; i < dim1(); i++ ){
 				this->set( i, j, old->get(dim1()-1-i,j) );
@@ -778,7 +778,7 @@ public:
 	
 	void fliplr()														//flip left-right
 	{
-		array2<double> *old = new array2<double>(*this);
+		array2D<double> *old = new array2D<double>(*this);
 		for ( int i = 0; i < dim1(); i++ ){
 			for ( int j = 0; j < dim2(); j++ ){
 				this->set( i, j, old->get(i,dim2()-1-i) );
@@ -791,7 +791,7 @@ public:
 	//linear gradient along one dimension, same along other dimension
 	void gradientAlongDim1( double lowlim, double highlim ){	//set elements to a range of values, given by the boundaries
 		for (int j = 0; j < dim2(); j++) {
-			array1<double> *col = new array1<double>( dim1() );
+			array1D<double> *col = new array1D<double>( dim1() );
 			col->range(lowlim, highlim);
 			this->setCol(j, col);
 			delete col;
@@ -800,7 +800,7 @@ public:
 				
 	void gradientAlongDim2( double lowlim, double highlim ){	//set elements to a range of values, given by the boundaries
 		for (int i = 0; i < dim1(); i++) {
-			array1<double> *row = new array1<double>( dim2() );
+			array1D<double> *row = new array1D<double>( dim2() );
 			row->range(lowlim, highlim);
 			this->setRow(i, row);
 			delete row;
@@ -828,28 +828,28 @@ public:
 };
 
 
-//special case of the array2 constructor: if the pointer is a general arraydata<double> object
+//special case of the array2D constructor: if the pointer is a general arraydata<double> object
 //useful to create 2D objects from general arraydata objects ...
 template <> template <>
-inline array2<double>::array2( arraydata<double> *data, unsigned int size_dim1, unsigned int size_dim2)
+inline array2D<double>::array2D( arraydata<double> *data, unsigned int size_dim1, unsigned int size_dim2)
 		: arraydata<double>( data )
 {
 	setDim( size_dim1, size_dim2 );
 	if (data->size() != size_dim1*size_dim2) {
-		std::cerr << "WARNING in array2::array2. Inconsistent array size. ";
+		std::cerr << "WARNING in array2D::array2D. Inconsistent array size. ";
 		std::cerr << "size1D=" << data->size() << ", size2D=" << size_dim1*size_dim2 
 			<< "=" << size_dim1 << "*" << size_dim2 << "" << std::endl;
 	}
 }
 
-//... or from array1 objects
+//... or from array1D objects
 template <> template <>
-inline array2<double>::array2( array1<double> *data, unsigned int size_dim1, unsigned int size_dim2)
+inline array2D<double>::array2D( array1D<double> *data, unsigned int size_dim1, unsigned int size_dim2)
 		: arraydata<double>( data )
 {
 	setDim( size_dim1, size_dim2 );
 	if (data->size() != size_dim1*size_dim2) {
-		std::cerr << "WARNING in array2::array2. Inconsistent array size. ";
+		std::cerr << "WARNING in array2D::array2D. Inconsistent array size. ";
 		std::cerr << "size1D=" << data->size() << ", size2D=" << size_dim1*size_dim2 
 			<< "=" << size_dim1 << "*" << size_dim2 << "" << std::endl;
 	}
@@ -859,11 +859,11 @@ inline array2<double>::array2( array1<double> *data, unsigned int size_dim1, uns
 
 //=================================================================================
 //
-// array3 -- 3-dimensional array
+// array3D -- 3-dimensional array
 //
 //=================================================================================
 template<typename T>
-class array3 : public arraydata<T>{
+class array3D : public arraydata<T>{
 	
 private:
 	int p_dim1;
@@ -877,13 +877,13 @@ private:
 	}		
 public:
 	//-----------------------------------------------------------------------------------------constructors
-	array3( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1, unsigned int size_dim3 = 1 )
+	array3D( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1, unsigned int size_dim3 = 1 )
 			: arraydata<T>(size_dim1*size_dim2*size_dim3){
 		setDim( size_dim1, size_dim2, size_dim3 );
 	}
 
 	//-----------------------------------------------------------------------------------------copy functions	
-	void copy( const array3& src ){
+	void copy( const array3D& src ){
 		setDim( src.dim1(), src.dim2(), src.dim3() );
 		this->arraydata<T>::copy( src );
 	}
@@ -936,11 +936,11 @@ public:
 
 //=================================================================================
 //
-// array4 -- 4-dimensional array
+// array4D -- 4-dimensional array
 //
 //=================================================================================
 template<typename T>
-class array4 : public arraydata<T>{
+class array4D : public arraydata<T>{
 	
 private:
 	int p_dim1;
@@ -957,12 +957,12 @@ private:
 
 public:
 	//-----------------------------------------------------------------------------------------constructors
-	array4( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1, 
+	array4D( unsigned int size_dim1 = 1, unsigned int size_dim2 = 1, 
 				unsigned int size_dim3 = 1, unsigned int size_dim4 = 1 )
 				: arraydata<T>(size_dim1*size_dim2*size_dim3*size_dim4){
 		setDim( size_dim1, size_dim2, size_dim3, size_dim4 );
 	}
-	array4( arraydata<T> *array, 
+	array4D( arraydata<T> *array, 
 				unsigned int size_dim1, unsigned int size_dim2, 
 				unsigned int size_dim3, unsigned int size_dim4 )
 				: arraydata<T>(array){
@@ -970,7 +970,7 @@ public:
 	}
     
 	//-----------------------------------------------------------------------------------------copy functions
-    void copy( const array4<T>& src ){
+    void copy( const array4D<T>& src ){
 		setDim( src.dim1(), src.dim2(), src.dim3(), src.dim4() );
 		arraydata<T>::copy( src.data() );
 	}
@@ -996,7 +996,7 @@ public:
 		arraydata<T>::set_atIndex( l*dim1()*dim2()*dim3() + k*dim1()*dim2() + j*dim1() + i, value);
 	}
 
-	void getRepresentationIn2D( array2<double> *&img ){
+	void getRepresentationIn2D( array2D<double> *&img ){
 		// mainly for creating 'raw' CSPAD images right now, where
 		// dim1 : 388 : rows of a 2x1
 		// dim2 : 185 : columns of a 2x1
@@ -1019,7 +1019,7 @@ public:
 		//     s0 s1 s2 s3 s4 s5 s6 s7
 		//
 		delete img;
-		img = new array2<double>(dim1()*dim4(), dim2()*dim3());	
+		img = new array2D<double>(dim1()*dim4(), dim2()*dim3());	
 		for (int q = 0; q<dim4(); q++){
 			for (int s = 0; s<dim3(); s++){
 				for (int c = 0; c<dim2(); c++){
@@ -1065,11 +1065,5 @@ public:
 	}
 };
 
-//define some standard types of arrays that use doubles
-
-typedef array1 <double> array1D;
-typedef array2 <double> array2D;
-typedef array3 <double> array3D;
-typedef array4 <double> array4D;
 
 #endif

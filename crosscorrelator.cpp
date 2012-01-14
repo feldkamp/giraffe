@@ -202,15 +202,15 @@ void CrossCorrelator::initPrivateVariables(){
 //---------------------------------------------------------------------------- initInternalArrays
 void CrossCorrelator::initInternalArrays(){
 	//allocate all other internal objects
-	p_table = new array2D(50, 50);
+	p_table = new array2D<double>(50, 50);
 	
-	p_q = new array1D(arraySize());
-	p_phi = new array1D(arraySize());
+	p_q = new array1D<double>(arraySize());
+	p_phi = new array1D<double>(arraySize());
 	
-	p_qAvg = new array1D(nQ());
-	p_iAvg = new array1D(nQ());
-	p_phiAvg = new array1D(nPhi());
-	p_pixelCount = new array2D( nQ(), nPhi() );
+	p_qAvg = new array1D<double>(nQ());
+	p_iAvg = new array1D<double>(nQ());
+	p_phiAvg = new array1D<double>(nPhi());
+	p_pixelCount = new array2D<double>( nQ(), nPhi() );
 }
 
 //---------------------------------------------------------------------------- destroyInternalArrays
@@ -245,8 +245,8 @@ void CrossCorrelator::destroyInternalArrays(){
 void CrossCorrelator::initDefaultQ(){
     cout << "Initializing p_qx and p_qx vectors with default values." << endl;
 
-    array1D *default_qx = new array1D(arraySize());
-    array1D *default_qy = new array1D(arraySize());
+    array1D<double> *default_qx = new array1D<double>(arraySize());
+    array1D<double> *default_qy = new array1D<double>(arraySize());
     
     //set new values for deltaq and qmax
     p_deltaq = 1;                            
@@ -367,18 +367,18 @@ void CrossCorrelator::run(double start_q, double stop_q, int alg_coords, int alg
 //=================================================================================
 
 //----------------------------------------------------------------------------autoCorrelation
-array2D *CrossCorrelator::autoCorr() const {
+array2D<double> *CrossCorrelator::autoCorr() const {
 	return p_autoCorrelation;
 }
 
 //----------------------------------------------------------------------------crossCorrelation
-array3D *CrossCorrelator::crossCorr() const {
+array3D<double> *CrossCorrelator::crossCorr() const {
 	return p_crossCorrelation;
 }
 
 
 //----------------------------------------------------------------------------data
-array1D *CrossCorrelator::data() const {
+array1D<double> *CrossCorrelator::data() const {
 	return p_data;
 }
 
@@ -386,12 +386,12 @@ void CrossCorrelator::setData( arraydata<double> *data ) {
 	if (p_data) {
 		delete p_data;
 	}
-	p_data = new array1D( data );
+	p_data = new array1D<double>( data );
 	setArraySize( data->size() );
 }
 
 //----------------------------------------------------------------------------qx
-array1D *CrossCorrelator::qx() const {
+array1D<double> *CrossCorrelator::qx() const {
 	return p_qx;
 }
 
@@ -403,7 +403,7 @@ void CrossCorrelator::setQx( arraydata<double> *qx ){
 	if (p_qx) {
 		delete p_qx;
 	}
-	p_qx = new array1D( qx );
+	p_qx = new array1D<double>( qx );
 	
 	if (debug()>=1){
 		cout << "CrossCorrelator::setQx(" << qx << "), min: " << qx->calcMin() << ", max: " << qx->calcMax() << endl;
@@ -412,7 +412,7 @@ void CrossCorrelator::setQx( arraydata<double> *qx ){
 
 
 //----------------------------------------------------------------------------qy
-array1D *CrossCorrelator::qy() const {
+array1D<double> *CrossCorrelator::qy() const {
 	return p_qy;
 }
 
@@ -424,7 +424,7 @@ void CrossCorrelator::setQy( arraydata<double> *qy ) {
 	if (p_qy) {
 		delete p_qy;
 	}
-	p_qy = new array1D( qy );
+	p_qy = new array1D<double>( qy );
 	
 	if (debug()>=1){
 		cout << "CrossCorrelator::setQy(" << qy << "), min: " << qy->calcMin() << ", max: " << qy->calcMax() << endl;
@@ -433,7 +433,7 @@ void CrossCorrelator::setQy( arraydata<double> *qy ) {
 
 
 //----------------------------------------------------------------------------mask
-array1D *CrossCorrelator::mask() const {
+array1D<double> *CrossCorrelator::mask() const {
 	return p_mask;
 }
 
@@ -442,7 +442,7 @@ void CrossCorrelator::setMask( arraydata<double> *maskArray ) {
 		delete p_mask;
 	}
 	if (maskArray) {
-		p_mask = new array1D( maskArray );
+		p_mask = new array1D<double>( maskArray );
 		setMaskEnable( true );
 		normalizeMask();
 	}else{
@@ -462,7 +462,7 @@ void CrossCorrelator::normalizeMask(){
 	}
 }
 
-void CrossCorrelator::setLookupTable( array2D *LUT ){
+void CrossCorrelator::setLookupTable( array2D<double> *LUT ){
 	if (!LUT){
 		cerr << "CrossCorrelator::setLookupTable! Not a valid lookup table." << endl;
 	}
@@ -471,21 +471,21 @@ void CrossCorrelator::setLookupTable( array2D *LUT ){
 }
 
 
-array2D *CrossCorrelator::fluctuations() const {
+array2D<double> *CrossCorrelator::fluctuations() const {
 	return p_fluctuations;
 }
 
 
-array2D *CrossCorrelator::polar() const {
+array2D<double> *CrossCorrelator::polar() const {
 	return p_polar;
 }
 
 
-array2D *CrossCorrelator::mask_polar() const {
+array2D<double> *CrossCorrelator::mask_polar() const {
 	return p_mask_polar;
 }
 
-array2D *CrossCorrelator::lookupTable() const{
+array2D<double> *CrossCorrelator::lookupTable() const{
 	return p_table;
 }
 
@@ -676,19 +676,19 @@ int CrossCorrelator::nLag() const{					//getter only, dependent variable
 }
 
 //----------------------------------------------------------------------------calculated arrays
-array1D *CrossCorrelator::qAvg() const{
+array1D<double> *CrossCorrelator::qAvg() const{
 	return p_qAvg;
 }
 
-array1D *CrossCorrelator::phiAvg() const{
+array1D<double> *CrossCorrelator::phiAvg() const{
 	return p_phiAvg;
 }
 
-array2D *CrossCorrelator::pixelCount() const{
+array2D<double> *CrossCorrelator::pixelCount() const{
 	return p_pixelCount;
 }
 
-array1D *CrossCorrelator::iAvg() const{
+array1D<double> *CrossCorrelator::iAvg() const{
 	return p_iAvg;
 }
 
@@ -717,7 +717,7 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 	
 	// create array of the intensities in polar coordinates with the correct binning
 	delete p_polar;
-	p_polar = new array2D( nQ(), nPhi() );
+	p_polar = new array2D<double>( nQ(), nPhi() );
 	
 	// calculate phi for each pixel and bin angles with correct resolution
 	int exclude_count = 0;
@@ -819,14 +819,14 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 	}
 	
 	// create counter array
-	array1D *counter = new array1D( nQ() );
+	array1D<double> *counter = new array1D<double>( nQ() );
 	
 	// if calculateSAXS() has already been used, free and recreate p_qAvg, p_iAvg
 	if (p_tracker_calculateSAXS) {
 		delete p_qAvg;
 		delete p_iAvg;
-		p_qAvg = new array1D(nQ());
-		p_iAvg = new array1D(nQ());
+		p_qAvg = new array1D<double>(nQ());
+		p_iAvg = new array1D<double>(nQ());
 	}
 	
 	if (!p_tracker_calculatePolarCoordinates && !p_tracker_calculateSAXS) {
@@ -904,7 +904,7 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 	
 		//calculate fluctuations
 		delete p_fluctuations;
-		p_fluctuations = new array2D( nQ(), nPhi() );
+		p_fluctuations = new array2D<double>( nQ(), nPhi() );
 		for (int i=0; i<nQ(); i++) {
 			for (int j=0; j<nPhi(); j++) {
 				if (pixelCount()->get(i,j) > 0.1) {	//compare to 0.1 to make sure float inaccuracies don't make this 'true'
@@ -921,7 +921,7 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 		if (xccaEnable()) {
 			//FULL CROSS-CORRELATION (4-fold for-loop)
 			delete p_crossCorrelation;
-			p_crossCorrelation = new array3D( nQ(), nQ(), nLag() );
+			p_crossCorrelation = new array3D<double>( nQ(), nQ(), nLag() );
 			
 			for (int i=0; i<nQ(); i++) { // q1 index
 				if (debug() && i%100 == 0) cout << "." << flush;
@@ -961,7 +961,7 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 		} else {
 			//AUTO-CORRELATION ONLY (3-fold for-loop)
 			delete p_autoCorrelation;
-			p_autoCorrelation = new array2D( nQ(), nLag() );
+			p_autoCorrelation = new array2D<double>( nQ(), nLag() );
 			for (int i=0; i<nQ(); i++) { 							// for i (q)
 				if (debug() && i%100 == 0) cout << "." << flush;
 				double variance = 0;
@@ -1032,7 +1032,7 @@ int CrossCorrelator::createLookupTable( int lutNy, int lutNx ){
     int retval = 0;
 	
 	calcLookupTableVariables( lutNy, lutNx );
-	array2D *myTable = new array2D( lutNy, lutNx );
+	array2D<double> *myTable = new array2D<double>( lutNy, lutNx );
 	
 	//initialize table with -1, which can never be a real index
 	const double initval = -1;
@@ -1129,11 +1129,11 @@ void CrossCorrelator::calcLookupTableVariables( int lutNy, int lutNx ){
 int CrossCorrelator::subtractSAXSmean(){
 
 	delete p_fluctuations;
-	p_fluctuations = new array2D(nQ(), nPhi());
+	p_fluctuations = new array2D<double>(nQ(), nPhi());
 
 	for(int q_ct=0; q_ct < polar()->dim1(); q_ct++){
 		//get one row (fixed q) out of the polar coordinates
-		array1D *row = new array1D( polar()->dim1() );
+		array1D<double> *row = new array1D<double>( polar()->dim1() );
 		polar()->getRow( q_ct, row );		
 		
 		//calculate average intensity in that row
@@ -1198,18 +1198,18 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( double start_q, double stop
 	}
     int retval = 0;
 
-	//create new array2D to store polar coordinate representation
+	//create new array2D<double> to store polar coordinate representation
 	delete p_polar;
-    p_polar = new array2D( nQ(), nPhi() );
+    p_polar = new array2D<double>( nQ(), nPhi() );
 	if (!p_polar){
 		cerr << "Error in CrossCorrelator::calculatePolarCoordinates_FAST. polar couldn't be allocated." << endl;
 		return 1;
 	}
 	
 	if ( maskEnable() ) {
-		//create new array2D to store polar coordinate representation
+		//create new array2D<double> to store polar coordinate representation
 		delete p_mask_polar;
-		p_mask_polar = new array2D( nQ(), nPhi() );
+		p_mask_polar = new array2D<double>( nQ(), nPhi() );
 		if (!p_mask_polar){
 			cerr << "Error in CrossCorrelator::calculatePolarCoordinates_FAST. p_mask_polar couldn't be allocated." << endl;
 			return 1;
@@ -1239,7 +1239,7 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( double start_q, double stop
 
 //----------------------------------------------------------------------------calculatePolarCoordinates_FAST
 // returns the number of times the lookup has failed
-int CrossCorrelator::calculatePolarCoordinates_FAST( array1D* cartesian1D, array2D* polar2D, 
+int CrossCorrelator::calculatePolarCoordinates_FAST( array1D<double>* cartesian1D, array2D<double>* polar2D, 
 													int number_phi, double start_phi, double stop_phi, 
 													int number_q, double start_q, double stop_q) const {
 	double xcoord = 0.;
@@ -1297,9 +1297,9 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( array1D* cartesian1D, array
 		
 		//if a mask is used, attempt linear interpolation
 		if (maskEnable()){
-			array1D *datarow = new array1D( polar2D->dim2() );
+			array1D<double> *datarow = new array1D<double>( polar2D->dim2() );
 			polar2D->getRow(q_ct, datarow);
-			array1D *maskrow = new array1D( mask_polar()->dim2() );
+			array1D<double> *maskrow = new array1D<double>( mask_polar()->dim2() );
 			mask_polar()->getRow(q_ct, maskrow);
 			//cout << "datarow: " << datarow->getASCIIdata();
 			//cout << "maskrow: " << maskrow->getASCIIdata();
@@ -1383,7 +1383,7 @@ int CrossCorrelator::calculateSAXS_FAST(){
 	if (!p_tracker_calculatePolarCoordinates){
 		calculatePolarCoordinates();
 	}
-	array1D *SAXS = iAvg();
+	array1D<double> *SAXS = iAvg();
 	polar()->calcAvgCol( SAXS );
 	
 	p_tracker_calculateSAXS++;
@@ -1394,7 +1394,7 @@ int CrossCorrelator::calculateSAXS_FAST(){
 
 
 //----------------------------------------------------------------------------lookup
-double CrossCorrelator::lookup( double xcoord, double ycoord, array1D *dataArray ) const {
+double CrossCorrelator::lookup( double xcoord, double ycoord, array1D<double> *dataArray ) const {
 
     double value = 0.;    //return data value at the given coordinates
     int index = 0;      //to do that, the index in the data is determined first
@@ -1523,13 +1523,13 @@ int CrossCorrelator::calculateXCCA_FAST(){
 		if (!xccaEnable()){											
 			// autocorrelation only
 			delete p_autoCorrelation;
-			p_autoCorrelation = new array2D( nQ(), nLag() );
+			p_autoCorrelation = new array2D<double>( nQ(), nLag() );
 			autocorrelateFFT( polar(), autoCorr() );
 		}else{														
 			// full-blown cross-correlationp
 			cerr << "CROSS-CORRELATE 3D USING FFT. PROCEED WITH CAUTION! Some features may not be implemented or fully tested." << endl;
 			delete p_crossCorrelation;
-			p_crossCorrelation = new array3D( nQ(), nQ(), nLag() );
+			p_crossCorrelation = new array3D<double>( nQ(), nQ(), nLag() );
 			crosscorrelateFFT( polar(), crossCorr() );
 		}//if
 	} catch(int e) {
@@ -1562,14 +1562,14 @@ int CrossCorrelator::calculateXCCA_FAST(){
 
 
 //----------------------------------------------------------------------------autocorrelateFFT_byRow
-int CrossCorrelator::autocorrelateFFT(array2D *polar2D, array2D *corr2D) const {
+int CrossCorrelator::autocorrelateFFT(array2D<double> *polar2D, array2D<double> *corr2D) const {
 	int retval, fail = 0;
 		
 	//calculate the auto-correlation for all rings
 	for(int q_ct=0; q_ct < polar2D->dim1(); q_ct++){
 			
 		//get one row out of the polar coordinates (at fixed q)
-		array1D *f = new array1D( polar2D->dim2() );
+		array1D<double> *f = new array1D<double>( polar2D->dim2() );
 		if (!f){ throw 1; } 
 		polar2D->getRow( q_ct, f );
 		if (f->size() == 0) { throw 2; }
@@ -1579,7 +1579,7 @@ int CrossCorrelator::autocorrelateFFT(array2D *polar2D, array2D *corr2D) const {
 		
 		//perform autocorrelation --> compute via FFT
 		// initialize imaginary part to zero --> f is real
-		array1D *f_imag = new array1D(f->size());						
+		array1D<double> *f_imag = new array1D<double>(f->size());						
 
 		FourierTransformer *ft = new FourierTransformer();
 		fail = ft->autocorrelation( f, f_imag );
@@ -1605,14 +1605,14 @@ int CrossCorrelator::autocorrelateFFT(array2D *polar2D, array2D *corr2D) const {
 
 
 //----------------------------------------------------------------------------autocorrelateFFT_byRow
-int CrossCorrelator::crosscorrelateFFT(array2D *polar2D, array3D *corr3D) const {
+int CrossCorrelator::crosscorrelateFFT(array2D<double> *polar2D, array3D<double> *corr3D) const {
 	int retval, fail = 0;
 
 	//calculate the cross-correlation for all combination of rings
 	for(int fq_ct=0; fq_ct < polar2D->dim1(); fq_ct++){
 		
 		//get one row out of the polar coordinates
-		array1D *f = new array1D( polar2D->dim2() );
+		array1D<double> *f = new array1D<double>( polar2D->dim2() );
 		if (!f){ throw 1; } 
 		polar2D->getRow( fq_ct, f );
 		if (f->size() == 0) { throw 2; }
@@ -1621,7 +1621,7 @@ int CrossCorrelator::crosscorrelateFFT(array2D *polar2D, array3D *corr3D) const 
 		for(int gq_ct=0; gq_ct < polar2D->dim1(); gq_ct++){
 
 			//get second row out of the polar coordinates
-			array1D *g = new array1D( polar2D->dim2() );
+			array1D<double> *g = new array1D<double>( polar2D->dim2() );
 			if (!f){ throw 1; } 
 			polar2D->getRow( gq_ct, g );		
 			if (g->size() == 0) { throw 2; }
@@ -1641,10 +1641,10 @@ int CrossCorrelator::crosscorrelateFFT(array2D *polar2D, array3D *corr3D) const 
 				return 2;
 			}
 			
-			array1D *f_real = new array1D( *f );
-			array1D *f_imag = new array1D(f->size());				// initialized to zeros --> f is real
-			array1D *g_real = new array1D( *g );
-			array1D *g_imag = new array1D(g->size());				// initialized to zeros --> g is real   
+			array1D<double> *f_real = new array1D<double>( *f );
+			array1D<double> *f_imag = new array1D<double>(f->size());				// initialized to zeros --> f is real
+			array1D<double> *g_real = new array1D<double>( *g );
+			array1D<double> *g_imag = new array1D<double>(g->size());				// initialized to zeros --> g is real   
 			
 			// calculate the cross correlation, result is returned in f_real, f_imag
 			FourierTransformer *ft = new FourierTransformer();
