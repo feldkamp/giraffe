@@ -59,7 +59,10 @@ string Tester::base(){
 //-------------------------------------------------------- -t1
 int Tester::testCrossCorrelator( int alg, int testpattern ){						
     cout << "testCrossCorrelator(" << alg << ")" << endl;
-    
+ 
+	
+	arraydataIO *io = new arraydataIO;   
+
 	int sizex = 500;
 	int sizey = 500;
 	int nphi = 256; 
@@ -68,7 +71,7 @@ int Tester::testCrossCorrelator( int alg, int testpattern ){
 	array2D *dataArray = new array2D(sizex, sizey);
 	array2D *qxArray = new array2D(sizex, sizey);
 	array2D *qyArray = new array2D(sizex, sizey);
-	dataArray->generateTestPattern(testpattern);
+	io->generateTestPattern(dataArray, testpattern);
 	qxArray->range(-10, 10);
 	qyArray->range(-10, 10);
 	
@@ -95,15 +98,13 @@ int Tester::testCrossCorrelator( int alg, int testpattern ){
 			cc->calculatePolarCoordinates_FAST(start_q, stop_q);
 			cc->calculateXCCA_FAST();
 
-			arraydataIO *io = new arraydataIO;
 			io->writeToTiff( cc->outputdir()+"polar.tif", cc->polar(), 1 );            //dump scaled output from correlation			
 			io->writeToTiff( cc->outputdir()+"corr.tif", cc->autoCorr(), 1 );            //dump scaled output from correlation
-			delete io;
 			
         break;
     }
 
-    
+	delete io;   
 	delete cc;
     return 0;
 }
@@ -476,6 +477,7 @@ int Tester::testDataTypes(){
 	cout << "sizeof(int32_t)  =           " << sizeof(int32_t) << endl;
 	cout << "sizeof(float) =              " << sizeof(float) << endl;
 	cout << "sizeof(double) =             " << sizeof(double) << endl;
+	cout << "sizeof(bool) =               " << sizeof(bool) << endl;
 	cout << "-----------------------------------------" << endl;
 	return 0;
 }
@@ -512,30 +514,34 @@ int Tester::testArraySpeed(){
 void Tester::subtestBoost(){
 	const int size = 1000;
 	array<double, size> a;
-	for (int i = 0; i < a.size(); i++){
+	for (unsigned int i = 0; i < a.size(); i++){
 		a.at(i) = 0;
 	}
 }
 
 void Tester::subtestArraydata(int size){
-	arraydata a = arraydata(size);
-	for (int i = 0; i < a.size(); i++){
+	arraydata<double> a = arraydata<double>(size);
+	for (unsigned int i = 0; i < a.size(); i++){
 		a.set_atIndex(i, double(i));
 		double value = a.get_atIndex(i);
-		cout << value << " " << std::flush;
-		if (!(i%1000))
-			cout << endl;
+		if (!(i%1000)){
+			cout << value << " " << std::flush;
+			if (!(i%1000000))
+				cout << endl;
+		}
 	}
 }
 
 void Tester::subtestVector(int size){
 	vector<double> v(size, 0);
 
-	for (int i = 0; i < v.size(); i++){
+	for (unsigned int i = 0; i < v.size(); i++){
 		v.at(i) = double(i);
 		double value = v.at(i);
-		cout << value << " " << std::flush;
-		if (!(i%1000))
-			cout << endl;
+		if (!(i%1000)){
+			cout << value << " " << std::flush;
+			if (!(i%1000000))
+				cout << endl;
+		}
 	}
 }

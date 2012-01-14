@@ -65,7 +65,7 @@ int FourierTransformer::magnitudeSquared( array1D *&f_real, array1D *&f_imag ){
 	
 	// calculate the magnitude squared: if F = a+ib, then |F|^2 = a^2 + b^2
 	// the imaginary part is always zero
-    for (int i=0; i < f_real->size(); i++) {
+    for (unsigned int i=0; i < f_real->size(); i++) {
         f_real->set( i,   ( f_real->get(i)*f_real->get(i) + f_imag->get(i)*f_imag->get(i) )  );
 		f_imag->set( i, 0 );		    
 	}

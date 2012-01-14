@@ -85,7 +85,7 @@ CrossCorrelator::CrossCorrelator( float *dataCArray, float *qxCArray, float *qyC
 }
 
 //----------------------------------------------------------------------------constructor with arraydata objects
-CrossCorrelator::CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arraydata *qyArray, 
+CrossCorrelator::CrossCorrelator( arraydata<double> *dataArray, arraydata<double> *qxArray, arraydata<double> *qyArray, 
 									int nphi, int nq1, int nq2){
 	initPrivateVariables();
 	
@@ -382,7 +382,7 @@ array1D *CrossCorrelator::data() const {
 	return p_data;
 }
 
-void CrossCorrelator::setData( arraydata *data ) {
+void CrossCorrelator::setData( arraydata<double> *data ) {
 	if (p_data) {
 		delete p_data;
 	}
@@ -395,7 +395,7 @@ array1D *CrossCorrelator::qx() const {
 	return p_qx;
 }
 
-void CrossCorrelator::setQx( arraydata *qx ){
+void CrossCorrelator::setQx( arraydata<double> *qx ){
 	if (!qx){
 		cerr << "ERROR in CrossCorrelator::setQx! No input array given." << endl;
 		throw;
@@ -416,7 +416,7 @@ array1D *CrossCorrelator::qy() const {
 	return p_qy;
 }
 
-void CrossCorrelator::setQy( arraydata *qy ) {
+void CrossCorrelator::setQy( arraydata<double> *qy ) {
 	if (!qy){
 		cerr << "ERROR in CrossCorrelator::setQy! No input array given." << endl;
 		throw;
@@ -437,7 +437,7 @@ array1D *CrossCorrelator::mask() const {
 	return p_mask;
 }
 
-void CrossCorrelator::setMask( arraydata *maskArray ) {
+void CrossCorrelator::setMask( arraydata<double> *maskArray ) {
 	if (p_mask) {
 		delete p_mask;
 	}

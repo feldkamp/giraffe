@@ -83,6 +83,7 @@
 		int verbose() const;
 		void setVerbose( int level );
 		
+		void generateTestPattern( array2D *img, int type );
 		
 	private:
 		bool p_transposeForIO;	 // transpose 2D files to conform with matrix (rows, cols) convention (default: true)

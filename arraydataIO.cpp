@@ -162,8 +162,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		
 		//feed back into dest
 		delete dest;
-		dest = new array1D( dim1 );
-		dest->arraydata::copy( temp, dim1 );
+		dest = new array1D( temp, dim1 );
 		
 		delete []temp;
 		delete file;
@@ -199,8 +198,8 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		
 		//feed back into dest
 		delete dest;
-		dest = new array2D( dim1, dim2 );
-		dest->arraydata::copy( temp, dim1*dim2);
+		dest = new array2D( temp, dim1, dim2 );
+		//dest->arraydata::copy( temp, dim1*dim2);
 		
 		delete []temp;
 		
@@ -212,6 +211,29 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		return 0; 
 	}
 
+	//-------------------------------------------------------------- writeToEDF (generic)
+	// non-class function
+	//--------------------------------------------------------------
+	int writeToEDF_generic( ns_edf::edf *file, arraydata<double> *src ) {
+	
+		bool flipByteOrder = false;
+		
+		// write scaled data?
+		// SF_UNSCALED = 0:  binary values written represent actual data values (a range from 0 to 65535 is possible)
+		// SF_SCALED	= 1: scaling max and min are written to header, data values always span full range from 0 to 65535 (2^16-1)
+		// SF_RETAIN	= 2: if the scaling factor was read from an input file, keep it what it was
+		ns_edf::scaled_t scaleOut = ns_edf::SF_SCALED;
+		
+		file->set_ScalingMin( src->calcMin() );
+		file->set_ScalingMax( src->calcMax() );
+		file->set_ScaledFlag( scaleOut );
+		
+		double *buf = new double[src->size()];
+		for (int i = 0; i < src->size(); i++){
+			buf[i] = src->get_atIndex(i);
+		}
+		return file->write( buf, flipByteOrder );	
+	}
 
 	//-------------------------------------------------------------- writeToEDF (1D)
 	//
@@ -221,24 +243,14 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			cerr << "ERROR. In arraydataIO::writeToEDF(1D). No source data. Could not write to file " << filename << endl;
 			return 1;
 		}
-		
-		bool flipByteOrder = false;
-		
-		// write scaled data?
-		// SF_UNSCALED = 0:  binary values written represent actual data values (a range from 0 to 65535 is possible)
-		// SF_SCALED	= 1: scaling max and min are written to header, data values always span full range from 0 to 65535 (2^16-1)
-		// SF_RETAIN	= 2: if the scaling factor was read from an input file, keep it what it was
-		ns_edf::scaled_t scaleOut = ns_edf::SF_SCALED;				
-		
+
 		ns_edf::edf *file = new ns_edf::edf;
 		
 		file->set_Dim_x( src->dim1() );
 		file->set_Dim_y( 1 );
-		file->set_ScalingMin( src->calcMin() );
-		file->set_ScalingMax( src->calcMax() );
 		file->set_FilenameOut( filename );
-		file->set_ScaledFlag( scaleOut );
-		int retval = file->write( src->data(), flipByteOrder );
+		int retval = writeToEDF_generic( file, src );
+		
 		delete file;
 		return retval;
 	}
@@ -251,15 +263,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			cerr << "ERROR. In arraydataIO::writeToEDF(2D). No source data. Could not write to file " << filename << endl;
 			return 1;
 		}
-		
-		bool flipByteOrder = false;
-		
-		// write scaled data?
-		// SF_UNSCALED = 0:  binary values written represent actual data values (a range from 0 to 65535 is possible)
-		// SF_SCALED	= 1: scaling max and min are written to header, data values always span full range from 0 to 65535 (2^16-1)
-		// SF_RETAIN	= 2: if the scaling factor was read from an input file, keep it what it was
-		ns_edf::scaled_t scaleOut = ns_edf::SF_SCALED;				
-		
+
 		if (transposeForIO()){//transpose before writing
 			src->transpose();
 		}
@@ -267,11 +271,9 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		
 		file->set_Dim_x( src->dim1() );
 		file->set_Dim_y( src->dim2() );
-		file->set_ScalingMin( src->calcMin() );
-		file->set_ScalingMax( src->calcMax() );
-		file->set_FilenameOut( filename );
-		file->set_ScaledFlag( scaleOut );
-		int retval = file->write( src->data(), flipByteOrder );
+		file->set_FilenameOut( filename );		
+		int retval = writeToEDF_generic( file, src );
+		
 		delete file;
 		
 		if (transposeForIO()){//transpose back before returning
@@ -383,11 +385,6 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 			return 2;
 		}
 		
-		if (!src->data()) {
-			cerr << "Error in writeToTiff! No data in array." << endl;
-			return 3;
-		}
-		
 		TIFF *out = TIFFOpen(filename.c_str() ,"w");
 		if(out)
 		{
@@ -490,7 +487,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	//-------------------------------------------------------------- readFromHDF5 (generic case)
 	//
 	//-------------------------------------------------------------- 
-	int readFromHDF5_generic( string filename, arraydata *&dest, int &rank, hsize_t *&dims, int verbose ) {
+	int readFromHDF5_generic( string filename, arraydata<double> *&dest, int &rank, hsize_t *&dims, int verbose ) {
 		
 		if (verbose){
 			cout << "Reading " << filename << " (HDF5 file)" << endl;
@@ -608,23 +605,23 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 		//this throws away all floating point accuracy in the data.......
 		if (memTypeID == H5T_NATIVE_DOUBLE) {
 			delete dest;
-			dest = new arraydata( (double*)buffer, n );
+			dest = new arraydata<double>( (double*)buffer, n );
 			delete[] ((double*)buffer);
 		} else if (memTypeID == H5T_NATIVE_FLOAT) {
 			delete dest;
-			dest = new arraydata( (float*)buffer, n );
+			dest = new arraydata<double>( (float*)buffer, n );
 			delete[] ((float*)buffer);
 		} else if (memTypeID == H5T_NATIVE_INT) { 
 			delete dest;
-			dest = new arraydata( (int*)buffer, n );
+			dest = new arraydata<double>( (int*)buffer, n );
 			delete[] ((int*)buffer);
 		} else if (memTypeID == H5T_STD_I16LE) { 
 			delete dest;
-			dest = new arraydata( (int16_t*)buffer, n );
+			dest = new arraydata<double>( (int16_t*)buffer, n );
 			delete[] ((int16_t*)buffer);
 		} else if (memTypeID == H5T_NATIVE_LONG) { 
 			delete dest;
-			dest = new arraydata( (long*)buffer, n );
+			dest = new arraydata<double>( (long*)buffer, n );
 			delete[] ((long*)buffer);
 		} else { 
 			cerr << "Error in arraydataIO::readFromHDF5. Type not found. " << endl;
@@ -641,7 +638,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	int arraydataIO::readFromHDF5( string filename, array1D *&dest ) const {
 		int img_rank = 0;
 		hsize_t *dims = 0;
-		arraydata *readarray = 0;
+		arraydata<double> *readarray = 0;
 		int fail = readFromHDF5_generic( filename, readarray, img_rank, dims, verbose() );
 		if (!fail){
 			delete dest;
@@ -655,7 +652,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	int arraydataIO::readFromHDF5( string filename, array2D *&dest ) const {
 		int img_rank = 0;
 		hsize_t *dims = 0;
-		arraydata *readarray = 0;
+		arraydata<double> *readarray = 0;
 		int fail = readFromHDF5_generic( filename, readarray, img_rank, dims, verbose() );
 		if (!fail){
 			delete dest;
@@ -686,7 +683,7 @@ int arraydataIO::writeToFile( std::string filename, array2D *src) const{
 	// dataType = 4 --> write as long    (H5T_NATIVE_LONG)
 	//-------------------------------------------------------------- 
 	//-------------------------------------------------------------- writeToHDF5 (generic case)
-	int writeToHDF5_generic( string filename, arraydata *src, int img_rank, hsize_t *dims, int internalType, int verbose ) {
+	int writeToHDF5_generic( string filename, arraydata<double> *src, int img_rank, hsize_t *dims, int internalType, int verbose ) {
 		if ( !src ){
 			cerr << "ERROR. In arraydataIO::writeToHDF5_generic. No source data. Could not write to file " << filename << endl;
 			return 1;
@@ -1016,11 +1013,6 @@ int arraydataIO::writeToASCII( std::string filename, array1D *src, int format ) 
 		cerr << "ERROR in arraydataIO::writeToASCII (1D). Array size is zero." << endl;
 		return 2;
 	}
-	
-	if (!src->data()) {
-		cerr << "ERROR in arraydataIO::writeToASCII (1D). No data in array." << endl;
-		return 3;
-	}	
 
 	std::ofstream fout( filename.c_str() );
 	switch (format){
@@ -1051,11 +1043,6 @@ int arraydataIO::writeToASCII( std::string filename, array2D *src, int format ) 
 		return 2;
 	}
 	
-	if (!src->data()) {
-		cerr << "ERROR in arraydataIO::writeToASCII (2D). No data in array." << endl;
-		return 3;
-	}	
-	
 
 	std::ofstream fout( filename.c_str() );
 	switch (format){
@@ -1084,11 +1071,6 @@ int arraydataIO::writeToASCII( std::string filename, array3D *src, int format ) 
 	if (src->size() == 0) {
 		cerr << "ERROR in arraydataIO::writeToASCII (3D). Array size is zero." << endl;
 		return 2;
-	}
-	
-	if (!src->data()) {
-		cerr << "ERROR in arraydataIO::writeToASCII (3D). No data in array." << endl;
-		return 3;
 	}	
 
 
@@ -1123,6 +1105,113 @@ void arraydataIO::setVerbose( int level ){
 int arraydataIO::verbose() const{
 	return p_verbose;
 }
+
+
+
+//-----------------------------------------------------test pattern
+void arraydataIO::generateTestPattern( array2D *img, int type ){
+	if (img == 0){
+		cerr << "Error in arraydataIO::generateTestPattern. Image not allocated." << endl;
+	}
+	
+	if (img->dim1()==0 || img->dim2()==0)
+		cout << "WARNING in generateTestPattern. One or more dimensions are zero." << endl;
+
+
+	cout << "Writing test pattern type " << type << ": ";
+	switch (type) {
+		case 0:											
+			{   
+				cout << "2D sinusoidal ";
+				double amplitude = 20000;
+				double periodX = img->dim1()/1;
+				double periodY = img->dim2()/2;
+				for (int i = 0; i < img->dim1(); i++) {
+					for (int j = 0; j < img->dim2(); j++) {
+						img->set(i, j, amplitude/2*(sin(2*M_PI*i/periodX)*cos(2*M_PI*j/periodY)+1) );
+					}
+				}
+			}
+			break;
+		case 1:											
+			{
+				cout << "increment by absolute array index ";
+				double val = 0;
+				for (int i = 0; i < img->size(); i++) {
+					if (val >= 65535) {
+						val = 0; 
+					}
+					img->set_atIndex(i, val);
+					val += 1;
+				}
+			}
+			break;
+		case 2:											
+			{
+				cout << "2D centro-symmetric sine ";
+				double amplitude = 20000;
+				double period = img->dim1()/5;
+				double centerX = img->dim1()/2;
+				double centerY = img->dim2()/2;
+				cout << "amp=" << amplitude << ", period=" << period << ", center=(" << centerX << "," << centerY << ")";
+				for (int i = 0; i < img->dim1(); i++) {
+					for (int j = 0; j < img->dim2(); j++) {
+						double x = i - centerX;
+						double y = j - centerY;
+						double r = sqrt( x*x + y*y );
+						img->set(i, j, amplitude/2*( sin(2*M_PI*r/period)+1 ) );
+					}
+				}
+			}
+			break;
+		case 3:											
+			{
+				cout << "2D centro-symmetric sine with circular modulation ";
+				double amplitude = 20000;
+				double period = img->dim1()/5;
+				double periodMod = img->dim1()/10;
+				double centerX = img->dim1()/2;
+				double centerY = img->dim2()/2;
+				cout << "amp=" << amplitude << ", period=" << period << ", center=(" << centerX << "," << centerY << ")";
+				for (int i = 0; i < img->dim1(); i++) {
+					for (int j = 0; j < img->dim2(); j++) {
+						double x = i - centerX;
+						double y = j - centerY;
+						double r = sqrt( x*x + y*y );
+						double phi = atan(y/x);
+						img->set(i, j, amplitude/2*( sin(2*M_PI*r/period)+1 + 1/10*(tan(2*M_PI*phi/periodMod)+1) ) );
+					}
+				}
+			}
+			break;
+		case 4:											
+			{
+				cout << "2D centro-symmetric sine with straight modulation ";
+				double amplitude = 20000;
+				double period = img->dim1()/5;
+				double periodMod = img->dim1()/10;
+				double centerX = img->dim1()/2;
+				double centerY = img->dim2()/2;
+				cout << "amp=" << amplitude << ", period=" << period << ", center=(" << centerX << "," << centerY << ")";
+				for (int i = 0; i < img->dim1(); i++) {
+					for (int j = 0; j < img->dim2(); j++) {
+						double x = i - centerX;
+						double y = j - centerY;
+						double r = sqrt( x*x + y*y );
+						img->set(i, j, amplitude/2*( sin(2*M_PI*r/period)+1 + cos(2*M_PI*i/periodMod)+1 ) );
+					}
+				}
+			}
+			break;
+		default:                                        
+			cout << "zeros";
+			img->zeros();
+			break;
+	}
+	cout << endl;
+}
+
+
 
 
 

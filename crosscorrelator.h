@@ -27,7 +27,7 @@ public:
 	//   nq2 (optional): causes computation of full 3D cross-correlation of nphi*nq1*nq2 values
 	CrossCorrelator( float *dataCArray, float *qxCArray, float *qyCArray, int arraylength, 
 						int nphi, int nq1, int nq2 = 0);
-	CrossCorrelator( arraydata *dataArray, arraydata *qxArray, arraydata *qyArray, 
+	CrossCorrelator( arraydata<double> *dataArray, arraydata<double> *qxArray, arraydata<double> *qyArray, 
 						int nphi, int nq1, int nq2 = 0);
 	~CrossCorrelator();	
 
@@ -128,7 +128,7 @@ public:
 	
 	//---------------------------------------------setters & getters for input data
 	array1D *data() const;
-	void setData( arraydata *data );
+	void setData( arraydata<double> *data );
 	template <class T>
 		void setData( T *dataCArray, unsigned int size ){
 			if (p_data) {
@@ -139,7 +139,7 @@ public:
 		}
 	
 	array1D *qx() const;
-	void setQx( arraydata *qx );
+	void setQx( arraydata<double> *qx );
 	template <class T>
 		void setQx( T *qxArray, unsigned int size ){
 			if (p_qx) {
@@ -149,7 +149,7 @@ public:
 		}
 
 	array1D *qy() const;
-	void setQy( arraydata *qy );
+	void setQy( arraydata<double> *qy );
 	template <class T>
 		void setQy( T *qyArray, unsigned int size ){
 			if (p_qy) {
@@ -159,7 +159,7 @@ public:
 		}
 
 	array1D *mask() const;
-	void setMask( arraydata *mask );
+	void setMask( arraydata<double> *mask );
 	template <class T>
 		void setMask(T *maskCArray, unsigned int size){
 			if (p_mask) {
