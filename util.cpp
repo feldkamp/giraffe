@@ -25,6 +25,8 @@ using std::endl;
 #include <string>
 using std::string;
 
+#include <sstream>
+
 #include <cmath>
 
 
@@ -89,7 +91,7 @@ namespace ns_cspad_util{
 	//    +--+--+--+--+--+--+--+--+
 	//     s0 s1 s2 s3 s4 s5 s6 s7
 	//-------------------------------------------------------------
-	int createRawImageCSPAD( const arraydata *input, array2D *&output ){
+	int createRawImageCSPAD( const arraydata<double> *input, array2D *&output ){
 		if (!input){
 			cerr << "Error in createRawImageCSPAD. No input. Aborting..." << endl;
 			return 1;
@@ -122,7 +124,7 @@ namespace ns_cspad_util{
 	//------------------------------------------------------------- createAssembledImageCSPAD
 	// expects 'pixX/Y' arrays to contain pixel count coordinates for each value in 'input'
 	//-------------------------------------------------------------
-	int createAssembledImageCSPAD( const arraydata *input, const array1D *pixX, const array1D *pixY, array2D *&output ){
+	int createAssembledImageCSPAD( const arraydata<double> *input, const array1D *pixX, const array1D *pixY, array2D *&output ){
 		if (!input){
 			cerr << "Error in createAssembledImageCSPAD. No input. Aborting..." << endl;
 			return 1;
@@ -166,5 +168,5 @@ namespace ns_cspad_util{
 		return 0;
 	}
 
-}//namespace
+}//namespace ns_cspad_util
 
