@@ -23,8 +23,15 @@ namespace ns_cspad_util{
 	
 	//-------------functions for the CSPAD detector-------------
 	int create1DFromRawImageCSPAD( const array2D *input, array1D *&output );
-	int createRawImageCSPAD( const arraydata *input, array2D *&output );
-	int createAssembledImageCSPAD( const arraydata *input, const array1D *pixX, const array1D *pixY, array2D *&output );
+	int createRawImageCSPAD( const arraydata<double> *input, array2D *&output );
+	int createAssembledImageCSPAD( const arraydata<double> *input, const array1D *pixX, const array1D *pixY, array2D *&output );
+}	
+	
+namespace ns_histogram_util{	
+	int getHistogramInBoundaries( const arraydata<double> *data, array1<int> *&hist, array1<double> *&bins, unsigned int nBins, double min, double max );
+	int getHistogram( const arraydata<double> *data, array1<int> *&hist, array1<double> *&bins, unsigned int nBins = 20 );
+	std::string getHistogramInBoundariesASCII( const arraydata<double> *data, unsigned int nBins, double min, double max );
+	std::string getHistogramASCII( const arraydata<double> *data, unsigned int nBins = 20 );
 }
 
 

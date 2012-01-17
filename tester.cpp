@@ -59,16 +59,19 @@ string Tester::base(){
 //-------------------------------------------------------- -t1
 int Tester::testCrossCorrelator( int alg, int testpattern ){						
     cout << "testCrossCorrelator(" << alg << ")" << endl;
-    
+ 
+	
+	arraydataIO *io = new arraydataIO;   
+
 	int sizex = 500;
 	int sizey = 500;
 	int nphi = 256; 
 	int nq = 200;
 	
-	array2D *dataArray = new array2D(sizex, sizey);
-	array2D *qxArray = new array2D(sizex, sizey);
-	array2D *qyArray = new array2D(sizex, sizey);
-	dataArray->generateTestPattern(testpattern);
+	array2D<double> *dataArray = new array2D<double>(sizex, sizey);
+	array2D<double> *qxArray = new array2D<double>(sizex, sizey);
+	array2D<double> *qyArray = new array2D<double>(sizex, sizey);
+	io->generateTestPattern(dataArray, testpattern);
 	qxArray->range(-10, 10);
 	qyArray->range(-10, 10);
 	
@@ -95,15 +98,13 @@ int Tester::testCrossCorrelator( int alg, int testpattern ){
 			cc->calculatePolarCoordinates_FAST(start_q, stop_q);
 			cc->calculateXCCA_FAST();
 
-			arraydataIO *io = new arraydataIO;
 			io->writeToTiff( cc->outputdir()+"polar.tif", cc->polar(), 1 );            //dump scaled output from correlation			
 			io->writeToTiff( cc->outputdir()+"corr.tif", cc->autoCorr(), 1 );            //dump scaled output from correlation
-			delete io;
 			
         break;
     }
 
-    
+	delete io;   
 	delete cc;
     return 0;
 }
@@ -113,8 +114,8 @@ int Tester::testCrossCorrelator( int alg, int testpattern ){
 int Tester::testArrayClasses(){
 	cout << "TESTING THE ARRAY CLASSES" << endl;
 
-	cout << "----------array1D------------" << endl;
-	array1D *my1Darray = new array1D(5);
+	cout << "----------array1D<double>------------" << endl;
+	array1D<double> *my1Darray = new array1D<double>(5);
 	my1Darray->set(0, 2);
 	my1Darray->set(2, 5);
 	//my1Darray->set(6, 5);//exceeds dimensions, should crash
@@ -123,8 +124,8 @@ int Tester::testArrayClasses(){
 	cout << "element 3: " << my1Darray->get(3) << endl;	
     delete my1Darray;
 	
-	cout << "----------array2D------------" << endl;    
-	array2D *my2Darray = new array2D(5, 10);
+	cout << "----------array2D<double>------------" << endl;    
+	array2D<double> *my2Darray = new array2D<double>(5, 10);
 	my2Darray->set(0, 0, 2);
 	my2Darray->set(2, 8, 5.5);
 	//my2Darray->set(6, 11, -2);//exceeds dimensions, should crash
@@ -146,7 +147,7 @@ int Tester::testArrayClasses(){
 	my2Darray->multiplyByValue(1/2.);
 	cout << "after multiplying by 1/2 --- " << my2Darray->getASCIIdata();
 
-	array1D *row = new array1D();
+	array1D<double> *row = new array1D<double>();
 	my2Darray->getRow(3, row);
 	cout << "extracted row 3 --- " << row->getASCIIdata();
 	my2Darray->setRow(4, row, 2);
@@ -161,7 +162,7 @@ int Tester::testArrayClasses(){
 	cout << my2Darray->getHistogramASCII( 20 );
 	cout << my2Darray->getHistogramInBoundariesASCII( 20, -5, 5 );
 	
-	array2D *mask = new array2D( my2Darray->dim1(), my2Darray->dim2() );
+	array2D<double> *mask = new array2D<double>( my2Darray->dim1(), my2Darray->dim2() );
 	mask->set(1,1,1);
 	mask->set(4,4,1);
 	my2Darray->multiplyByArrayElementwise( mask );
@@ -173,8 +174,8 @@ int Tester::testArrayClasses(){
 	
     
     
-//	cout << "----------array3D------------" << endl;
-//	array3D *my3Darray = new array3D(20, 10, 3);
+//	cout << "----------array3D<double>------------" << endl;
+//	array3D<double> *my3Darray = new array3D<double>(20, 10, 3);
 //	my3Darray->set(0, 0, 0, 2);
 //    my3Darray->set(1, 1, 1, -2);
 //	my3Darray->set(2, 8, 2, 5.5);
@@ -185,13 +186,13 @@ int Tester::testArrayClasses(){
 //	delete my3Darray;
     
     
-//    cout << "----------forging array1D ---> array2D----------" << endl;
-//	array1D *one = new array1D(25);
+//    cout << "----------forging array1D<double> ---> array2D<double>----------" << endl;
+//	array1D<double> *one = new array1D<double>(25);
 //	one->set(0, 2);
 //	one->set(2, 2);
 //	one->set(6, 6);
 //    one->set(24, 24);
-//    array2D *two = new array2D(one, 5, 5);
+//    array2D<double> *two = new array2D<double>(one, 5, 5);
 //    cout << "one: " << one->getASCIIdata() << endl;
 //    cout << "two: " << two->getASCIIdata() << endl;
 //    cout << "-->deleting one" << endl;
@@ -205,13 +206,13 @@ int Tester::testArrayClasses(){
  
  
  
-//    cout << "----------forging array2D ---> array1D----------" << endl;
-//    two = new array2D(5, 5);
+//    cout << "----------forging array2D<double> ---> array1D<double>----------" << endl;
+//    two = new array2D<double>(5, 5);
 //    two->set(0,0,1);
 //    two->set(1,1,7);
 //    two->set(2,0,-2);
 //    two->set(4,4,16);
-//    one = new array1D(two);
+//    one = new array1D<double>(two);
 //    cout << "two: " << two->getASCIIdata() << endl;  
 //    cout << "one: " << one->getASCIIdata() << endl; 
 //    delete two;
@@ -228,9 +229,9 @@ int Tester::testArrayClasses(){
 int Tester::testFourierTrafo(){
 
     int size = 50;
-    array1D *f = new array1D(size);
-    array1D *g = new array1D(size);
-    array1D *model = new array1D(size);
+    array1D<double> *f = new array1D<double>(size);
+    array1D<double> *g = new array1D<double>(size);
+    array1D<double> *model = new array1D<double>(size);
 	
 	
     //create typical 2D model
@@ -325,7 +326,7 @@ int Tester::testIO(int mode){
 
 	//-------------------------------------------------------------writing
 	cout << "--- test case 2D ---" << endl;
-	array2D *wmat = new array2D(10, 6);
+	array2D<double> *wmat = new array2D<double>(10, 6);
 //	wmat->generateTestPattern( 4 );		//cases 0 - 4 available
 	wmat->gradientAlongDim1(-10, 10);
 	cout << wmat->getASCIIdata();
@@ -364,7 +365,7 @@ int Tester::testIO(int mode){
 	}
 	
 	//-------------------------------------------------------------reading
-	array2D *rmat = new array2D;
+	array2D<double> *rmat = new array2D<double>;
 
 	if (mode == 0 || mode == 1){
 		cout << "\nreading from EDF" << endl;
@@ -414,7 +415,7 @@ int Tester::testIO(int mode){
 	
 	//-------------------------------------------------------------writing
 	cout << "--- test case 1D ---" << endl;
-	array1D *warr = new array1D(10);
+	array1D<double> *warr = new array1D<double>(10);
 	warr->range(-7, 12);
 	cout << warr->getASCIIdata();
 
@@ -434,7 +435,7 @@ int Tester::testIO(int mode){
 	}
 	
 	//-------------------------------------------------------------reading
-	array1D* rarr = new array1D;
+	array1D<double>* rarr = new array1D<double>;
 	
 	if (mode == 10 || mode == 11) {
 		io->readFromEDF(base()+infn+"_1D.edf", rarr);
@@ -476,6 +477,7 @@ int Tester::testDataTypes(){
 	cout << "sizeof(int32_t)  =           " << sizeof(int32_t) << endl;
 	cout << "sizeof(float) =              " << sizeof(float) << endl;
 	cout << "sizeof(double) =             " << sizeof(double) << endl;
+	cout << "sizeof(bool) =               " << sizeof(bool) << endl;
 	cout << "-----------------------------------------" << endl;
 	return 0;
 }
@@ -512,30 +514,34 @@ int Tester::testArraySpeed(){
 void Tester::subtestBoost(){
 	const int size = 1000;
 	array<double, size> a;
-	for (int i = 0; i < a.size(); i++){
+	for (unsigned int i = 0; i < a.size(); i++){
 		a.at(i) = 0;
 	}
 }
 
 void Tester::subtestArraydata(int size){
-	arraydata a = arraydata(size);
-	for (int i = 0; i < a.size(); i++){
+	arraydata<double> a = arraydata<double>(size);
+	for (unsigned int i = 0; i < a.size(); i++){
 		a.set_atIndex(i, double(i));
 		double value = a.get_atIndex(i);
-		cout << value << " " << std::flush;
-		if (!(i%1000))
-			cout << endl;
+		if (!(i%1000)){
+			cout << value << " " << std::flush;
+			if (!(i%1000000))
+				cout << endl;
+		}
 	}
 }
 
 void Tester::subtestVector(int size){
 	vector<double> v(size, 0);
 
-	for (int i = 0; i < v.size(); i++){
+	for (unsigned int i = 0; i < v.size(); i++){
 		v.at(i) = double(i);
 		double value = v.at(i);
-		cout << value << " " << std::flush;
-		if (!(i%1000))
-			cout << endl;
+		if (!(i%1000)){
+			cout << value << " " << std::flush;
+			if (!(i%1000000))
+				cout << endl;
+		}
 	}
 }

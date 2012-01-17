@@ -18,11 +18,11 @@ public:
 	
 	//each of these functions is passed the real and imaginary part of a complex function f (f_real, f_imag)
 	//result is returned in these same arguments
-	int transformForward( array1D *&f_real, array1D *&f_imag );					
-	int transformInverse( array1D *&f_real, array1D *&f_imag );					// includes 1/N normalization
-	int magnitudeSquared( array1D *&f_real, array1D *&f_imag );
-	int autocorrelation( array1D *&f_real, array1D *&f_imag );
-	int crosscorrelation( array1D *&f_real, array1D *&f_imag, array1D *&g_real, array1D *&g_imag );
+	int transformForward( array1D<double> *&f_real, array1D<double> *&f_imag );					
+	int transformInverse( array1D<double> *&f_real, array1D<double> *&f_imag );					// includes 1/N normalization
+	int magnitudeSquared( array1D<double> *&f_real, array1D<double> *&f_imag );
+	int autocorrelation( array1D<double> *&f_real, array1D<double> *&f_imag );
+	int crosscorrelation( array1D<double> *&f_real, array1D<double> *&f_imag, array1D<double> *&g_real, array1D<double> *&g_imag );
 	
 private:
     int verbose;
@@ -35,11 +35,11 @@ private:
 	bool p_create_new_plans;		//default: new plans are created every time
 									//alternatively, the user could be enabled to set plans manually (not implemented currently)
 	
-	void setData( const array1D *real, const array1D *imag );
-	void getData( array1D *&real, array1D *&imag ) const;		// return within passed arguments
+	void setData( const array1D<double> *real, const array1D<double> *imag );
+	void getData( array1D<double> *&real, array1D<double> *&imag ) const;		// return within passed arguments
 	//after the transform, use these functions to ask for the transformed data
-	array1D getReal() const;									// return by copy (may be slower)
-	array1D getImag() const;									// return by copy (may be slower)
+	array1D<double> getReal() const;									// return by copy (may be slower)
+	array1D<double> getImag() const;									// return by copy (may be slower)
 	
 	void createPlans();
 	void destroyPlans();

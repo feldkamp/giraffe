@@ -164,17 +164,17 @@ int main (int argc, char * const argv[]) {
 
 	arraydataIO *io = new arraydataIO;
 
-	//prepare array2D's to hold overall averages
-	array2D *detavg = new array2D;
+	//prepare array2D<double>'s to hold overall averages
+	array2D<double> *detavg = new array2D<double>;
 	io->readFromFile( files.at(0), detavg );
 	int imgX = detavg->dim2();
 	int imgY = detavg->dim1();
 	
-	array2D *backavg = new array2D( imgY, imgX );
-	array2D *mask = 0;
-	array2D *back = 0;
-	array2D *qx = 0;
-	array2D *qy = 0;
+	array2D<double> *backavg = new array2D<double>( imgY, imgX );
+	array2D<double> *mask = 0;
+	array2D<double> *back = 0;
+	array2D<double> *qx = 0;
+	array2D<double> *qy = 0;
 	
 	int iofail = 0;
 				
@@ -193,7 +193,7 @@ int main (int argc, char * const argv[]) {
 		iofail += io->readFromFile( pixx_fn, qx);
 	}else{
 		cout << "using a generic qx-distribution" << endl;
-		qx = new array2D( imgY, imgX );
+		qx = new array2D<double>( imgY, imgX );
 		qx->gradientAlongDim1(-imgX/2+shiftX, +imgX/2+shiftX);
 	}
 
@@ -201,7 +201,7 @@ int main (int argc, char * const argv[]) {
 		iofail += io->readFromFile( pixy_fn, qy);
 	}else{
 		cout << "using a generic qy-distribution" << endl;
-		qy = new array2D( imgY, imgX );
+		qy = new array2D<double>( imgY, imgX );
 		qy->gradientAlongDim2(-imgY/2+shiftY, +imgY/2+shiftY);
 	}
 	
@@ -242,8 +242,8 @@ int main (int argc, char * const argv[]) {
 
 	nLag = cc->nLag();
 	
-	array2D *polaravg = new array2D( nQ, nPhi );
-	array2D *corravg = new array2D( nQ, nLag );
+	array2D<double> *polaravg = new array2D<double>( nQ, nPhi );
+	array2D<double> *corravg = new array2D<double>( nQ, nLag );
 	
 	//process all files
 	unsigned int num_files = (unsigned int)files.size();
@@ -254,13 +254,13 @@ int main (int argc, char * const argv[]) {
 		string fn = files.at(k);
 		cout << "#" << k << ": " << std::flush;// << fn << endl;
 		
-		array2D *image = 0;
+		array2D<double> *image = 0;
 		if (k != 0){
 			io->readFromFile( fn, image );
 		}else{
 			//this has been read previously in detavg, no need to read again...
 			delete image;
-			image = new array2D(*detavg);
+			image = new array2D<double>(*detavg);
 			detavg->zeros();
 		}
 		
