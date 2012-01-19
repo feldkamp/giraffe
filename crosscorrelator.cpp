@@ -210,7 +210,7 @@ void CrossCorrelator::initInternalArrays(){
 	p_qAvg = new array1D<double>(nQ());
 	p_iAvg = new array1D<double>(nQ());
 	p_phiAvg = new array1D<double>(nPhi());
-	p_pixelCount = new array2D<double>( nQ(), nPhi() );
+	p_pixelCount = new array2D<unsigned int>( nQ(), nPhi() );
 }
 
 //---------------------------------------------------------------------------- destroyInternalArrays
@@ -433,7 +433,7 @@ void CrossCorrelator::setQy( arraydata<double> *qy ) {
 
 
 //----------------------------------------------------------------------------mask
-array1D<double> *CrossCorrelator::mask() const {
+array1D<bool> *CrossCorrelator::mask() const {
 	return p_mask;
 }
 
@@ -442,7 +442,7 @@ void CrossCorrelator::setMask( arraydata<double> *maskArray ) {
 		delete p_mask;
 	}
 	if (maskArray) {
-		p_mask = new array1D<double>( maskArray );
+		p_mask = new array1D<bool>( maskArray );
 		setMaskEnable( true );
 		normalizeMask();
 	}else{
@@ -481,7 +481,7 @@ array2D<double> *CrossCorrelator::polar() const {
 }
 
 
-array2D<double> *CrossCorrelator::mask_polar() const {
+array2D<bool> *CrossCorrelator::mask_polar() const {
 	return p_mask_polar;
 }
 
@@ -684,7 +684,7 @@ array1D<double> *CrossCorrelator::phiAvg() const{
 	return p_phiAvg;
 }
 
-array2D<double> *CrossCorrelator::pixelCount() const{
+array2D<unsigned int> *CrossCorrelator::pixelCount() const{
 	return p_pixelCount;
 }
 
@@ -1142,10 +1142,12 @@ int CrossCorrelator::subtractSAXSmean(){
 			avg = row->calcAvg();
 		}else{												//mask --> leave out bad pixels
 			double sum = 0.;
-			double valid = 0;
+			unsigned int valid = 0;
 			for (int i = 0; i < row->size(); i++) {
 				sum += row->get_atIndex(i);
-				valid += mask_polar()->get(i, q_ct);		// if mask has a 1 here, the point is valid
+				if (mask_polar()->get(i, q_ct) ){		// if mask has a 1 here, the point is valid
+					valid++; 
+				}
 			}
 			avg = (valid > 0) ? (sum/((double)valid)) : 0;
 		}
@@ -1209,13 +1211,20 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( double start_q, double stop
 	if ( maskEnable() ) {
 		//create new array2D<double> to store polar coordinate representation
 		delete p_mask_polar;
-		p_mask_polar = new array2D<double>( nQ(), nPhi() );
+		p_mask_polar = new array2D<bool>( nQ(), nPhi() );
 		if (!p_mask_polar){
 			cerr << "Error in CrossCorrelator::calculatePolarCoordinates_FAST. p_mask_polar couldn't be allocated." << endl;
 			return 1;
 		}
 		setMaskEnable(false);	//disable mask feature for the purpose of treating the mask itself...
-		calculatePolarCoordinates_FAST( mask(), mask_polar(), nPhi(), start_phi, stop_phi, nQ(), start_q, stop_q );
+		//transfer data to a double arrays to be able to perform the transform to polar coordinates
+		array1D<double> *doublemask = new array1D<double>( mask() );
+		array2D<double> *doublemask2D = new array2D<double>;
+		calculatePolarCoordinates_FAST( doublemask, doublemask2D, nPhi(), start_phi, stop_phi, nQ(), start_q, stop_q );
+		delete p_mask_polar;
+		p_mask_polar = new array2D<bool>( doublemask2D );
+		delete doublemask;
+		delete doublemask2D;
 		setMaskEnable(true);	// ...turn back on
 	}
 	
@@ -1239,7 +1248,7 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( double start_q, double stop
 
 //----------------------------------------------------------------------------calculatePolarCoordinates_FAST
 // returns the number of times the lookup has failed
-int CrossCorrelator::calculatePolarCoordinates_FAST( array1D<double>* cartesian1D, array2D<double>* polar2D, 
+int CrossCorrelator::calculatePolarCoordinates_FAST( array1D<double> *cartesian1D, array2D<double> *polar2D, 
 													int number_phi, double start_phi, double stop_phi, 
 													int number_q, double start_q, double stop_q) const {
 	double xcoord = 0.;

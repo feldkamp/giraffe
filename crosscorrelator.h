@@ -11,6 +11,7 @@
 #define _crosscorrelator_h
 
 #include "arrayclasses.h"
+using namespace ns_arraydata;
 
 #include <string>
 
@@ -116,11 +117,11 @@ public:
 	//---------------------------------------------getters for calculated arrays
 	array1D<double> *qAvg() const;
 	array1D<double> *phiAvg() const;
-	array2D<double> *pixelCount() const;
+	array2D<unsigned int> *pixelCount() const;
 	array1D<double> *iAvg() const;
 	array2D<double> *fluctuations() const;	// intensity fluctuations in polar coordinates produced by calculatePolarCoordinates()
 	array2D<double> *polar() const;			// intensities in polar coordinates produced by calculatePolarCoordinates()/calculatePolarCoordinates_FAST()
-	array2D<double> *mask_polar() const;	// mask in polar coordinates produced by calculatePolarCoordinates_FAST()
+	array2D<bool> *mask_polar() const;		// mask in polar coordinates produced by calculatePolarCoordinates_FAST()
 	array2D<double> *autoCorr() const;
 	double getAutoCorrelation(unsigned index1, unsigned index2) const;
 	array3D<double> *crossCorr() const;	
@@ -158,7 +159,7 @@ public:
 			p_qy = new array1D<double>( qyArray, size );
 		}
 
-	array1D<double> *mask() const;
+	array1D<bool> *mask() const;
 	void setMask( arraydata<double> *mask );
 	template <class T>
 		void setMask(T *maskCArray, unsigned int size){
@@ -166,7 +167,7 @@ public:
 				delete p_mask;
 			}
 			if (maskCArray) {
-				p_mask = new array1D<double>( maskCArray, size );
+				p_mask = new array1D<bool>( maskCArray, size );	// input data will be cast to bool
 				setMaskEnable( true );
 				normalizeMask();
 			}else{
@@ -224,7 +225,7 @@ private:
 	array1D<double> *p_data;			// data storage
 	array1D<double> *p_qx;				// pixel x coordinate
 	array1D<double> *p_qy;				// pixel y coordinate
-	array1D<double> *p_mask;			// mask used to remove bad pixels
+	array1D<bool> *p_mask;			// mask used to remove bad pixels
 	array2D<double> *p_polar;			// intensities in polar coordinates
 	
 	array2D<double> *p_autoCorrelation;
@@ -250,7 +251,7 @@ private:
 	array1D<double> *p_qAvg;			// vector of output magnitudes of q-vector
 	array1D<double> *p_iAvg;			// vector of output average intensities for magnitudes of q-vector
 	array1D<double> *p_phiAvg;			// vector of output angles
-	array2D<double> *p_pixelCount;		// pixel counts in polar coordinates
+	array2D<unsigned int> *p_pixelCount;		// pixel counts in polar coordinates
 	
 	array2D<double> *p_fluctuations;	// intensity fluctuations in polar coordinates
     
@@ -260,7 +261,7 @@ private:
 	int p_tracker_calculateXCCA;				// tracker for calculateXCCA()
 	
 	//-------------------------------------------------required for alg2
-	array2D<double> *p_mask_polar;
+	array2D<bool> *p_mask_polar;
 	array2D<double> *p_table;					//lookup table
 
 	double p_qxmax;
