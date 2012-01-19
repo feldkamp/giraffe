@@ -37,19 +37,19 @@ namespace ns_cspad_util{
 	// make a 1D array from a written 2D "raw" image
 	//
 	//-------------------------------------------------------------
-	int create1DFromRawImageCSPAD( const array2D *input, array1D *&output ){
+	int create1DFromRawImageCSPAD( const array2D<double> *input, array1D<double> *&output ){
 		if (!input){
 			cerr << "Error in create1DFromRawImageCSPAD. No input. Aborting..." << endl;
 			return 1;
 		}
 		
 		delete output;
-		output = new array1D( nMaxTotalPx );
+		output = new array1D<double>( nMaxTotalPx );
 
 		//transpose to be conform with psana's convention
 		//make a copy to not screw up the original array
 		//obviously not the smart way to do it... needs a fix at a certain point...... should be simple by rearranging logic in 4-for-loop
-		array2D *copy = new array2D( *input );
+		array2D<double> *copy = new array2D<double>( *input );
 		copy->transpose();
 
 		//sort into 1D data
@@ -91,14 +91,14 @@ namespace ns_cspad_util{
 	//    +--+--+--+--+--+--+--+--+
 	//     s0 s1 s2 s3 s4 s5 s6 s7
 	//-------------------------------------------------------------
-	int createRawImageCSPAD( const arraydata<double> *input, array2D *&output ){
+	int createRawImageCSPAD( const arraydata<double> *input, array2D<double> *&output ){
 		if (!input){
 			cerr << "Error in createRawImageCSPAD. No input. Aborting..." << endl;
 			return 1;
 		}
 
 		delete output;
-		output = new array2D( nMaxQuads*nRowsPer2x1, nMax2x1sPerQuad*nColsPer2x1 );
+		output = new array2D<double>( nMaxQuads*nRowsPer2x1, nMax2x1sPerQuad*nColsPer2x1 );
 		
 		//sort into ordered 2D data
 		for (int q = 0; q < nMaxQuads; q++){
@@ -124,7 +124,7 @@ namespace ns_cspad_util{
 	//------------------------------------------------------------- createAssembledImageCSPAD
 	// expects 'pixX/Y' arrays to contain pixel count coordinates for each value in 'input'
 	//-------------------------------------------------------------
-	int createAssembledImageCSPAD( const arraydata<double> *input, const array1D *pixX, const array1D *pixY, array2D *&output ){
+	int createAssembledImageCSPAD( const arraydata<double> *input, const array1D<double> *pixX, const array1D<double> *pixY, array2D<double> *&output ){
 		if (!input){
 			cerr << "Error in createAssembledImageCSPAD. No input. Aborting..." << endl;
 			return 1;
@@ -141,7 +141,7 @@ namespace ns_cspad_util{
 		const int NY_CSPAD = (int) ceil(ymax-ymin) + 1;
 		
 		if (input->size() != pixX->size() || input->size() != pixY->size() ){
-			cerr << "Error in array2D::createAssembledImageCSPAD! Array sizes don't match. Aborting!" << endl;
+			cerr << "Error in array2D<double>::createAssembledImageCSPAD! Array sizes don't match. Aborting!" << endl;
 			cerr << "size() of data:" << input->size() << ", pixX:" << pixX->size() << ", pixY:" << pixY->size() << endl;
 			return 2;
 		}else{
@@ -149,7 +149,7 @@ namespace ns_cspad_util{
 		}
 		
 		delete output;
-		output = new array2D( NY_CSPAD, NX_CSPAD );
+		output = new array2D<double>( NY_CSPAD, NX_CSPAD );
 
 		//sort into ordered 2D data
 		for (int q = 0; q < nMaxQuads; q++){

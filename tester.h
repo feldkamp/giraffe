@@ -28,9 +28,11 @@ class Tester {
 		
 		//sub-tests for testArraySpeed
 		void subtestBoost();
-		void subtestArraydata(int size);
-		void subtestVector(int size);
-	
+		void subtestArraydata(unsigned int size);
+		void subtestVector(unsigned int size);
+		void subtest2D_a(unsigned int dim1, unsigned int dim2);
+		void subtest2D_b(unsigned int dim1, unsigned int dim2);
+			
 	private:
 		std::string p_base;
 };

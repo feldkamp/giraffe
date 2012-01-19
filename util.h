@@ -9,6 +9,7 @@
 //
 
 #include "arrayclasses.h"
+using namespace ns_arraydata;
 
 namespace ns_cspad_util{
 	const int nRowsPerASIC = 194;
@@ -22,17 +23,11 @@ namespace ns_cspad_util{
 	const int nMaxTotalPx = nMaxPxPerQuad * nMaxQuads; 						// 2296960;  //(2.3e6)
 	
 	//-------------functions for the CSPAD detector-------------
-	int create1DFromRawImageCSPAD( const array2D *input, array1D *&output );
-	int createRawImageCSPAD( const arraydata<double> *input, array2D *&output );
-	int createAssembledImageCSPAD( const arraydata<double> *input, const array1D *pixX, const array1D *pixY, array2D *&output );
+	int create1DFromRawImageCSPAD( const array2D<double> *input, array1D<double> *&output );
+	int createRawImageCSPAD( const arraydata<double> *input, array2D<double> *&output );
+	int createAssembledImageCSPAD( const arraydata<double> *input, const array1D<double> *pixX, const array1D<double> *pixY, array2D<double> *&output );
 }	
-	
-namespace ns_histogram_util{	
-	int getHistogramInBoundaries( const arraydata<double> *data, array1<int> *&hist, array1<double> *&bins, unsigned int nBins, double min, double max );
-	int getHistogram( const arraydata<double> *data, array1<int> *&hist, array1<double> *&bins, unsigned int nBins = 20 );
-	std::string getHistogramInBoundariesASCII( const arraydata<double> *data, unsigned int nBins, double min, double max );
-	std::string getHistogramASCII( const arraydata<double> *data, unsigned int nBins = 20 );
-}
+
 
 
 #endif

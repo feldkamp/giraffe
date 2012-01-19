@@ -27,6 +27,7 @@ using std::vector;
 namespace po = boost::program_options;
 
 #include "arrayclasses.h"
+using namespace ns_arraydata;
 #include "arraydataIO.h"
 #include "util.h"
 

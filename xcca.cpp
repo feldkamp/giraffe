@@ -15,8 +15,9 @@ using std::string;
 #include <boost/program_options.hpp>		//parser for options (commandline and ini-file)
 namespace po = boost::program_options;
 
-#include "crosscorrelator.h"
 #include "arrayclasses.h"
+using namespace ns_arraydata;
+#include "crosscorrelator.h"
 #include "arraydataIO.h"
 
 
@@ -283,7 +284,9 @@ int main (int argc, char * const argv[]) {
 			io->writeToFile( outdir+"corr"+single_desc+ext, cc->autoCorr() );
 			io->writeToFile( outdir+"polar"+single_desc+ext, cc->polar() );
 			io->writeToFile( outdir+"fluct"+single_desc+ext, cc->fluctuations() );
-			io->writeToFile( outdir+"pixel_count"+single_desc+ext, cc->pixelCount() );
+			
+			//pixelCount is of type array2D<unsigned int> and would need to be converted to be written
+			//io->writeToFile( outdir+"pixel_count"+single_desc+ext, cc->pixelCount() );
 			
 			io->writeToFile( outdir+"q"+single_desc+ext, cc->qAvg() );	
 			io->writeToFile( outdir+"i"+single_desc+ext, cc->iAvg() );	
