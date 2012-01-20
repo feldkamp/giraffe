@@ -655,11 +655,10 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 		arraydata<double> *readarray = 0;
 		int fail = readFromHDF5_generic( filename, readarray, img_rank, dims, verbose() );
 		if (!fail){
-			delete dest;
 			int cols = (int)dims[0];
 			int rows = (int)dims[1];
 			if (img_rank == 1){ cols = 1; }
-			dest = new array2D<double>( readarray, rows, cols );
+			convertToArray2D( readarray, dest, rows, cols );
 			if (verbose()>2){
 				cout << "dest: " << dest << ", dims " << dest->dim1() << " x " << dest->dim2() 
 					<< ", rows:" << rows << ", cols:" << cols << endl;

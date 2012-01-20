@@ -30,6 +30,7 @@
 
 	#include <string>
 	#include "arrayclasses.h"
+	using namespace ns_arraydata;
 
 	class arraydataIO{
 

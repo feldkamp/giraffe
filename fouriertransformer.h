@@ -8,6 +8,8 @@
 
 
 #include "arrayclasses.h"
+using namespace ns_arraydata;
+
 #include <fftw3.h>
 
 

@@ -182,6 +182,9 @@ void CrossCorrelator::initPrivateVariables(){
 	p_iAvg = 0;
 	p_phiAvg = 0;
 	p_fluctuations = 0;
+	p_pixelCount = 0;
+	p_pixelBool = 0;
+	p_autoCorrNorm = 0;
 	
 	p_tracker_calculatePolarCoordinates = 0;
 	p_tracker_calculateSAXS = 0;
@@ -210,7 +213,7 @@ void CrossCorrelator::initInternalArrays(){
 	p_qAvg = new array1D<double>(nQ());
 	p_iAvg = new array1D<double>(nQ());
 	p_phiAvg = new array1D<double>(nPhi());
-	p_pixelCount = new array2D<double>( nQ(), nPhi() );
+	p_pixelCount = new array2D<unsigned int>( nQ(), nPhi() );
 }
 
 //---------------------------------------------------------------------------- destroyInternalArrays
@@ -231,6 +234,8 @@ void CrossCorrelator::destroyInternalArrays(){
 	delete p_iAvg;
 	delete p_phiAvg;
 	delete p_pixelCount;
+	delete p_pixelBool;
+	delete p_autoCorrNorm;
 	delete p_fluctuations;
 	
 	delete p_crossCorrelation;
@@ -433,7 +438,7 @@ void CrossCorrelator::setQy( arraydata<double> *qy ) {
 
 
 //----------------------------------------------------------------------------mask
-array1D<double> *CrossCorrelator::mask() const {
+array1D<bool> *CrossCorrelator::mask() const {
 	return p_mask;
 }
 
@@ -442,7 +447,7 @@ void CrossCorrelator::setMask( arraydata<double> *maskArray ) {
 		delete p_mask;
 	}
 	if (maskArray) {
-		p_mask = new array1D<double>( maskArray );
+		p_mask = new array1D<bool>( maskArray );
 		setMaskEnable( true );
 		normalizeMask();
 	}else{
@@ -481,7 +486,7 @@ array2D<double> *CrossCorrelator::polar() const {
 }
 
 
-array2D<double> *CrossCorrelator::mask_polar() const {
+array2D<bool> *CrossCorrelator::mask_polar() const {
 	return p_mask_polar;
 }
 
@@ -684,8 +689,16 @@ array1D<double> *CrossCorrelator::phiAvg() const{
 	return p_phiAvg;
 }
 
-array2D<double> *CrossCorrelator::pixelCount() const{
+array2D<unsigned int> *CrossCorrelator::pixelCount() const{
 	return p_pixelCount;
+}
+
+array2D<bool> *CrossCorrelator::pixelBool() const{
+	return p_pixelBool;
+}
+
+array2D<unsigned int> *CrossCorrelator::autoCorrNorm() const{
+	return p_autoCorrNorm;
 }
 
 array1D<double> *CrossCorrelator::iAvg() const{
@@ -746,10 +759,13 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 			// make sure qIndex and phiIndex are not out of array bounds
 			if ( (qIndex >= 0) && (qIndex < nQ()) 
 					&& (phiIndex >= 0) && (phiIndex < nPhi())) { 
+				
 				//add data value to existing array
 				polar()->set(qIndex, phiIndex, polar()->get(qIndex, phiIndex) + data()->get(i) );
+				
 				//increment pixel count 
 				pixelCount()->set(qIndex, phiIndex, pixelCount()->get(qIndex,phiIndex)+1);
+				
 			} else {
 				if (debug() >= 3){
 					cout << "POINT EXCLUDED! qIndex " << qIndex << " (nQ:" << nQ() 
@@ -765,6 +781,21 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 		cout << "Warning from CrossCorrelator::calculatePolarCoordinates(): " << exclude_ratio*100 << "% of points excluded." << endl;
 	}
 	
+	//need to count these three functions in this order
+	//they generally only need to be called once for a given binning and geometry
+	//once calculated, they don't change anymore
+	//--->skip these three steps, if the calculation has been performed already
+	if (!pixelCount()){
+		calculatePixelCount();
+	}
+	if (!pixelBool()){
+		calculatePixelBool();									// relies on pixelCount
+	}
+	if( !autoCorrNorm() && !xccaEnable() ){
+		calculateAutoCorrNorm();								// relies on pixelCount
+	}
+
+		
 	// calculate vector of output |q|
 	for (int i=0; i<nQ(); i++) {
 		qAvg()->set( i, qmin()+i*deltaq() );
@@ -792,6 +823,47 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 }
 
 
+//----------------------------------------------------------------------------
+void CrossCorrelator::calculatePixelCount(){
+}
+
+
+//----------------------------------------------------------------------------
+void CrossCorrelator::calculatePixelBool(){
+	delete p_pixelBool;
+	p_pixelBool = new array2D<bool>( nQ(), nLag() );
+	
+	for (unsigned int i = 0; i < pixelBool()->size(); i++){
+		if (pixelCount()->get_atIndex(i)){
+			pixelBool()->set_atIndex(i, true);
+		}else{
+			pixelBool()->set_atIndex(i, false);
+		}
+	}
+}
+
+
+//----------------------------------------------------------------------------
+void CrossCorrelator::calculateAutoCorrNorm(){
+	delete p_autoCorrNorm;
+	p_autoCorrNorm = new array2D<unsigned int>( nQ(), nLag() );
+	
+	unsigned int norm = 0;
+	int phi2_index = 0;
+	for (int i=0; i<nQ(); i++) { 							// for i (q)
+		for (int k=0; k<nLag(); k++) { 						// for k (lag) => phi2 = (l+k)%nPhi
+			norm = 0;
+			for (int l=0; l<nPhi(); l++) { 					// for l (phi1)
+				phi2_index = (l+k)%nPhi();
+				if ( pixelCount()->get(i,l)*pixelCount()->get(i,phi2_index) > 0 ){
+					//incement counter, if there was a contribution to this (i,k)
+					norm++;
+				}
+			}//for l (phi1)
+			autoCorrNorm()->set(i, k, norm);
+		}//for k (lag)
+	}// for i (q)
+}
 
 //----------------------------------------------------------------------------calculateSAXS
 // calculates the angular average of the intensity as a function of |q|
@@ -897,7 +969,7 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 		p_fluctuations = new array2D<double>( nQ(), nPhi() );
 		for (int i=0; i<nQ(); i++) {
 			for (int j=0; j<nPhi(); j++) {
-				if (pixelCount()->get(i,j) > 0.1) {	//compare to 0.1 to make sure float inaccuracies don't make this 'true'
+				if (pixelCount()->get(i,j) > 0) {
 					// subtract SAXS average for all shots or just subtract the SAXS from the specific shot?
 					// second alternative is used here, since that always produces fluctuations with zero mean
 					fluctuations()->set(i, j, polar()->get(i,j) - iAvg()->get(i) );
@@ -906,88 +978,14 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 		}
 
 		if (debug() >= 1) cout << "calculating " << xccaEnable_str << std::flush;
-			
+		
 		// calculate cross-correlation array and normalization array for cross-correlation	
 		if (xccaEnable()) {
-			//FULL CROSS-CORRELATION (4-fold for-loop)
-			delete p_crossCorrelation;
-			p_crossCorrelation = new array3D<double>( nQ(), nQ(), nLag() );
-			
-			for (int i=0; i<nQ(); i++) { // q1 index
-				if (debug() && i%100 == 0) cout << "." << flush;
-				for (int j=0; j<nQ(); j++) { // q2 index
-					for (int k=0; k<nLag(); k++) { // phi lag => phi2 index = (l+k)%nPhi
-						double norm = 0;
-						for (int l=0; l<nPhi(); l++) { // phi1 index
-							int phi2_index = (l+k)%nPhi();
-							crossCorr()->set(i,j,k, crossCorr()->get(i,j,k) + fluctuations()->get(i,l)*fluctuations()->get(j, phi2_index) );
-							int norm_contribution = pixelCount()->get(i,l)*pixelCount()->get(j,phi2_index) > 0 ? 1 : 0;
-							norm += norm_contribution;
-						}
-						if (norm) {
-							crossCorr()->set(i, j, k, crossCorr()->get(i,j,k)/norm );
-						} else { // fail code if no information exists about the specific element in the cross-correlation array
-							crossCorr()->set(i, j, k, -2);
-						}
-					}
-				} // for q2
-			} // for q1
-			
-			// normalization loop for variances (since the diagonal elements w.r.t. Q of the cross-correlation array aren't calculated first)
-			for (int i=0; i<nQ(); i++) { // q1 index
-				for (int j=0; j<nQ(); j++) { // q2 index
-					double variance1 = crossCorr()->get(i, i, 0);
-					double variance2 = crossCorr()->get(j, j, 0);
-					for (int k=0; k<nLag(); k++) { // phi lag => phi2 index = (l+k)%nPhi
-						if (variance1 && variance2) {
-							// normalize by standard deviations (or the square root of the diagonal elements of the cross-correlation)
-							crossCorr()->set(i, j, k, crossCorr()->get(i,j,k) / (sqrt(variance1)*sqrt(variance2)) );
-						} else { // fail code if variances are 0
-							crossCorr()->set(i, j, k, -1.5);
-						}
-					}
-				} // for q2
-			} // for q1
+			calculateXCCA_crossCorrelation();
 		} else {
-			//AUTO-CORRELATION ONLY (3-fold for-loop)
-			delete p_autoCorrelation;
-			p_autoCorrelation = new array2D<double>( nQ(), nLag() );
-			for (int i=0; i<nQ(); i++) { 							// for i (q)
-				if (debug() && i%100 == 0) cout << "." << flush;
-				double variance = 0;
-				for (int k=0; k<nLag(); k++) { 						// for k (lag) => phi2 = (l+k)%nPhi
-					double norm = 0;
-					unsigned int ik = autoCorr()->arrayIndex(i,k);
-					for (int l=0; l<nPhi(); l++) { 					// for l (phi1)
-						int phi2_index = (l+k)%nPhi();
-						autoCorr()->set(i,k, autoCorr()->get_atIndex(ik) + fluctuations()->get(i,l)*fluctuations()->get(i, phi2_index) );
-						if ( pixelCount()->get(i,l)*pixelCount()->get(i,phi2_index) > 0 ){
-							//incement counter, if there was a contribution to this (i,k)
-							norm++;
-						}
-					}//for l (phi1)
-					
-					if (norm != 0) {
-						if (k == 0) {
-							//get variance (or the zeroth element of the auto-correlation)
-							variance = autoCorr()->get(i, 0)/norm;
-						}
-						if (variance != 0) {
-							// normalize by how many times data was written to (i,k) and variance at this specific i (q-value)
-							autoCorr()->set(i, k, autoCorr()->get(i,k) / (norm*variance) );
-						} else { 
-							// fail with code -1.5, if variance at this is 0
-							autoCorr()->set(i, k, -1.5);
-						}
-					} else { 
-						// fail with code -2, if no information exists about the specific element in the cross-correlation array
-						// i.e. norm == 0
-						autoCorr()->set(i, k, -2);
-					}
-				}//for k (lag)
-			}// for i (q)
-			
-		}//if xccaEnable()
+			calculateXCCA_autoCorrelation();
+		}
+		
 		if (debug() >= 1) cout << "done." << endl;
 		
 		p_tracker_calculateXCCA++;
@@ -1003,6 +1001,91 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 }
 
 
+
+//----------------------------------------------------------------------------calculateXCCA_crossCorrelation
+//FULL CROSS-CORRELATION (4-fold for-loop)
+void CrossCorrelator::calculateXCCA_crossCorrelation(){
+	delete p_crossCorrelation;
+	p_crossCorrelation = new array3D<double>( nQ(), nQ(), nLag() );
+	
+	for (int i=0; i<nQ(); i++) { // q1 index
+		if (debug() && i%100 == 0) cout << "." << flush;
+		for (int j=0; j<nQ(); j++) { // q2 index
+			for (int k=0; k<nLag(); k++) { // phi lag => phi2 index = (l+k)%nPhi
+				double norm = 0;
+				for (int l=0; l<nPhi(); l++) { // phi1 index
+					int phi2_index = (l+k)%nPhi();
+					crossCorr()->set(i,j,k, crossCorr()->get(i,j,k) + fluctuations()->get(i,l)*fluctuations()->get(j, phi2_index) );
+					norm += pixelCount()->get(i,l)*pixelCount()->get(j,phi2_index) > 0 ? 1 : 0;
+				} // l: for phi
+				if (norm) {
+					crossCorr()->set(i, j, k, crossCorr()->get(i,j,k)/norm );
+				} else { // fail code if no information exists about the specific element in the cross-correlation array
+					crossCorr()->set(i, j, k, -2);
+				}
+			} // k: for lag
+		} // j: for q2
+	} // i: for q1
+	
+	// normalization loop for variances (since the diagonal elements w.r.t. Q of the cross-correlation array aren't calculated first)
+	for (int i=0; i<nQ(); i++) { // q1 index
+		for (int j=0; j<nQ(); j++) { // q2 index
+			double variance1 = crossCorr()->get(i, i, 0);
+			double variance2 = crossCorr()->get(j, j, 0);
+			for (int k=0; k<nLag(); k++) { // phi lag => phi2 index = (l+k)%nPhi
+				if (variance1 && variance2) {
+					// normalize by standard deviations (or the square root of the diagonal elements of the cross-correlation)
+					crossCorr()->set(i, j, k, crossCorr()->get(i,j,k) / (sqrt(variance1)*sqrt(variance2)) );
+				} else { // fail code if variances are 0
+					crossCorr()->set(i, j, k, -1.5);
+				}
+			}
+		} // for q2
+	} // for q1
+}
+
+
+
+//----------------------------------------------------------------------------calculateXCCA_autoCorrelation
+//AUTO-CORRELATION ONLY (3-fold for-loop)
+void CrossCorrelator::calculateXCCA_autoCorrelation(){
+	delete p_autoCorrelation;
+	p_autoCorrelation = new array2D<double>( nQ(), nLag() );
+
+	double variance = 0;
+	int phi2_index = 0;	
+	
+	for (int i=0; i<nQ(); i++) { 							// for i (q)
+		if (debug() && i%100 == 0) cout << "." << flush;
+		variance = 0;
+		for (int k=0; k<nLag(); k++) { 						// for k (lag) => phi2 = (l+k)%nPhi
+			for (int l=0; l<nPhi(); l++) { 					// for l (phi1)
+				phi2_index = (l+k)%nPhi();
+				autoCorr()->set(i,k, autoCorr()->get(i,k) + fluctuations()->get(i,l) * fluctuations()->get(i, phi2_index) );
+			}//for l (phi1)
+			
+			unsigned int norm = autoCorrNorm()->get(i,k);
+			if (norm != 0) {
+				if (k == 0) {
+					//get variance (or the zeroth element of the auto-correlation)
+					variance = autoCorr()->get(i, 0)/(double)norm;
+				}
+				if (variance != 0) {
+					// normalize by how many times data was written to (i,k) and variance at this specific i (q-value)
+					autoCorr()->set(i, k, autoCorr()->get(i,k) / (double)(norm*variance) );
+				} else { 
+					// fail with code -1.5
+					// i.e. variance == 0
+					autoCorr()->set(i, k, -1.5);
+				}
+			} else { 
+				// fail with code -2, if no information exists about the specific element in the cross-correlation array
+				// i.e. norm == 0
+				autoCorr()->set(i, k, -2);
+			}
+		}//for k (lag)
+	}// for i (q)
+}
 
 
 //=================================================================================
@@ -1132,10 +1215,12 @@ int CrossCorrelator::subtractSAXSmean(){
 			avg = row->calcAvg();
 		}else{												//mask --> leave out bad pixels
 			double sum = 0.;
-			double valid = 0;
+			unsigned int valid = 0;
 			for (int i = 0; i < row->size(); i++) {
 				sum += row->get_atIndex(i);
-				valid += mask_polar()->get(i, q_ct);		// if mask has a 1 here, the point is valid
+				if (mask_polar()->get(i, q_ct) ){		// if mask has a 1 here, the point is valid
+					valid++; 
+				}
 			}
 			avg = (valid > 0) ? (sum/((double)valid)) : 0;
 		}
@@ -1199,13 +1284,20 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( double start_q, double stop
 	if ( maskEnable() ) {
 		//create new array2D<double> to store polar coordinate representation
 		delete p_mask_polar;
-		p_mask_polar = new array2D<double>( nQ(), nPhi() );
+		p_mask_polar = new array2D<bool>( nQ(), nPhi() );
 		if (!p_mask_polar){
 			cerr << "Error in CrossCorrelator::calculatePolarCoordinates_FAST. p_mask_polar couldn't be allocated." << endl;
 			return 1;
 		}
 		setMaskEnable(false);	//disable mask feature for the purpose of treating the mask itself...
-		calculatePolarCoordinates_FAST( mask(), mask_polar(), nPhi(), start_phi, stop_phi, nQ(), start_q, stop_q );
+		//transfer data to a double arrays to be able to perform the transform to polar coordinates
+		array1D<double> *doublemask = new array1D<double>( mask() );
+		array2D<double> *doublemask2D = new array2D<double>;
+		calculatePolarCoordinates_FAST( doublemask, doublemask2D, nPhi(), start_phi, stop_phi, nQ(), start_q, stop_q );
+		delete p_mask_polar;
+		p_mask_polar = new array2D<bool>( doublemask2D );
+		delete doublemask;
+		delete doublemask2D;
 		setMaskEnable(true);	// ...turn back on
 	}
 	
@@ -1229,7 +1321,7 @@ int CrossCorrelator::calculatePolarCoordinates_FAST( double start_q, double stop
 
 //----------------------------------------------------------------------------calculatePolarCoordinates_FAST
 // returns the number of times the lookup has failed
-int CrossCorrelator::calculatePolarCoordinates_FAST( array1D<double>* cartesian1D, array2D<double>* polar2D, 
+int CrossCorrelator::calculatePolarCoordinates_FAST( array1D<double> *cartesian1D, array2D<double> *polar2D, 
 													int number_phi, double start_phi, double stop_phi, 
 													int number_q, double start_q, double stop_q) const {
 	double xcoord = 0.;

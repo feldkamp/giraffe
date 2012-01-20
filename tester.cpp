@@ -487,31 +487,46 @@ int Tester::testDataTypes(){
 
 //-------------------------------------------------------- -t6
 int Tester::testArraySpeed(){ 
-	int size = 1000*1000*100;
-	clock_t c_pre, c_bst, c_rry, c_vctr;
+	int size1D = 1000*1000;
+	unsigned int dim1 = 10000;
+	unsigned int dim2 = 10000;
 	
-	c_pre = clock();
-		
+	clock_t c_start, c_bst, c_rry, c_vctr, c_2D_a, c_2D_b;
+	
+	c_start = clock();
 	subtestBoost();
-	c_bst = clock();
+	c_bst = clock() - c_start;
 
-	subtestArraydata(size);
-	c_rry = clock();
+	c_start = clock();
+	subtestArraydata(size1D);
+	c_rry = clock() - c_start;
+
+	c_start = clock();	
+	subtestVector(size1D);
+	c_vctr = clock() - c_start;
+
+	//specific 2D tests
+	c_start = clock();	
+	subtest2D_a(dim1,dim2);
+	c_2D_a = clock() - c_start;
+
+	c_start = clock();	
+	subtest2D_b(dim1,dim2);
+	c_2D_b = clock() - c_start;
 	
-	subtestVector(size);
-	c_vctr = clock();
-	
-	
-	cout << "started test at " << c_pre << ", ms: " << c_pre/double(CLOCKS_PER_SEC)*1000 << endl;
-	cout << "after boost at  " << c_bst << ", ms: " << c_bst/double(CLOCKS_PER_SEC)*1000 << ", diff: " << (c_bst-c_pre)/double(CLOCKS_PER_SEC)*1000 << endl;
-	cout << "after array at  " << c_rry << ", ms: " << c_rry/double(CLOCKS_PER_SEC)*1000 << ", diff: " << (c_rry-c_bst)/double(CLOCKS_PER_SEC)*1000 << endl;
-	cout << "after vector at " << c_vctr << ", ms: " << c_vctr/double(CLOCKS_PER_SEC)*1000 << ", diff: " << (c_vctr-c_rry)/double(CLOCKS_PER_SEC)*1000 << endl;
+	cout << "1D boost  " << c_bst << ", " << c_bst/double(CLOCKS_PER_SEC)*1000 << " ms" << endl;
+	cout << "1D array  " << c_rry << ", " << c_rry/double(CLOCKS_PER_SEC)*1000 << " ms" << endl;
+	cout << "1D vector " << c_vctr << ", " << c_vctr/double(CLOCKS_PER_SEC)*1000 << " ms" << endl;
+	cout << "2D_a test " << c_2D_a << ", " << c_2D_a/double(CLOCKS_PER_SEC)*1000 << " ms" << endl;
+	cout << "2D_b test " << c_2D_b << ", " << c_2D_b/double(CLOCKS_PER_SEC)*1000 << " ms" << endl;
+	cout << "ratio b/a: " << c_2D_a/(double)c_2D_b << endl;
 	
 	return 0;
 } 
 
 
 void Tester::subtestBoost(){
+	cout << "subtestBoost" << endl;
 	const int size = 1000;
 	array<double, size> a;
 	for (unsigned int i = 0; i < a.size(); i++){
@@ -519,29 +534,54 @@ void Tester::subtestBoost(){
 	}
 }
 
-void Tester::subtestArraydata(int size){
+void Tester::subtestArraydata(unsigned int size){
+	cout << "subtestArraydata" << endl;
 	arraydata<double> a = arraydata<double>(size);
 	for (unsigned int i = 0; i < a.size(); i++){
 		a.set_atIndex(i, double(i));
 		double value = a.get_atIndex(i);
-		if (!(i%1000)){
-			cout << value << " " << std::flush;
-			if (!(i%1000000))
-				cout << endl;
-		}
+//		if (!(i%1000)){
+//			cout << value << " " << std::flush;
+//			if (!(i%1000000))
+//				cout << endl;
+//		}
 	}
 }
 
-void Tester::subtestVector(int size){
+void Tester::subtestVector(unsigned int size){
+	cout << "subtestVector" << endl;
 	vector<double> v(size, 0);
 
 	for (unsigned int i = 0; i < v.size(); i++){
 		v.at(i) = double(i);
 		double value = v.at(i);
-		if (!(i%1000)){
-			cout << value << " " << std::flush;
-			if (!(i%1000000))
-				cout << endl;
+//		if (!(i%1000)){
+//			cout << value << " " << std::flush;
+//			if (!(i%1000000))
+//				cout << endl;
+//		}
+	}
+}
+
+void Tester::subtest2D_a(unsigned int dim1, unsigned int dim2){
+	cout << "subtest2D_a: i slow, j fast variable in loop" << endl;
+	array2D<double> img(dim1, dim2);
+	for (int i = 0; i < img.dim1(); i++){			// i
+		for (int j = 0; j < img.dim2(); j++){		// j
+			img.set(i, j, 1);
 		}
 	}
 }
+
+void Tester::subtest2D_b(unsigned int dim1, unsigned int dim2){
+	cout << "subtest2D_b: j slow, i fast variable in loop" << endl;
+	array2D<double> img(dim1, dim2);
+	for (int j = 0; j < img.dim2(); j++){			// j
+		for (int i = 0; i < img.dim1(); i++){		// i
+			img.set(i, j, 1);
+		}
+	}
+}
+
+
+
