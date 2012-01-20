@@ -55,8 +55,13 @@ public:
 	
 	//---------------------------------------------calculations (Jonas's way)
 	void calculatePolarCoordinates(double start_q = 0, double stop_q = 0);
+	void calculatePixelCount();
+	void calculatePixelBool();
+	void calculateAutoCorrNorm();
 	void calculateSAXS(double start_q = 0, double stop_q = 0);
 	void calculateXCCA(double start_q = 0, double stop_q = 0);
+	void calculateXCCA_crossCorrelation();
+	void calculateXCCA_autoCorrelation();
 	
     //---------------------------------------------alternative approach (Jan's way)
     // some of these functions have the byname _FAST to distinguish them from the ones above 
@@ -118,6 +123,8 @@ public:
 	array1D<double> *qAvg() const;
 	array1D<double> *phiAvg() const;
 	array2D<unsigned int> *pixelCount() const;
+	array2D<bool> *pixelBool() const;
+	array2D<unsigned int> *autoCorrNorm() const;
 	array1D<double> *iAvg() const;
 	array2D<double> *fluctuations() const;	// intensity fluctuations in polar coordinates produced by calculatePolarCoordinates()
 	array2D<double> *polar() const;			// intensities in polar coordinates produced by calculatePolarCoordinates()/calculatePolarCoordinates_FAST()
@@ -252,6 +259,8 @@ private:
 	array1D<double> *p_iAvg;			// vector of output average intensities for magnitudes of q-vector
 	array1D<double> *p_phiAvg;			// vector of output angles
 	array2D<unsigned int> *p_pixelCount;		// pixel counts in polar coordinates
+	array2D<bool> *p_pixelBool;
+	array2D<unsigned int> *p_autoCorrNorm;
 	
 	array2D<double> *p_fluctuations;	// intensity fluctuations in polar coordinates
     

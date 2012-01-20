@@ -6,6 +6,31 @@
  *  Last changed on 04/27/11.
  *  Copyright 2011 SLAC National Accelerator Laboratory. All rights reserved.
  *
+ *
+ *
+ *  All classes defined in this file are templatized to accept any data type. The internal type name is T.
+ *  (although only simple data types - int, double (, bool) - make sense for some of the mathematical functions)
+ *  In particular, the classes are:
+ *   - arraydata : templatized base class that uses an STL vector to store an array
+ *               : the class adds often used mathematical functions to the simple storage
+ *   - array1D   : derived class for the one-dimensional case, dimensions: (rows)
+ *   - array2D   : derived class for the two-dimensional case, dimensions: (rows, columns)
+ *   - array3D   : derived class for the three-dimensional case, dimensions: (rows, columns, depth)
+ *   - array4D   : derived class for the four-dimensional case, , dimensions: (rows, columns, depth, dim4)
+ *
+ *  The general data element accessor for arraydata objects are get_atIndex(int) and set_atIndex(int,T)
+ *  For the derived classes, the accesor functions take the for get(int,...) and set(int,...,T)
+ *
+ *  Note: the 'fast' index is always the first one in the accessor function. 
+ *  Consider array3D<T>::get(int i, int j, int k){ return get_atIndex( k*dim1()*dim2() + j*dim1() + i ); }
+ *	
+ *  
+ *  
+ *
+ *
+ *
+ *
+ *
  */
 
 #ifndef _arrayclasses_h
@@ -657,18 +682,22 @@ namespace ns_arraydata{
 		T get( unsigned int i, unsigned int j ) const{
 			assert(i < dim1());
 			assert(j < dim2());
-			return arraydata<T>::get_atIndex( j*dim1() + i );
+//			return arraydata<T>::get_atIndex( i*dim2() + j );		//index switch
+			return arraydata<T>::get_atIndex( j*dim1() + i );		//classic
 		}
 		
 		void set( unsigned int i, unsigned int j, T value ){
 			assert(i < dim1());
 			assert(j < dim2());
-			arraydata<T>::set_atIndex( j*dim1() + i, value);
+//			arraydata<T>::set_atIndex( i*dim2() + j, value);		//index switch
+			arraydata<T>::set_atIndex( j*dim1() + i, value);		//classic
 		}
 
 		//returns the arraydata index corresponding to the pair i, j
 		unsigned int arrayIndex( unsigned int i, unsigned int j ) const {
-			return (unsigned int)(j * dim1() + i);
+			return (unsigned int)(i*dim2() + j);
+//			return (unsigned int)(j*dim1() + i);
+
 		}
 
 		
@@ -940,13 +969,15 @@ namespace ns_arraydata{
 			assert(i < dim1());
 			assert(j < dim2());
 			assert(k < dim3());
-			return arraydata<T>::get_atIndex( k*dim1()*dim2() + j*dim1() + i );
+//			return arraydata<T>::get_atIndex( i*dim2()*dim3() + j*dim3() + k );		//index switch
+			return arraydata<T>::get_atIndex( k*dim1()*dim2() + j*dim1() + i );		//classic
 		}
 		void set( unsigned int i, unsigned int j, unsigned int k, T value ){
 			assert(i < dim1());
 			assert(j < dim2());
 			assert(k < dim3());
-			arraydata<T>::set_atIndex( k*dim1()*dim2() + j*dim1() + i, value ); 
+//			arraydata<T>::set_atIndex( i*dim2()*dim3() + j*dim3() + k, value );		//index switch
+			arraydata<T>::set_atIndex( k*dim1()*dim2() + j*dim1() + i, value ); 	//classic
 		}
 
 		std::string getASCIIdata( bool annotate=1 ) const{
@@ -1025,20 +1056,22 @@ namespace ns_arraydata{
 			p_dim4 = dim4;
 		}
 			
-		double get( unsigned int i, unsigned int j, unsigned int k, unsigned int l ) const{
+		T get( unsigned int i, unsigned int j, unsigned int k, unsigned int l ) const{
 			assert(i < dim1());
 			assert(j < dim2());
 			assert(k < dim3());
 			assert(l < dim4());
-			return arraydata<T>::get_atIndex( l*dim1()*dim2()*dim3() + k*dim1()*dim2() + j*dim1() + i );
+//			return arraydata<T>::get_atIndex( i*dim2()*dim3()*dim4() + k*dim3()*dim4() + k*dim4() + l );	//index switch
+			return arraydata<T>::get_atIndex( l*dim1()*dim2()*dim3() + k*dim1()*dim2() + j*dim1() + i );	//classic
 		}
 		
-		void set( unsigned int i, unsigned int j, unsigned int k, unsigned int l, double value ){
+		void set( unsigned int i, unsigned int j, unsigned int k, unsigned int l, T value ){
 			assert(i < dim1());
 			assert(j < dim2());
 			assert(k < dim3());
 			assert(l < dim4());
-			arraydata<T>::set_atIndex( l*dim1()*dim2()*dim3() + k*dim1()*dim2() + j*dim1() + i, value);
+//			arraydata<T>::set_atIndex( i*dim2()*dim3()*dim4() + k*dim3()*dim4() + k*dim4() + l, value);		//index switch
+			arraydata<T>::set_atIndex( l*dim1()*dim2()*dim3() + k*dim1()*dim2() + j*dim1() + i, value);		//classic
 		}
 
 		void getRepresentationIn2D( array2D<double> *&img ){
