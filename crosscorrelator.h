@@ -143,7 +143,6 @@ public:
 				delete p_data;
 			}
 			p_data = new array1D<double>( dataCArray, size );
-			setArraySize( size );
 		}
 	
 	array1D<double> *qx() const;
@@ -176,26 +175,16 @@ public:
 			if (maskCArray) {
 				p_mask = new array1D<bool>( maskCArray, size );	// input data will be cast to bool
 				setMaskEnable( true );
-				normalizeMask();
 			}else{
 				setMaskEnable( false );
 			}
 		}
-	void normalizeMask();
 
-	
-	int arraySize() const;                              // returns private variable p_arraySize
-	void setArraySize( int arraySize_val );
-	int matrixSize() const;                             // returns sqrt(p_arraySize)
-	void setMatrixSize( int matrixSize_val );
-                                                        // matrixSize is just a little helper for now
-                                                        // to come up with a q-calibration
-                                                        // need to change this soon...
-	double qmax() const;
-	void setQmax( double qmax_val );
-	double qmin() const;
-	void setQmin( double qmin_val );
-	void setQminQmax( double qmin_val, double qmax_val );	
+	double userQMax() const;
+	void setUserQMax( double user_qmax_val );
+	double userQMin() const;
+	void setUserQMin( double user_qmin_val );
+	void setUserQMinQMax( double user_qmin_val, double user_qmax_val );	
 	
 	double phimin() const;
 	void setPhimin( double phimin_val );
@@ -224,7 +213,6 @@ public:
 	
 private:
 	//-------------------------------------------------required for both algorithms
-	int p_arraySize;
 	bool p_mask_enable;			// enables/disables masking of bad pixels
 	bool p_xcca_enable;			// enables/disables cross-correlations (if disabled only autocorrelations are calculated)
     std::string p_outputdir;  	// the output directory if anything is dumped from withing this class (default is working dir)
@@ -232,7 +220,7 @@ private:
 	array1D<double> *p_data;			// data storage
 	array1D<double> *p_qx;				// pixel x coordinate
 	array1D<double> *p_qy;				// pixel y coordinate
-	array1D<bool> *p_mask;			// mask used to remove bad pixels
+	array1D<bool>   *p_mask;			// mask used to remove bad pixels
 	array2D<double> *p_polar;			// intensities in polar coordinates
 	
 	array2D<double> *p_autoCorrelation;
@@ -242,8 +230,8 @@ private:
 	clock_t p_creation_time;
 	
 	//-------------------------------------------------required for alg1
-	double p_qmin;				// start q for correlation calculations
-	double p_qmax;				// stop q for correlation calculations
+	double p_userQMin;			// start q for correlation calculations
+	double p_userQMax;			// stop q for correlation calculations
 	double p_deltaq;			// step size (bin length) in q-direction
 	double p_phimin;			// start phi for correlation calculations (currently disabled, 0 is always used)
 	double p_phimax;			// stop phi for correlation calculations (currently disabled, 360 is always used)
@@ -259,7 +247,7 @@ private:
 	array1D<double> *p_iAvg;			// vector of output average intensities for magnitudes of q-vector
 	array1D<double> *p_phiAvg;			// vector of output angles
 	array2D<unsigned int> *p_pixelCount;		// pixel counts in polar coordinates
-	array2D<bool> *p_pixelBool;
+	array2D<bool>   *p_pixelBool;
 	array2D<unsigned int> *p_autoCorrNorm;
 	
 	array2D<double> *p_fluctuations;	// intensity fluctuations in polar coordinates

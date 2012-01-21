@@ -93,7 +93,7 @@ int Tester::testCrossCorrelator( int alg, int testpattern ){
 			
             cc->createLookupTable(500, 500);
             double start_q = 5*cc->deltaq();
-            double stop_q = cc->qmax();
+            double stop_q = cc->userQMax();
 
 			cc->calculatePolarCoordinates_FAST(start_q, stop_q);
 			cc->calculateXCCA_FAST();

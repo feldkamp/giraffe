@@ -49,10 +49,7 @@ CrossCorrelator::CrossCorrelator( float *dataCArray, float *qxCArray, float *qyC
 		cerr << "Error in CrossCorrelator (c-array) constructor! Not all input data is allocated." << endl;
 		cerr << "data: " << dataCArray << ", qx: " << qxCArray << ", qy: " << qyCArray << endl; 
   	}
-	
-    //set basic properties for the size of the arrays
-    setArraySize(arraylength);
-	
+
 	//check consistency of input arguments
 	if (nphi > 0) {
 		p_nPhi = nphi;
@@ -81,6 +78,7 @@ CrossCorrelator::CrossCorrelator( float *dataCArray, float *qxCArray, float *qyC
 		initDefaultQ();
 	}
 
+	//initialize the arrays (must be called last as it relies on nQ(), data()->size() to be set
 	initInternalArrays();
 }
 
@@ -103,8 +101,6 @@ CrossCorrelator::CrossCorrelator( arraydata<double> *dataArray, arraydata<double
 		throw;
 	}
 	
-    //set basic properties for the size of the arrays
-    setArraySize(dataArray->size());
 	p_nPhi = nphi;
 	p_deltaphi = (double) 2.0*M_PI/(double)(nPhi());	// make sure deltaphi samples exactly an interval of 2PI
 	p_nLag = (int) ceil(p_nPhi/2.0+1);
@@ -129,6 +125,7 @@ CrossCorrelator::CrossCorrelator( arraydata<double> *dataArray, arraydata<double
 		initDefaultQ();
 	}
 	
+	//initialize the arrays (must be called last as it relies on nQ(), data()->size() to be set
 	initInternalArrays();
 }
 
@@ -153,9 +150,8 @@ CrossCorrelator::~CrossCorrelator(){
 //so that they don't contain or point to random memory
 //----------------------------------------------------------------------------
 void CrossCorrelator::initPrivateVariables(){
-	p_arraySize = 1;
-	p_qmin = 0;
-	p_qmax = 0;
+	p_userQMin = 0;
+	p_userQMax = 0;
 	p_deltaq = 0;
 	p_phimin = 0;
 	p_phimax = 0;
@@ -207,13 +203,12 @@ void CrossCorrelator::initInternalArrays(){
 	//allocate all other internal objects
 	p_table = new array2D<double>(50, 50);
 	
-	p_q = new array1D<double>(arraySize());
-	p_phi = new array1D<double>(arraySize());
+	p_q = new array1D<double>(data()->size());
+	p_phi = new array1D<double>(data()->size());
 	
 	p_qAvg = new array1D<double>(nQ());
 	p_iAvg = new array1D<double>(nQ());
 	p_phiAvg = new array1D<double>(nPhi());
-	p_pixelCount = new array2D<unsigned int>( nQ(), nPhi() );
 }
 
 //---------------------------------------------------------------------------- destroyInternalArrays
@@ -250,19 +245,19 @@ void CrossCorrelator::destroyInternalArrays(){
 void CrossCorrelator::initDefaultQ(){
     cout << "Initializing p_qx and p_qx vectors with default values." << endl;
 
-    array1D<double> *default_qx = new array1D<double>(arraySize());
-    array1D<double> *default_qy = new array1D<double>(arraySize());
+    array1D<double> *default_qx = new array1D<double>( data()->size() );
+    array1D<double> *default_qy = new array1D<double>( data()->size() );
     
     //set new values for deltaq and qmax
     p_deltaq = 1;                            
-    p_qmax = arraySize()/2.*deltaq();
+    p_userQMax = data()->size() / 2.*deltaq();
 
-    for (int i=0; i<arraySize(); i++){
-        default_qx->set(i, -qmax()+deltaq()*i );
-        default_qy->set(i, -qmax()+deltaq()*i );
+    for (int i=0; i<data()->size(); i++){
+        default_qx->set(i, -userQMax()+deltaq()*i );
+        default_qy->set(i, -userQMax()+deltaq()*i );
     }
     
-    int onedim = (int) floor(sqrt(arraySize()));
+    int onedim = (int) floor(sqrt( data()->size() ));
     for (int i = 0; i < onedim; i++){
         for (int j = 0; j < onedim; j++){
             default_qx->set( i*onedim+j,    (i - (onedim-1)/2.)*deltaq() );
@@ -341,7 +336,7 @@ void CrossCorrelator::run(double start_q, double stop_q, int alg_coords, int alg
 			break;
 		case 2:
 			if ( !lookupTable() ){
-				int lutsize = (int) ceil(sqrt( arraySize() ) );
+				int lutsize = (int) ceil(sqrt( data()->size() ) );
 				createLookupTable( lutsize, lutsize );
 			}
 			calculatePolarCoordinates_FAST( start_q, stop_q );
@@ -392,7 +387,6 @@ void CrossCorrelator::setData( arraydata<double> *data ) {
 		delete p_data;
 	}
 	p_data = new array1D<double>( data );
-	setArraySize( data->size() );
 }
 
 //----------------------------------------------------------------------------qx
@@ -447,23 +441,10 @@ void CrossCorrelator::setMask( arraydata<double> *maskArray ) {
 		delete p_mask;
 	}
 	if (maskArray) {
-		p_mask = new array1D<bool>( maskArray );
+		p_mask = new array1D<bool>( maskArray );	// input data will be cast to bool
 		setMaskEnable( true );
-		normalizeMask();
 	}else{
 		setMaskEnable( false );
-	}
-}
-
-void CrossCorrelator::normalizeMask(){
-	//if the mask has a value other than zero (any value, pos. or neg.), set that to exactly 1
-	for (int i = 0; i < mask()->size(); i++){
-		double tolerance = 0.000001;	// float comparison, so allow for some error
-		if ( mask()->get_atIndex(i) < tolerance && mask()->get_atIndex(i) > -tolerance ){
-			mask()->set_atIndex(i, 0.);
-		}else{
-			mask()->set_atIndex(i, 1.);
-		}
 	}
 }
 
@@ -494,47 +475,25 @@ array2D<double> *CrossCorrelator::lookupTable() const{
 	return p_table;
 }
 
-//----------------------------------------------------------------------------arraySize
-int CrossCorrelator::arraySize() const{
-	return p_arraySize;
-}
-
-void CrossCorrelator::setArraySize( int arraySize_val ){
-	if (arraySize_val > 0){
-		p_arraySize = arraySize_val;
-	}else{ 
-		cerr << "ERROR in CrossCorrelator::setArraySize(): arraylength must be a positive integer." << endl;
-	}
-}
-
-//----------------------------------------------------------------------------matrixSize
-int CrossCorrelator::matrixSize() const{
-	return (int)floor(sqrt( (double)arraySize() ));            //assuming a square image
-}
-
-void CrossCorrelator::setMatrixSize( int matrixSize_val ){
-	setArraySize( matrixSize_val*matrixSize_val );
-}
-
 //----------------------------------------------------------------------------qmin/qmax
-void CrossCorrelator::setQminQmax( double user_qmin, double user_qmax ){
-	if (p_qmin == user_qmin && p_qmax == user_qmax){
+void CrossCorrelator::setUserQMinQMax( double new_user_qmin, double new_user_qmax ){
+	if (p_userQMin == new_user_qmin && p_userQMax == new_user_qmax){
 		//private variables won't get new values, just return without doing anything
 		return;
 	}
 	
-	p_qmin = user_qmin;
-	p_qmax = user_qmax;
-	
-	if (user_qmax <= user_qmin) {
+	//set new values
+	p_userQMin = new_user_qmin;
+	p_userQMax = new_user_qmax;
+	if (new_user_qmax <= new_user_qmin) {
 		cerr << "WARNING in CrossCorrelator::setQminQmax(). " 
-			<< "Qmax:" << user_qmax << "  <=  Qmin:" << user_qmin << " -- switching values around." << endl;
-		p_qmin = user_qmax;
-		p_qmax = user_qmin;		
+			<< "Qmax:" << new_user_qmax << "  <=  Qmin:" << new_user_qmin << " -- switching values around." << endl;
+		p_userQMin = new_user_qmax;
+		p_userQMax = new_user_qmin;		
 	}
 	
-	//calculate variables that depend on qmax and qmin
-	p_deltaq = (qmax()-qmin())/(double)(nQ()-1);		// make sure deltaq samples start and stop
+	//use new values to calculate variables that depend on qmax and qmin
+	p_deltaq = (userQMax()-userQMin())/(double)(nQ()-1);		// make sure deltaq samples start and stop
 	
 	
 	//check to see if these user given values are in the range of the pixel vectors
@@ -543,14 +502,14 @@ void CrossCorrelator::setQminQmax( double user_qmin, double user_qmax ){
 	double qy_max = qy()->calcMax();
 	double qy_min = qy()->calcMin();
 	
-	if ( fabs(qx_max) < user_qmax || fabs(qy_max) < user_qmax || fabs(qx_min) < user_qmax || fabs(qy_min) < user_qmax ){
+	if ( fabs(qx_max) < userQMax() || fabs(qy_max) < userQMax() || fabs(qx_min) < userQMax() || fabs(qy_min) < userQMax() ){
 		cerr << "WARNING in CrossCorrelator::setQminQmax(). " << endl;
-		cerr << "  Max q-value given by user (" << user_qmax << ") exceeds the largest values in the given pixel arrays!" << endl;
+		cerr << "  Max q-value given by user (" << userQMax() << ") exceeds the largest values in the given pixel arrays!" << endl;
 		cerr << "  qx_min=" << qx_min << ", qx_max=" << qx_max << ", qy_min=" << qy_min << ", qy_max=" << qy_max << endl;
 
-		if ( fabs(qx_max) < user_qmin || fabs(qy_max) < user_qmin || fabs(qx_min) < user_qmin || fabs(qy_min) < user_qmin ){
+		if ( fabs(qx_max) < userQMin() || fabs(qy_max) < userQMin() || fabs(qx_min) < userQMin() || fabs(qy_min) < userQMin() ){
 			cerr << "ERROR in CrossCorrelator::setQminQmax(). " << endl;
-			cerr << "  Even the minimum q-value given by user (" << user_qmin << ") exceeds the largest values in the given pixel arrays!" << endl;
+			cerr << "  Even the minimum q-value given by user (" << userQMin() << ") exceeds the largest values in the given pixel arrays!" << endl;
 			cerr << "  Aborting due to invalid conditions" << endl;
 			cerr << "  Check that the given pixel arrays and q-limits are sensible " << endl;
 			throw "User q-value boundaries too large for pixel arrays.";
@@ -559,26 +518,26 @@ void CrossCorrelator::setQminQmax( double user_qmin, double user_qmax ){
 	
 	//check update variables
 	if (debug() >= 1) {
-		cout << "CrossCorrelator::setQminQmax() qmin: " << qmin() << ", qmax: " << qmax() 
+		cout << "CrossCorrelator::setQminQmax() qmin: " << userQMin() << ", qmax: " << userQMax() 
 				<< ", deltaq: " << deltaq() << ", nQ: " << nQ() 
 				<< ", deltaphi: " << deltaphi() << ", nPhi: " << nPhi() << ", nLag: " << nLag() << endl;
 	}
 }
 
-double CrossCorrelator::qmin() const{
-	return p_qmin;
+double CrossCorrelator::userQMin() const{
+	return p_userQMin;
 }
 
-void CrossCorrelator::setQmin( double qmin_val ){
-	setQminQmax( qmin_val, qmax() );
+void CrossCorrelator::setUserQMin( double qmin_val ){
+	setUserQMinQMax( qmin_val, userQMax() );
 }
 
-double CrossCorrelator::qmax() const{
-	return p_qmax;
+double CrossCorrelator::userQMax() const{
+	return p_userQMax;
 }
 
-void CrossCorrelator::setQmax( double qmax_val ){
-	setQminQmax( qmin(), qmax_val );
+void CrossCorrelator::setUserQMax( double qmax_val ){
+	setUserQMinQMax( userQMin(), qmax_val );
 }
 
 
@@ -721,11 +680,11 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 	}
 		
 	// sanity limit check
-	if (!qmax() && !stop_q) {
+	if (!userQMax() && !stop_q) {
 		cerr << "ERROR in CrossCorrelator::calculatePolarCoordinates: Need to specify Q-limits as arguments!" << endl;
 		return;
 	} else if (start_q || stop_q) {
-		setQminQmax( start_q, stop_q );
+		setUserQMinQMax( start_q, stop_q );
 	}
 	
 	// create array of the intensities in polar coordinates with the correct binning
@@ -734,7 +693,7 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 	
 	// calculate phi for each pixel and bin angles with correct resolution
 	int exclude_count = 0;
-	for (int i=0; i<arraySize(); i++) {
+	for (int i=0; i<data()->size(); i++) {
 		double phii = 0;
 		double qxi = qx()->get(i);
 		double qyi = qy()->get(i);
@@ -763,19 +722,13 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 		
 		// calculate polar arrays (accept this point if mask says ok, or if there is no mask)
 		if (!maskEnable() || mask()->get(i)) {
-			int qIndex = (int) round((p_q->get(i)-qmin())/deltaq()); // the index in qAvg[] that corresponds to q[i]
+			int qIndex = (int) round((p_q->get(i)-userQMin())/deltaq()); // the index in qAvg[] that corresponds to q[i]
 			int phiIndex = (int) round((p_phi->get(i)-phimin())/deltaphi()); // the index in phiAvg[] that corresponds to phi[i]
 			
 			// make sure qIndex and phiIndex are not out of array bounds
-			if ( (qIndex >= 0) && (qIndex < nQ()) 
-					&& (phiIndex >= 0) && (phiIndex < nPhi())) { 
-				
+			if ( (qIndex >= 0) && (qIndex < nQ()) && (phiIndex >= 0) && (phiIndex < nPhi())) { 
 				//add data value to existing array
 				polar()->set(qIndex, phiIndex, polar()->get(qIndex, phiIndex) + data()->get(i) );
-				
-				//increment pixel count 
-				pixelCount()->set(qIndex, phiIndex, pixelCount()->get(qIndex,phiIndex)+1);
-				
 			} else {
 				if (debug() >= 3){
 					cout << "POINT EXCLUDED! qIndex " << qIndex << " (nQ:" << nQ() 
@@ -784,9 +737,10 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 				exclude_count++;
 			}
 		}
-	}
+	}//end of main for-loop over all data points
 	
-	double exclude_ratio = exclude_count / ((double)arraySize());
+	
+	double exclude_ratio = exclude_count / ((double)data()->size());
 	if ( exclude_ratio > 0.9 ){
 		cout << "Warning from CrossCorrelator::calculatePolarCoordinates(): " << exclude_ratio*100 << "% of points excluded." << endl;
 	}
@@ -808,7 +762,7 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 		
 	// calculate vector of output |q|
 	for (int i=0; i<nQ(); i++) {
-		qAvg()->set( i, qmin()+i*deltaq() );
+		qAvg()->set( i, userQMin()+i*deltaq() );
 	}
 
 	// calculate vector of output angles
@@ -819,8 +773,8 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 	// normalize polar array of the intensities and calculate fluctuations
 	for (int i=0; i<nQ(); i++) {
 		for (int j=0; j<nPhi(); j++) {
-			if (pixelCount()->get(i,j) > 0.1) {	//compare to 0.1 to make sure float inaccuracies don't make this 'true'
-				polar()->set(i, j, polar()->get(i,j)/pixelCount()->get(i,j) );
+			if ( pixelBool()->get(i,j) ) {
+				polar()->set(i, j, polar()->get(i,j) / (double)pixelCount()->get(i,j) );
 			}
 			if (debug() > 2){
 				cout << "q: " << qAvg()->get(i) << ", phi: " << p_phiAvg->get(j) 
@@ -835,13 +789,29 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 
 //----------------------------------------------------------------------------
 void CrossCorrelator::calculatePixelCount(){
+	if (debug() ){ cout << "calculatePixelCount" << endl; }
+	delete p_pixelCount;
+	p_pixelCount = new array2D<unsigned int>( nQ(), nPhi() );	
+	
+	for (int i=0; i<data()->size(); i++) {
+		if ( !maskEnable() || mask()->get(i) ) {
+			int qIndex = (int) round( (p_q->get(i)-userQMin())/deltaq() ); 								// the index in qAvg that corresponds to q[i]
+			int phiIndex = (int) round( (p_phi->get(i)-phimin())/deltaphi() ); 						// the index in phiAvg that corresponds to phi[i]
+			
+			// make sure qIndex and phiIndex are not out of array bounds
+			if ( (qIndex >= 0) && (qIndex < nQ()) && (phiIndex >= 0) && (phiIndex < nPhi())) { 
+				pixelCount()->set(qIndex, phiIndex, pixelCount()->get(qIndex,phiIndex)+1);			//increment pixel count 
+			}
+		}
+	}
 }
 
 
 //----------------------------------------------------------------------------
 void CrossCorrelator::calculatePixelBool(){
+	if (debug() ){ cout << "calculatePixelBool" << endl; }
 	delete p_pixelBool;
-	p_pixelBool = new array2D<bool>( nQ(), nLag() );
+	p_pixelBool = new array2D<bool>( pixelCount()->dim1(), pixelCount()->dim2() );
 	
 	for (unsigned int i = 0; i < pixelBool()->size(); i++){
 		if (pixelCount()->get_atIndex(i)){
@@ -855,6 +825,7 @@ void CrossCorrelator::calculatePixelBool(){
 
 //----------------------------------------------------------------------------
 void CrossCorrelator::calculateAutoCorrNorm(){
+	if (debug() ){ cout << "calculateAutoCorrNorm" << endl; }
 	delete p_autoCorrNorm;
 	p_autoCorrNorm = new array2D<unsigned int>( nQ(), nLag() );
 	
@@ -883,15 +854,15 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 	}
 	
 	// sanity limit check
-	if (!qmax() && !stop_q) {
+	if (!userQMax() && !stop_q) {
 		cerr << "ERROR in CrossCorrelator::calculateSAXS: Need to specify Q-limits as arguments before running calculateSAXS()" << endl;
 		return;
 	} else if (start_q || stop_q) {
-		setQminQmax( start_q, stop_q );
+		setUserQMinQMax( start_q, stop_q );
 	}
 	
 	// create counter array
-	array1D<double> *counter = new array1D<double>( nQ() );
+	array1D<unsigned int> *counter = new array1D<unsigned int>( nQ() );
 	
 	// if calculateSAXS() has already been used, free and recreate p_qAvg, p_iAvg
 	if (p_tracker_calculateSAXS) {
@@ -903,7 +874,7 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 	
 	if (!p_tracker_calculatePolarCoordinates && !p_tracker_calculateSAXS) {
 		// calculate |q| for each pixel and bin lengths with correct resolution
-		for (int i=0; i<arraySize(); i++) {
+		for (int i=0; i<data()->size(); i++) {
 			p_q->set(i, round(sqrt( (qx()->get(i)*qx()->get(i))+(qy()->get(i)*qy()->get(i)) ) / deltaq()) * deltaq() );
 		}
 	}
@@ -911,26 +882,26 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 	if (!p_tracker_calculatePolarCoordinates || p_tracker_calculateSAXS) {
 		// calculate vector of output |q|
 		for (int i=0; i<nQ(); i++) {
-			qAvg()->set( i, qmin()+i*deltaq() );
+			qAvg()->set( i, userQMin()+i*deltaq() );
 		}			
 	}
 	
 	// angular sum for each |q|
-	for (int i=0; i<arraySize(); i++) {
+	for (int i=0; i<data()->size(); i++) {
 		if (!maskEnable() || mask()->get(i)) {
-			int qIndex = (int) round((p_q->get(i)-qmin())/deltaq()); // the index in qAvg[] that corresponds to q[i]
-			if (p_q->get(i) <= qmax() && p_q->get(i) >= qmin()) {
+			int qIndex = (int) round((p_q->get(i)-userQMin())/deltaq()); // the index in qAvg[] that corresponds to q[i]
+			if (p_q->get(i) <= userQMax() && p_q->get(i) >= userQMin()) {
 				iAvg()->set( qIndex, iAvg()->get(qIndex)+data()->get(i) );
 				counter->set( qIndex, counter->get(qIndex)+1 );
 			} else if (debug() >= 3) 
-				cout << "POINT EXCLUDED! q: " << p_q->get(i) << ", qmin: " << qmin() << ", qmax: " << qmax() 
+				cout << "POINT EXCLUDED! q: " << p_q->get(i) << ", qmin: " << userQMin() << ", qmax: " << userQMax() 
 					<< ", nQ: " << nQ() << ", qIndex: " << qIndex << endl;
 		}
 	}
 	
 	// normalize by number of pixels
 	for (int i=0; i<nQ(); i++) {
-		if (counter->get(i)) iAvg()->set( i, iAvg()->get(i)/counter->get(i) );
+		if (counter->get(i)) iAvg()->set( i, iAvg()->get(i)/(double)counter->get(i) );
 	}
 	
 	if (debug() >= 2) {
@@ -955,7 +926,7 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 	}
 		
 	// sanity limit check
-	if (!qmax() && !stop_q) {
+	if (!userQMax() && !stop_q) {
 		cerr << "ERROR in CrossCorrelator::calculateXCCA: Need to specify Q-limits as arguments!" << endl;
 		return;
 	} else if (start_q || stop_q) {
