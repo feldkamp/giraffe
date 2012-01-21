@@ -694,27 +694,17 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 	// calculate phi for each pixel and bin angles with correct resolution
 	int exclude_count = 0;
 	for (int i=0; i<data()->size(); i++) {
-		double phii = 0;
 		double qxi = qx()->get(i);
 		double qyi = qy()->get(i);
+		// calculate phi between [-PI,PI]
+		double phii = atan2(qxi, qyi);
 		
-		// setup UHP
-		if (qxi == 0) { // make sure that the column with qx = 0 has angle 0 (q = 0 is assumed to have phi = 0)
-			phii = 0;
-		} else {
-			phii = atan(qxi/qyi); // If qy = 0 and qx != 0, atan gives the correct result, but only for the UHP! Need to add PI for all LHP!
-		}
-		
-		// correct LHP by adding PI
-		if (qyi < 0) {
-			phii += M_PI;
-		}
-		
-		if (phii < -deltaphi()/2) { // make sure the binned angle is between 0-deltaphi()/2 and 2PI-deltaphi()/2
+		// make sure the binned angle is between 0-deltaphi()/2 and 2PI-deltaphi()/2
+		if (phii < -deltaphi()/2) {
 			phii += 2*M_PI;
 		}
 		
-		// calculate phi for each pixel
+		// set phi for each pixel correct binning
 		p_phi->set( i, round(phii/deltaphi()) * deltaphi() );
 		
 		// calculate |q| for each pixel and bin lengths with correct resolution
