@@ -82,7 +82,6 @@ libs = Split("""
 ##### define sources to be compiled
 sources_giraffe = Split("""
    crosscorrelator.cpp
-   arrayclasses.cpp
    arraydataIO.cpp
    fouriertransformer.cpp
    util.cpp
