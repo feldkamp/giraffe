@@ -60,6 +60,7 @@ public:
 	void calculateAutoCorrNorm();
 	void calculateSAXS(double start_q = 0, double stop_q = 0);
 	void calculateXCCA(double start_q = 0, double stop_q = 0);
+	void calculateFluctuations();
 	void calculateXCCA_crossCorrelation();
 	void calculateXCCA_autoCorrelation();
 	
@@ -213,15 +214,15 @@ public:
 	
 private:
 	//-------------------------------------------------required for both algorithms
-	bool p_mask_enable;			// enables/disables masking of bad pixels
-	bool p_xcca_enable;			// enables/disables cross-correlations (if disabled only autocorrelations are calculated)
-    std::string p_outputdir;  	// the output directory if anything is dumped from withing this class (default is working dir)
+	bool p_mask_enable;							// enables/disables masking of bad pixels
+	bool p_xcca_enable;							// enables/disables cross-correlations (if disabled only autocorrelations are calculated)
+    std::string p_outputdir;  					// the output directory if anything is dumped from withing this class (default is working dir)
 
-	array1D<double> *p_data;			// data storage
-	array1D<double> *p_qx;				// pixel x coordinate
-	array1D<double> *p_qy;				// pixel y coordinate
-	array1D<bool>   *p_mask;			// mask used to remove bad pixels
-	array2D<double> *p_polar;			// intensities in polar coordinates
+	array1D<double> *p_data;					// data storage
+	array1D<double> *p_qx;						// pixel x coordinate
+	array1D<double> *p_qy;						// pixel y coordinate
+	array1D<bool>   *p_mask;					// mask used to remove bad pixels
+	array2D<double> *p_polar;					// intensities in polar coordinates
 	
 	array2D<double> *p_autoCorrelation;
 	array3D<double> *p_crossCorrelation;
@@ -230,27 +231,27 @@ private:
 	clock_t p_creation_time;
 	
 	//-------------------------------------------------required for alg1
-	double p_userQMin;			// start q for correlation calculations
-	double p_userQMax;			// stop q for correlation calculations
-	double p_deltaq;			// step size (bin length) in q-direction
-	double p_phimin;			// start phi for correlation calculations (currently disabled, 0 is always used)
-	double p_phimax;			// stop phi for correlation calculations (currently disabled, 360 is always used)
-	double p_deltaphi;			// step size (bin length) in phi direction
-	int p_nQ;					// formerly samplingLength
-	int p_nPhi;					// formerly samplingAngle
-	int p_nLag;					// formerly samplingLag
+	double p_userQMin;							// start q for correlation calculations
+	double p_userQMax;							// stop q for correlation calculations
+	double p_deltaq;							// step size (bin length) in q-direction
+	double p_phimin;							// start phi for correlation calculations (currently disabled, 0 is always used)
+	double p_phimax;							// stop phi for correlation calculations (currently disabled, 360 is always used)
+	double p_deltaphi;							// step size (bin length) in phi direction
+	int p_nQ;									// formerly samplingLength
+	int p_nPhi;									// formerly samplingAngle
+	int p_nLag;									// formerly samplingLag
 
-	array1D<double> *p_q;				// magnitude of q-vector (1st dimension in correlation) for each pixel
-	array1D<double> *p_phi;				// angle (2nd dimension in correlation) for each pixel
+	array1D<double> *p_q;						// magnitude of q-vector (1st dimension in correlation) for each pixel
+	array1D<double> *p_phi;						// angle (2nd dimension in correlation) for each pixel
 	
-	array1D<double> *p_qAvg;			// vector of output magnitudes of q-vector
-	array1D<double> *p_iAvg;			// vector of output average intensities for magnitudes of q-vector
-	array1D<double> *p_phiAvg;			// vector of output angles
+	array1D<double> *p_qAvg;					// vector of output magnitudes of q-vector
+	array1D<double> *p_iAvg;					// vector of output average intensities for magnitudes of q-vector
+	array1D<double> *p_phiAvg;					// vector of output angles
 	array2D<unsigned int> *p_pixelCount;		// pixel counts in polar coordinates
-	array2D<bool>   *p_pixelBool;
-	array2D<unsigned int> *p_autoCorrNorm;
+	array2D<bool>   *p_pixelBool;				// determines if a pixel is valid (boolean version of pixelCount)
+	array2D<unsigned int> *p_autoCorrNorm;		// vector to normalize the auto correlation (does not change unless mask or q-range changes)
 	
-	array2D<double> *p_fluctuations;	// intensity fluctuations in polar coordinates
+	array2D<double> *p_fluctuations;			// intensity fluctuations in polar coordinates
     
 	// function trackers
     int p_tracker_calculatePolarCoordinates;	// tracker for calculatePolarCoordinates()
@@ -259,13 +260,12 @@ private:
 	
 	//-------------------------------------------------required for alg2
 	array2D<bool> *p_mask_polar;
-	array2D<double> *p_table;					//lookup table
-
-	double p_qxmax;
+	array2D<double> *p_table;					// lookup table
+	double p_qxmax;								// largest value in p_qx
 	double p_qymax;	
-	double p_qxmin;
+	double p_qxmin;								// smallest value in p_qx
 	double p_qymin;
-	double p_qxdelta;
+	double p_qxdelta;							// difference between two elements in p_qx
 	double p_qydelta; 
 };
 

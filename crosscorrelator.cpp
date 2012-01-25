@@ -387,6 +387,11 @@ void CrossCorrelator::setData( arraydata<double> *data ) {
 		delete p_data;
 	}
 	p_data = new array1D<double>( data );
+	
+	//reset all trackers after setting new data
+    p_tracker_calculatePolarCoordinates = 0;
+	p_tracker_calculateSAXS = 0;
+	p_tracker_calculateXCCA = 0;
 }
 
 //----------------------------------------------------------------------------qx
@@ -851,9 +856,6 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 		setUserQMinQMax( start_q, stop_q );
 	}
 	
-	// create counter array
-	array1D<unsigned int> *counter = new array1D<unsigned int>( nQ() );
-	
 	// if calculateSAXS() has already been used, free and recreate p_qAvg, p_iAvg
 	if (p_tracker_calculateSAXS) {
 		delete p_qAvg;
@@ -865,7 +867,9 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 	if (!p_tracker_calculatePolarCoordinates && !p_tracker_calculateSAXS) {
 		// calculate |q| for each pixel and bin lengths with correct resolution
 		for (int i=0; i<data()->size(); i++) {
-			p_q->set(i, round(sqrt( (qx()->get(i)*qx()->get(i))+(qy()->get(i)*qy()->get(i)) ) / deltaq()) * deltaq() );
+			// for each pixel |q| = sqrt(qx*qx + qy*qy)
+			p_q->set(i, round( sqrt( (qx()->get(i)*qx()->get(i))+(qy()->get(i)*qy()->get(i)) ) / deltaq()) * deltaq() );
+			//by JF: why divide, round, multiply?
 		}
 	}
 	
@@ -876,13 +880,16 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 		}			
 	}
 	
+	// create counter array
+	array1D<unsigned int> *counter = new array1D<unsigned int>( nQ() );
+		
 	// angular sum for each |q|
 	for (int i=0; i<data()->size(); i++) {
 		if (!maskEnable() || mask()->get(i)) {
-			int qIndex = (int) round((p_q->get(i)-userQMin())/deltaq()); // the index in qAvg[] that corresponds to q[i]
-			if (p_q->get(i) <= userQMax() && p_q->get(i) >= userQMin()) {
-				iAvg()->set( qIndex, iAvg()->get(qIndex)+data()->get(i) );
-				counter->set( qIndex, counter->get(qIndex)+1 );
+			int qIndex = (int) round( (p_q->get(i)-userQMin())/deltaq() ); 		// the index in qAvg that corresponds to q[i]
+			if ( p_q->get(i) >= userQMin() && p_q->get(i) <= userQMax() ){
+				iAvg()->set( qIndex, iAvg()->get(qIndex)+data()->get(i) );		// add pixel intensity (from data array)
+				counter->set( qIndex, counter->get(qIndex)+1 );					// increment counter for this pixel
 			} else if (debug() >= 3) 
 				cout << "POINT EXCLUDED! q: " << p_q->get(i) << ", qmin: " << userQMin() << ", qmax: " << userQMax() 
 					<< ", nQ: " << nQ() << ", qIndex: " << qIndex << endl;
@@ -891,7 +898,9 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 	
 	// normalize by number of pixels
 	for (int i=0; i<nQ(); i++) {
-		if (counter->get(i)) iAvg()->set( i, iAvg()->get(i)/(double)counter->get(i) );
+		if (counter->get(i)){
+			iAvg()->set( i, iAvg()->get(i)/(double)counter->get(i) );
+		}
 	}
 	
 	if (debug() >= 2) {
@@ -910,7 +919,6 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 
 //----------------------------------------------------------------------------calculateXCCA
 void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
-	string xccaEnable_str = xccaEnable() ? "full cross-correlation" : "auto-correlation";
 	if (debug() >= 1){
 		cout << "CrossCorrelator::calculateXCCA(" << start_q << "," << stop_q << ") " << endl;		
 	}
@@ -935,20 +943,7 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 		//calculateSAXS_FAST();			//instead of calculateSAXS above
 		//subtractSAXSmean();			//instead of calucation loop below
 	
-		//calculate fluctuations
-		delete p_fluctuations;
-		p_fluctuations = new array2D<double>( nQ(), nPhi() );
-		for (int i=0; i<nQ(); i++) {
-			for (int j=0; j<nPhi(); j++) {
-				if (pixelCount()->get(i,j) > 0) {
-					// subtract SAXS average for all shots or just subtract the SAXS from the specific shot?
-					// second alternative is used here, since that always produces fluctuations with zero mean
-					fluctuations()->set(i, j, polar()->get(i,j) - iAvg()->get(i) );
-				}
-			}
-		}
-
-		if (debug() >= 1) cout << "calculating " << xccaEnable_str << std::flush;
+		calculateFluctuations();
 		
 		// calculate cross-correlation array and normalization array for cross-correlation	
 		if (xccaEnable()) {
@@ -956,8 +951,6 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 		} else {
 			calculateXCCA_autoCorrelation();
 		}
-		
-		if (debug() >= 1) cout << "done." << endl;
 		
 		p_tracker_calculateXCCA++;
 	} else {
@@ -972,10 +965,25 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 }
 
 
+void CrossCorrelator::calculateFluctuations(){
+	//calculate fluctuations
+	delete p_fluctuations;
+	p_fluctuations = new array2D<double>( nQ(), nPhi() );
+	for (int i=0; i<nQ(); i++) {
+		for (int j=0; j<nPhi(); j++) {
+			if (pixelCount()->get(i,j) > 0) {
+				// subtract SAXS average for all shots or just subtract the SAXS from the specific shot?
+				// second alternative is used here, since that always produces fluctuations with zero mean
+				fluctuations()->set(i, j, polar()->get(i,j) - iAvg()->get(i) );
+			}
+		}
+	}
+}
 
 //----------------------------------------------------------------------------calculateXCCA_crossCorrelation
 //FULL CROSS-CORRELATION (4-fold for-loop)
 void CrossCorrelator::calculateXCCA_crossCorrelation(){
+	if (debug() >= 1) cout << "calculating full cross correlation" << std::flush;
 	delete p_crossCorrelation;
 	p_crossCorrelation = new array3D<double>( nQ(), nQ(), nLag() );
 	
@@ -1013,6 +1021,7 @@ void CrossCorrelator::calculateXCCA_crossCorrelation(){
 			}
 		} // for q2
 	} // for q1
+	if (debug() >= 1) cout << " done." << endl;
 }
 
 
@@ -1020,6 +1029,7 @@ void CrossCorrelator::calculateXCCA_crossCorrelation(){
 //----------------------------------------------------------------------------calculateXCCA_autoCorrelation
 //AUTO-CORRELATION ONLY (3-fold for-loop)
 void CrossCorrelator::calculateXCCA_autoCorrelation(){
+	if (debug() >= 1) cout << "calculating auto correlation" << std::flush;
 	delete p_autoCorrelation;
 	p_autoCorrelation = new array2D<double>( nQ(), nLag() );
 
@@ -1056,6 +1066,7 @@ void CrossCorrelator::calculateXCCA_autoCorrelation(){
 			}
 		}//for k (lag)
 	}// for i (q)
+	if (debug() >= 1) cout << " done." << endl;
 }
 
 
