@@ -35,7 +35,7 @@
 	class arraydataIO{
 
 	public:
-		arraydataIO();
+		arraydataIO( int verbose = 0 );
 		~arraydataIO();
 		
 		//general functions, data type is determined by checking the file extension

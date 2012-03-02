@@ -58,6 +58,8 @@ int main (int argc, char * const argv[]) {
 		("list,l", 			po::value<string>(&list_fn), 						"file list with input files")
 		("pixelX", 			po::value<string>(&pixx_fn), 						"input file for pixel values x-coordinate")
 		("pixelY", 			po::value<string>(&pixy_fn), 						"input file for pixel values y-coordinate")
+		("shiftX", 			po::value<double>(&shiftX), 						"number of pixels in x to shift image center by (when not given pixelX)")
+		("shiftY", 			po::value<double>(&shiftY), 						"number of pixels in y to shift image center by (when not given pixelY)")
 		("numPhi", 			po::value<int>(&nPhi),								"number of angles phi")
 		("numQ", 			po::value<int>(&nQ),								"number of q-values")
 		("startQ", 			po::value<double>(&start_q),							"start value for q")
@@ -96,6 +98,12 @@ int main (int argc, char * const argv[]) {
 	}
 	if (vm.count("pixelY")){
 		cout << "--> using y-values file " << pixy_fn << endl;
+	}
+	if (vm.count("shiftX")){
+		cout << "--> shifting image center in x by " << shiftX << endl;
+	}
+	if (vm.count("shiftY")){
+		cout << "--> shifting image center in y by " << shiftY << endl;
 	}
 	if (vm.count("numPhi")){
 		cout << "--> using numPhi value " << nPhi << endl;
@@ -162,12 +170,12 @@ int main (int argc, char * const argv[]) {
 	}
 
 	//-------------------------------------------------interface done, get to work
-
-	arraydataIO *io = new arraydataIO;
-
+	arraydataIO *io = new arraydataIO(verbose);
+	int iofail = 0;
+	
 	//prepare array2D<double>'s to hold overall averages
 	array2D<double> *detavg = new array2D<double>;
-	io->readFromFile( files.at(0), detavg );
+	iofail += io->readFromFile( files.at(0), detavg );
 	int imgX = detavg->dim2();
 	int imgY = detavg->dim1();
 	
@@ -177,7 +185,7 @@ int main (int argc, char * const argv[]) {
 	array2D<double> *qx = 0;
 	array2D<double> *qy = 0;
 	
-	int iofail = 0;
+
 				
 	if (mask_fn != ""){
 		iofail += io->readFromFile( mask_fn, mask);
@@ -193,7 +201,7 @@ int main (int argc, char * const argv[]) {
 	if (pixx_fn != ""){
 		iofail += io->readFromFile( pixx_fn, qx);
 	}else{
-		cout << "using a generic qx-distribution" << endl;
+		cout << "using a generic qx-distribution (with " << shiftX << " shift)" << endl;
 		qx = new array2D<double>( imgY, imgX );
 		qx->gradientAlongDim1(-imgX/2+shiftX, +imgX/2+shiftX);
 	}
@@ -201,7 +209,7 @@ int main (int argc, char * const argv[]) {
 	if (pixy_fn != ""){
 		iofail += io->readFromFile( pixy_fn, qy);
 	}else{
-		cout << "using a generic qy-distribution" << endl;
+		cout << "using a generic qy-distribution (with " << shiftY << " shift)" << endl;
 		qy = new array2D<double>( imgY, imgX );
 		qy->gradientAlongDim2(-imgY/2+shiftY, +imgY/2+shiftY);
 	}
@@ -257,13 +265,19 @@ int main (int argc, char * const argv[]) {
 		
 		array2D<double> *image = 0;
 		if (k != 0){
-			io->readFromFile( fn, image );
+			iofail = io->readFromFile( fn, image );
 		}else{
 			//this has been read previously in detavg, no need to read again...
 			delete image;
 			image = new array2D<double>(*detavg);
 			detavg->zeros();
 		}
+		
+		if(iofail){
+			cerr << "I/O failure. Aborting." << endl;
+			return 1;		
+		}
+		
 		
 		if (back){
 			image->subtractArrayElementwise( back );
@@ -300,7 +314,6 @@ int main (int argc, char * const argv[]) {
 		}
 			
 		delete image;
-		delete cc;
 	}
 	
 	
@@ -324,6 +337,7 @@ int main (int argc, char * const argv[]) {
 	delete polaravg;
 	delete corravg;		
 	delete io;
+	delete cc;
 	
     return 0;
 }

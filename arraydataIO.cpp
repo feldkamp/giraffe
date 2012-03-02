@@ -41,9 +41,9 @@ std::string getExt(std::string filename){
 }
 
 
-arraydataIO::arraydataIO()
+arraydataIO::arraydataIO( int verbose )
 	: p_transposeForIO(true)	//should be 'true', generally. see note in header
-	, p_verbose(2)
+	, p_verbose(verbose)
 {
 }
 
@@ -344,16 +344,16 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 			TIFFGetField(tiff, TIFFTAG_IMAGELENGTH, &imagelength);
 			TIFFGetField(tiff, TIFFTAG_BITSPERSAMPLE, &datalength);
 			TIFFGetField(tiff, TIFFTAG_SAMPLEFORMAT, &datatype);
-
-			if(verbose()){
-				cout << "Reading '" << filename << "' (TIFF file)"
-				<< ", dimensions (" << dest->dim1() << ", " << dest->dim2() << ")" << endl;
-			}
 							
 			//allocate data to write image to		
 			delete dest;
 			dest = new array2D<double>(width, imagelength);
-			
+
+			if(verbose()){
+				cout << "Reading '" << filename << "' (TIFF file)"
+				<< ", dimensions (" << dest->dim1() << ", " << dest->dim2() << "), " << datalength << " bit." << endl;
+			}
+						
 			switch ( datalength) {
 			case 32:
 
@@ -423,16 +423,16 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 					cerr << "Error in arraydataIO::readFromTiff. Could not read image (TIFFReadRGBAImage failed)." << endl;
 				}
 			}//switch	
-				
-			TIFFClose(tiff);
 			
 			if (transposeForIO()){
 				dest->transpose();
 			}
 			
+			TIFFClose(tiff);
 		} else { //tiff could not be opened
 			retval = 1;
 		}
+		
 		return retval;
 	}
 

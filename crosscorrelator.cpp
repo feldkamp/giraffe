@@ -903,7 +903,7 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 		}
 	}
 	
-	if (debug() >= 2) {
+	if (debug() > 2) {
 		cout << "angular average of the intensity:" << endl;
 		for (int i=0; i<nQ(); i++)
 			cout << "Q: " << qAvg()->get(i) << ",   \t# pixels: " << counter->get(i) << ",\tI: " << iAvg()->get(i) << endl;
