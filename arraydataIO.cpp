@@ -81,11 +81,13 @@ int arraydataIO::readFromFile( std::string filename, array2D<double> *&dest) con
 		fail = readFromEDF( filename, dest );
 	}else if (ext == "h5" || ext == "hdf5" || ext == "H5" || ext == "HDF5"){		
 		fail = readFromHDF5( filename, dest );
+	}else if (ext == "tif" || ext == "tiff" || ext == "TIF" || ext == "TIFF"){		
+		fail = readFromTiff( filename, dest );
 	}else if (ext == "txt" || ext == "TXT" || ext == "dat"){		
 		fail = readFromASCII( filename, dest );
 	}else{
 		cerr << "Error in arraydataIO::readFromFile(2D)! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
-		cerr << "valid options include 'edf', 'h5' and 'txt/dat'" << endl;
+		cerr << "valid options include 'edf', 'h5', 'tif', and 'txt/dat'" << endl;
 		fail = 100;
 	}
 	return fail;
@@ -95,7 +97,6 @@ int arraydataIO::writeToFile( std::string filename, array1D<double> *src) const{
 	string ext = getExt( filename );
 	int fail = 0;
 	
-	// read 2D 'raw' image
 	if (ext == "edf" || ext == "EDF" || ext == "bin"){			
 		fail = writeToEDF( filename, src );
 	}else if (ext == "h5" || ext == "hdf5" || ext == "H5" || ext == "HDF5"){		
@@ -103,7 +104,7 @@ int arraydataIO::writeToFile( std::string filename, array1D<double> *src) const{
 	}else if (ext == "txt" || ext == "TXT" || ext == "dat"){		
 		fail = writeToASCII( filename, src );
 	}else{
-		cerr << "Error in arraydataIO::writeToFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
+		cerr << "Error in arraydataIO::writeToFile(1D)! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
 		cerr << "valid options include 'edf', 'h5' and 'txt/dat'" << endl;
 		fail = 100;
 	}
@@ -113,22 +114,30 @@ int arraydataIO::writeToFile( std::string filename, array1D<double> *src) const{
 int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 	string ext = getExt( filename );
 	int fail = 0;
-	
-	// read 2D 'raw' image
+
 	if (ext == "edf" || ext == "EDF" || ext == "bin"){			
 		fail = writeToEDF( filename, src );
 	}else if (ext == "h5" || ext == "hdf5" || ext == "H5" || ext == "HDF5"){		
 		fail = writeToHDF5( filename, src );
+	}else if (ext == "tif" || ext == "tiff" || ext == "TIF" || ext == "TIFF"){
+		fail = writeToTiff( filename, src );
 	}else if (ext == "txt" || ext == "TXT" || ext == "dat"){		
 		fail = writeToASCII( filename, src );
 	}else{
-		cerr << "Error in arraydataIO::writeToFile! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
-		cerr << "valid options include 'edf', 'h5' and 'txt/dat'" << endl;
+		cerr << "Error in arraydataIO::writeToFile(2D)! Extension '" << ext << "' found in '" << filename << "' is not valid. " << endl;
+		cerr << "valid options include 'edf', 'h5', 'tif', and 'txt/dat'" << endl;
 		fail = 100;
 	}
 	return fail;
 }
 
+
+
+//****************************************************************************************************************
+//****************************************************************************************************************
+//*** EDF                                                                                                      ***
+//****************************************************************************************************************
+//****************************************************************************************************************
 #ifdef ARRAYDATAIO_EDF
 	#include "edf.h"				// needed to read/write EDF files (ESRF Data Format)
 
@@ -302,6 +311,18 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 #endif
 
 
+
+
+
+
+
+
+
+//****************************************************************************************************************
+//****************************************************************************************************************
+//*** TIFF                                                                                                     ***
+//****************************************************************************************************************
+//****************************************************************************************************************
 #ifdef ARRAYDATAIO_TIFF
 	#include <tiffio.h>				// needed to read/write tiff files (Tagged Image File Format)
 	
@@ -316,43 +337,100 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 		TIFF *tiff= TIFFOpen( filename.c_str(), "r" );
 
 		if(tiff){
-			uint32 width, height;
-			int npixels;
-			uint32* raster;
-
+			uint32 width, imagelength;
+			uint32 datalength;
+			uint32 datatype = 0;
 			TIFFGetField(tiff, TIFFTAG_IMAGEWIDTH, &width);
-			TIFFGetField(tiff, TIFFTAG_IMAGELENGTH, &height);
+			TIFFGetField(tiff, TIFFTAG_IMAGELENGTH, &imagelength);
+			TIFFGetField(tiff, TIFFTAG_BITSPERSAMPLE, &datalength);
+			TIFFGetField(tiff, TIFFTAG_SAMPLEFORMAT, &datatype);
 
-			//allocate data to write image to		
-			delete dest;
-			dest = new array2D<double>(width, height);
-			
 			if(verbose()){
 				cout << "Reading '" << filename << "' (TIFF file)"
 				<< ", dimensions (" << dest->dim1() << ", " << dest->dim2() << ")" << endl;
 			}
+							
+			//allocate data to write image to		
+			delete dest;
+			dest = new array2D<double>(width, imagelength);
 			
-			npixels = width * height;
-			raster = (uint32*) _TIFFmalloc( npixels * sizeof(uint32) );
-			if (raster != NULL){
-				if ( TIFFReadRGBAImage(tiff, width, height, raster, 0) ){
-					for(unsigned int j= 0; j < height; j++){		//y
-						for(unsigned int i= 0; i < width; i++){		//x	
-//							dest->set( i, j, 1.* (raster[j*width+i] & 0x000000ff));			// max value 255
-							dest->set( i, j, 1.* (raster[j*width+i] & 0x0000ffff));			// max value 65535
-						}
+			switch ( datalength) {
+			case 32:
+
+				if( datatype == SAMPLEFORMAT_UINT )
+				{
+					uint32* ibuf;
+					ibuf = (uint32*) _TIFFmalloc(TIFFScanlineSize(tiff));				
+
+					for (uint32 row = 0; row < imagelength; row++)
+					{
+						TIFFReadScanline(tiff, ibuf, row);
+						for (uint16 i = 0; i < width; i++)
+							dest->set(i, row, ibuf[i]);
+					}
+					_TIFFfree(ibuf);
+				}
+				else if( datatype == SAMPLEFORMAT_IEEEFP )
+				{
+					float* fbuf;
+					fbuf = (float*) _TIFFmalloc(TIFFScanlineSize(tiff));
+					for (uint32 row = 0; row < imagelength; row++)
+					{
+						TIFFReadScanline(tiff, fbuf, row);
+						for (uint16 i = 0; i < width; i++)
+							dest->set(i, row, fbuf[i]);
+					}
+					_TIFFfree(fbuf);
+				}else{
+					cerr << "arraydataIO::readFromTiff. Data format " << datatype << " not implemented." << endl;
+				}
+
+				break;
+			case 16:
+				uint16* buf;
+
+				buf = (uint16*) _TIFFmalloc(TIFFScanlineSize(tiff));
+
+				for (uint32 row = 0; row < imagelength; row++)
+				{
+					TIFFReadScanline(tiff, buf, row);
+					for (uint16 i = 0; i < width; i++)
+					{
+						dest->set(i, row, buf[i]);
 					}
 				}
-				_TIFFfree(raster);
-			}
+
+				_TIFFfree(buf);
+				break;
+			default:
+				int npixels;
+				uint32* raster;
+
+				npixels = width * imagelength;
+				raster = (uint32*) _TIFFmalloc( npixels * sizeof(uint32) );
+				if (raster != NULL){
+					if ( TIFFReadRGBAImage(tiff, width, imagelength, raster, 0) ){
+						for(uint32 row= 0; row < imagelength; row++){		//y
+							for(uint16 i= 0; i < width; i++){				//x	
+	//							dest->set( i, j, 1.* (raster[j*width+i] & 0x000000ff));			// max value 255
+								dest->set( i, row, 1.* (raster[row*width+i] & 0x0000ffff));			// max value 65535, force to double
+							}
+						}
+					}
+					_TIFFfree(raster);
+					dest->fliplr();
+				}else{
+					cerr << "Error in arraydataIO::readFromTiff. Could not read image (TIFFReadRGBAImage failed)." << endl;
+				}
+			}//switch	
+				
 			TIFFClose(tiff);
 			
 			if (transposeForIO()){
 				dest->transpose();
 			}
 			
-			dest->flipud();
-		} else {
+		} else { //tiff could not be opened
 			retval = 1;
 		}
 		return retval;
@@ -425,19 +503,22 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 			TIFFSetField(out, TIFFTAG_PHOTOMETRIC, photo);
 
 			//write to file
+			int too_low_count = 0;
+			int too_high_count = 0;
 			for (uint32 i = 0; i < height; i++)
 			{
 				for (unsigned int j = 0; j < width; j++)
 				{
 					if (scaleFlag) {										//scale image to full range
 						tifdata[j] = (uint16) floor( 65535.* (src->get(j,i)-MinValue) / MaxMinRange );
-					} 
-					else {										
+					} else {										
 						if( src->get(j,i) < 0 ) {
 							tifdata[j] = 0;									// cut off values smaller than 0
+							too_low_count++;
 						}
 						else if ( src->get(j,i) > 65535 ) {
 							tifdata[j] = 65535;								// ...and values larger than 2^16-1
+							too_high_count++;
 						}
 						else{ 
 							tifdata[j] = (uint16) floor(src->get(j,i));		// ... force everything else to be integer
@@ -449,10 +530,18 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 			}
 			
 			
+			
 			if (verbose()){
 				cout << "Tiff image '" << filename << "' written to disc." << endl;
 				if (scaleFlag) cout << "Scaled output. "; else cout << "Unscaled output. ";
-				cout << "Data min: " << MinValue << ", max: " << MaxValue << ", range: " << MaxMinRange << endl;
+				cout << "data min: " << MinValue << ", max: " << MaxValue << ", range: " << MaxMinRange << endl;
+				
+				if (too_low_count){
+					cout << too_low_count << " values lower than zero in the original data have been cut off." << endl;
+				}
+				if (too_high_count){
+					cout << too_high_count << " values higher than 65535 in the original data have been cut off." << endl;
+				}
 			}
 			
 			delete[] tifdata;
@@ -480,6 +569,15 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 #endif
 
 
+
+
+
+
+//****************************************************************************************************************
+//****************************************************************************************************************
+//*** HDF5                                                                                                     ***
+//****************************************************************************************************************
+//****************************************************************************************************************
 
 #ifdef ARRAYDATAIO_HDF5
 	#include <hdf5.h>				// needed to read/write HDF5 files (Tagged Image File Format)
@@ -930,6 +1028,15 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 
 
 
+
+
+//****************************************************************************************************************
+//****************************************************************************************************************
+//*** ASCII                                                                                                    ***
+//****************************************************************************************************************
+//****************************************************************************************************************
+
+
 //-------------------------------------------------------------- readFromASCII (1D)
 //
 //-------------------------------------------------------------- 
@@ -1088,6 +1195,16 @@ int arraydataIO::writeToASCII( std::string filename, array3D<double> *src, int f
 	return 0;
 }
 
+
+
+
+
+
+//****************************************************************************************************************
+//****************************************************************************************************************
+//*** general functionality                                                                                    ***
+//****************************************************************************************************************
+//****************************************************************************************************************
 
 bool arraydataIO::transposeForIO() const{
 	return p_transposeForIO;

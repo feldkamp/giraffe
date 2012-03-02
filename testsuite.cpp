@@ -93,7 +93,7 @@ int main (int argc, char * const argv[]) {
 							int io_mode = 0;	//general case: test all 2D formats
 //							io_mode = 1; 	//2D EDF
 //							io_mode = 2;	//2D HDF5
-//							io_mode = 3;	//2D TIFF
+							io_mode = 3;	//2D TIFF
 //							io_mode = 4;	//2D ASCII
 //							io_mode = 5;	//special case...
 //							io_mode = 12; 	//test all 1D formats
