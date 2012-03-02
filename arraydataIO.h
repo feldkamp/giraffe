@@ -55,7 +55,7 @@
 		
 		// scaleFlag = 0 --> do not scale data
 		// scaleFlag = 1 --> scale data to 0..65535
-		int writeToTiff( std::string filename, array2D<double> *src, int scaleFlag = 0) const;
+		int writeToTiff( std::string filename, array2D<double> *src, int scaleFlag = 0, int bits = 16) const;
 		
 		
 		//------------------------------------------------------------------------------HDF5

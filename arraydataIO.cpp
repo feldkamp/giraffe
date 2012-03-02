@@ -452,7 +452,7 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 	// implementation borrowed following matrixdata::tiff16out 
 	// of the tomo/matlib package (see http://xray-lens.de )
 	//--------------------------------------------------------------------------
-	int arraydataIO::writeToTiff( string filename, array2D<double> *src, int scaleFlag ) const {
+	int arraydataIO::writeToTiff( string filename, array2D<double> *src, int scaleFlag, int bits ) const {
 		if ( !src ){
 			cerr << "ERROR. In arraydataIO::writeToTiff. No source data. Could not write to file " << filename << endl;
 			return 1;
@@ -476,12 +476,10 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 			const double MinValue = src->calcMin();
 			const double MaxMinRange = MaxValue - MinValue;
 			
-			uint16 *tifdata = new uint16[width];
-			
 			// define tif-parameters
-			const uint16 spp = 1;      // Samples per pixel
-			const uint16 bpp = 16;     // Bits per sample
-			const uint16 photo = PHOTOMETRIC_MINISBLACK;
+			uint16 spp = 1;      // Samples per pixel
+			uint16 bpp = bits;     // Bits per sample
+			uint16 photo = PHOTOMETRIC_MINISBLACK;
 			
 			// set the width of the image
 			TIFFSetField(out, TIFFTAG_IMAGEWIDTH, width/spp);  
@@ -502,37 +500,55 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 			TIFFSetField(out, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
 			TIFFSetField(out, TIFFTAG_PHOTOMETRIC, photo);
 
-			//write to file
 			int too_low_count = 0;
 			int too_high_count = 0;
-			for (uint32 i = 0; i < height; i++)
-			{
-				for (unsigned int j = 0; j < width; j++)
-				{
-					if (scaleFlag) {										//scale image to full range
-						tifdata[j] = (uint16) floor( 65535.* (src->get(j,i)-MinValue) / MaxMinRange );
-					} else {										
-						if( src->get(j,i) < 0 ) {
-							tifdata[j] = 0;									// cut off values smaller than 0
-							too_low_count++;
-						}
-						else if ( src->get(j,i) > 65535 ) {
-							tifdata[j] = 65535;								// ...and values larger than 2^16-1
-							too_high_count++;
-						}
-						else{ 
-							tifdata[j] = (uint16) floor(src->get(j,i));		// ... force everything else to be integer
-						}
-					}
-				}
-				
-				TIFFWriteScanline(out, tifdata, i, 0);
-			}
 			
+			switch (bits){
+				case 32:
+				{
+					TIFFSetField(out, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
+					float *tifdata32 = new float[width];
+					for (uint32 i = 0; i < height; i++){
+						for (unsigned int j = 0; j < width; j++){
+							tifdata32[j] = (float)src->get(j,i);
+						}
+						TIFFWriteScanline(out, tifdata32, i, 0);
+					}
+					delete[] tifdata32;
+				}	
+				break;
+				default:	//8, 16, and all other odd bit numbers
+				{
+					if (bits != 8 && bits != 16){
+						cout << "Warning. Writing " << bits << "-bit TIFF images seems unusual." << endl;
+					}
+					uint16 *tifdata16 = new uint16[width];
+					for (uint32 i = 0; i < height; i++){
+						for (unsigned int j = 0; j < width; j++){
+							if (scaleFlag) {										//scale image to full range
+								tifdata16[j] = (uint16) floor( 65535.* (src->get(j,i)-MinValue) / MaxMinRange );
+							} else {										
+								if( src->get(j,i) < 0 ) {
+									tifdata16[j] = 0;									// cut off values smaller than 0
+									too_low_count++;
+								}else if ( src->get(j,i) > 65535 ) {
+									tifdata16[j] = 65535;								// ...and values larger than 2^16-1
+									too_high_count++;
+								}else{ 
+									tifdata16[j] = (uint16) floor(src->get(j,i));		// ... force everything else to be integer
+								}
+							}
+						}
+						TIFFWriteScanline(out, tifdata16, i, 0);
+					}
+					delete[] tifdata16;
+				}
+			}//end switch(bits)			
 			
 			
 			if (verbose()){
-				cout << "Tiff image '" << filename << "' written to disc." << endl;
+				cout << "TIFF file '" << filename << "' written"
+					<< ", dimensions (" << src->dim1() << ", " << src->dim2() << "), " << bpp << " bit." << endl;
 				if (scaleFlag) cout << "Scaled output. "; else cout << "Unscaled output. ";
 				cout << "data min: " << MinValue << ", max: " << MaxValue << ", range: " << MaxMinRange << endl;
 				
@@ -544,7 +560,6 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 				}
 			}
 			
-			delete[] tifdata;
 			TIFFClose(out);
 			
 			if (transposeForIO()){//transpose back before returning

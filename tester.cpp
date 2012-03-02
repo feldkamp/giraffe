@@ -322,13 +322,14 @@ int Tester::testIO(int mode){
 	string outfn = "test";
 	string infn = "test";
 	
-	arraydataIO *io = new arraydataIO;
+	arraydataIO *io = new arraydataIO(2);
 
 	//-------------------------------------------------------------writing
 	cout << "--- test case 2D ---" << endl;
 	array2D<double> *wmat = new array2D<double>(10, 6);
-//	wmat->generateTestPattern( 4 );		//cases 0 - 4 available
-	wmat->gradientAlongDim1(-10, 10);
+	io->generateTestPattern( wmat, 1 );		//cases 0 - 4 available
+//	wmat->gradientAlongDim1(-10, 10);
+
 	cout << wmat->getASCIIdata();
 	
 	
@@ -351,10 +352,12 @@ int Tester::testIO(int mode){
 	}
 	
 	if (mode == 0 || mode == 3){
-		cout << "writing to TIFF scaled" << endl;
-		io->writeToTiff(base()+outfn+"_scaled.tif", wmat, 1);	
-		cout << "writing to TIFF unscaled" << endl;
-		io->writeToTiff(base()+outfn+"_unscaled.tif", wmat, 0);
+		cout << "writing to 16-bit TIFF scaled" << endl;
+		io->writeToTiff(base()+outfn+"_16scaled.tif", wmat, 1);	
+		cout << "writing to 16-bit TIFF unscaled" << endl;
+		io->writeToTiff(base()+outfn+"_16unscaled.tif", wmat, 0);
+		cout << "writing to 32-bit TIFF" << endl;
+		io->writeToTiff(base()+outfn+"_32.tif", wmat, 0, 32);
 	}
 	
 	if (mode == 0 || mode == 4){
@@ -392,11 +395,14 @@ int Tester::testIO(int mode){
 	}
 		
 	if (mode == 0 || mode == 3){
-		cout << "\nreading from TIFF scaled" << endl;
-		io->readFromTiff(base()+infn+"_scaled.tif", rmat);
+		cout << "\nreading from 16-bit TIFF scaled" << endl;
+		io->readFromTiff(base()+infn+"_16scaled.tif", rmat);
 		cout << rmat->getASCIIdata();
-		cout << "\nreading from TIFF unscaled" << endl;
-		io->readFromTiff(base()+infn+"_unscaled.tif", rmat);
+		cout << "\nreading from 16-bit TIFF unscaled" << endl;
+		io->readFromTiff(base()+infn+"_16unscaled.tif", rmat);
+		cout << rmat->getASCIIdata();
+		cout << "\nreading from 32-bit TIFF" << endl;
+		io->readFromTiff(base()+infn+"_32.tif", rmat);
 		cout << rmat->getASCIIdata();
 	}
 	
