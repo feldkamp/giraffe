@@ -337,24 +337,24 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 		TIFF *tiff= TIFFOpen( filename.c_str(), "r" );
 
 		if(tiff){
-			uint32 width, imagelength;
-			uint32 datalength;
+			uint32 imagewidth, imagelength;
+			uint32 bitspersample;
 			uint32 datatype = 0;
-			TIFFGetField(tiff, TIFFTAG_IMAGEWIDTH, &width);
+			TIFFGetField(tiff, TIFFTAG_IMAGEWIDTH, &imagewidth);
 			TIFFGetField(tiff, TIFFTAG_IMAGELENGTH, &imagelength);
-			TIFFGetField(tiff, TIFFTAG_BITSPERSAMPLE, &datalength);
+			TIFFGetField(tiff, TIFFTAG_BITSPERSAMPLE, &bitspersample);
 			TIFFGetField(tiff, TIFFTAG_SAMPLEFORMAT, &datatype);
 							
 			//allocate data to write image to		
 			delete dest;
-			dest = new array2D<double>(width, imagelength);
+			dest = new array2D<double>(imagewidth, imagelength);
 
 			if(verbose()){
 				cout << "Reading '" << filename << "' (TIFF file)"
-				<< ", dimensions (" << dest->dim1() << ", " << dest->dim2() << "), " << datalength << " bit." << endl;
+				<< ", dimensions (" << dest->dim1() << ", " << dest->dim2() << "), " << bitspersample << " bit." << endl;
 			}
 						
-			switch ( datalength) {
+			switch ( bitspersample) {
 			case 32:
 
 				if( datatype == SAMPLEFORMAT_UINT )
@@ -365,7 +365,7 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 					for (uint32 row = 0; row < imagelength; row++)
 					{
 						TIFFReadScanline(tiff, ibuf, row);
-						for (uint16 i = 0; i < width; i++)
+						for (uint16 i = 0; i < imagewidth; i++)
 							dest->set(i, row, ibuf[i]);
 					}
 					_TIFFfree(ibuf);
@@ -377,7 +377,7 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 					for (uint32 row = 0; row < imagelength; row++)
 					{
 						TIFFReadScanline(tiff, fbuf, row);
-						for (uint16 i = 0; i < width; i++)
+						for (uint16 i = 0; i < imagewidth; i++)
 							dest->set(i, row, fbuf[i]);
 					}
 					_TIFFfree(fbuf);
@@ -394,7 +394,7 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 				for (uint32 row = 0; row < imagelength; row++)
 				{
 					TIFFReadScanline(tiff, buf, row);
-					for (uint16 i = 0; i < width; i++)
+					for (uint16 i = 0; i < imagewidth; i++)
 					{
 						dest->set(i, row, buf[i]);
 					}
@@ -406,14 +406,14 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 				int npixels;
 				uint32* raster;
 
-				npixels = width * imagelength;
+				npixels = imagewidth * imagelength;
 				raster = (uint32*) _TIFFmalloc( npixels * sizeof(uint32) );
 				if (raster != NULL){
-					if ( TIFFReadRGBAImage(tiff, width, imagelength, raster, 0) ){
+					if ( TIFFReadRGBAImage(tiff, imagewidth, imagelength, raster, 0) ){
 						for(uint32 row= 0; row < imagelength; row++){		//y
-							for(uint16 i= 0; i < width; i++){				//x	
+							for(uint16 i= 0; i < imagewidth; i++){				//x	
 	//							dest->set( i, j, 1.* (raster[j*width+i] & 0x000000ff));			// max value 255
-								dest->set( i, row, 1.* (raster[row*width+i] & 0x0000ffff));			// max value 65535, force to double
+								dest->set( i, row, 1.* (raster[row*imagewidth+i] & 0x0000ffff));			// max value 65535, force to double
 							}
 						}
 					}

@@ -201,17 +201,21 @@ int main (int argc, char * const argv[]) {
 	if (pixx_fn != ""){
 		iofail += io->readFromFile( pixx_fn, qx);
 	}else{
-		cout << "using a generic qx-distribution (with " << shiftX << " shift)" << endl;
+		double x0 = -imgX/2-shiftX;
+		double x1 = +imgX/2-shiftX;
+		cout << "generic qx-distribution, range (" << x0 << ", " << x1 << ")" << endl;
 		qx = new array2D<double>( imgY, imgX );
-		qx->gradientAlongDim1(-imgX/2+shiftX, +imgX/2+shiftX);
+		qx->gradientAlongDim2(x0, x1);	
 	}
 
 	if (pixy_fn != ""){
 		iofail += io->readFromFile( pixy_fn, qy);
 	}else{
-		cout << "using a generic qy-distribution (with " << shiftY << " shift)" << endl;
+		double y0 = -imgY/2-shiftY;
+		double y1 = +imgY/2-shiftY;
+		cout << "generic qy-distribution, range (" << y0 << ", " << y1 << ")" << endl;
 		qy = new array2D<double>( imgY, imgX );
-		qy->gradientAlongDim2(-imgY/2+shiftY, +imgY/2+shiftY);
+		qy->gradientAlongDim1(y0, y1);
 	}
 	
 	if (iofail){
