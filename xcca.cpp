@@ -259,7 +259,7 @@ int main (int argc, char * const argv[]) {
 	for (int k = 0; k < num_files; k++){
 		std::ostringstream osst_num;
 		osst_num << k;
-		string single_desc = osst_num.str();
+		string single_desc = "evt_"+osst_num.str();
 		string fn = files.at(k);
 		cout << "#" << k << ": " << std::flush;// << fn << endl;
 		
@@ -295,15 +295,17 @@ int main (int argc, char * const argv[]) {
 		}
 
 		if ( single_out || num_files == 1 ){
-			io->writeToFile( outdir+"corr"+single_desc+ext, cc->autoCorr() );
-			io->writeToFile( outdir+"polar"+single_desc+ext, cc->polar() );
-			io->writeToFile( outdir+"fluct"+single_desc+ext, cc->fluctuations() );
+			io->writeToFile( outdir+single_desc+"xaca"+ext, cc->autoCorr() );
+			io->writeToFile( outdir+single_desc+"polar"+ext, cc->polar() );
+			io->writeToFile( outdir+single_desc+"fluct"+ext, cc->fluctuations() );
 			
 			//pixelCount is of type array2D<unsigned int> and would need to be converted to be written
-			//io->writeToFile( outdir+"pixel_count"+single_desc+ext, cc->pixelCount() );
+			//io->writeToFile( outdir+single_desc+"pixel_count"+ext, cc->pixelCount() );
 			
-			io->writeToFile( outdir+"q"+single_desc+ext, cc->qAvg() );	
-			io->writeToFile( outdir+"i"+single_desc+ext, cc->iAvg() );	
+			io->writeToFile( outdir+single_desc+"q"+ext, cc->qAvg() );
+			io->writeToFile( outdir+single_desc+"i"+ext, cc->iAvg() );
+			
+			io->writeToFile( outdir+single_desc+"det"+ext, cc->data() );
 		}
 		
 		//sum up results
