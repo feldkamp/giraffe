@@ -334,11 +334,11 @@ int main (int argc, char * const argv[]) {
 		polaravg->divideByValue( num_files );		//normalize	
 		corravg->divideByValue( num_files );		//normalize
 		
-		io->writeToFile( outdir+"det_avg"+ext, detavg);			// average background-subtracted detector image
-		io->writeToFile( outdir+"polar_avg"+ext, polaravg);		// average image in polar coordinates
-		io->writeToFile( outdir+"corr_avg"+ext, corravg);			// average autocorrelation
+		io->writeToFile( outdir+"avg_det"+ext, detavg);			// average background-subtracted detector image
+		io->writeToFile( outdir+"avg_polar"+ext, polaravg);		// average image in polar coordinates
+		io->writeToFile( outdir+"avg_xaca"+ext, corravg);			// average autocorrelation
 		if ( back ){
-			io->writeToFile( outdir+"det_background_avg"+ext, backavg);		// just the background
+			io->writeToFile( outdir+"avg_det_back"+ext, backavg);		// just the background
 		}
 	}
 	
