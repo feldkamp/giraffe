@@ -128,7 +128,6 @@ public:
 	array2D<unsigned int> *autoCorrNorm() const;
 	array1D<double> *iAvg() const;
 	array2D<double> *fluctuations() const;	// intensity fluctuations in polar coordinates produced by calculatePolarCoordinates()
-	array2D<double> *polar() const;			// intensities in polar coordinates produced by calculatePolarCoordinates()/calculatePolarCoordinates_FAST()
 	array2D<bool> *mask_polar() const;		// mask in polar coordinates produced by calculatePolarCoordinates_FAST()
 	array2D<double> *autoCorr() const;
 	double getAutoCorrelation(unsigned index1, unsigned index2) const;
@@ -180,6 +179,17 @@ public:
 				setMaskEnable( false );
 			}
 		}
+	
+
+	// intensities in polar coordinates produced by calculatePolarCoordinates(),calculatePolarCoordinates_FAST()
+	// but can be set from the outside, if available, to be able to skip this step
+	array2D<double> *polar() const;			
+	void setPolar( array2D<double> *img );
+	
+	// polar coordinate image of the average of all shots
+	// can be set from the outside to to subtract common parts in the data set
+	array2D<double> *grandAvgPolar() const;	
+	void setGrandAvgPolar( array2D<double> *img );
 
 	double userQMax() const;
 	void setUserQMax( double user_qmax_val );
@@ -223,6 +233,7 @@ private:
 	array1D<double> *p_qy;						// pixel y coordinate
 	array1D<bool>   *p_mask;					// mask used to remove bad pixels
 	array2D<double> *p_polar;					// intensities in polar coordinates
+	array2D<double> *p_grand_avg_polar;			// polar coordinate image of the average of all shots (needs to be user-provided)
 	
 	array2D<double> *p_autoCorrelation;
 	array3D<double> *p_crossCorrelation;

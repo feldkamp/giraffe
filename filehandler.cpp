@@ -366,7 +366,7 @@ int main (int argc, char * const argv[]) {
 			if (mode == "mask_combine"){
 				//multiple execution of applyMask
 				if (i == 0){
-					sum = new array2D<double>(*data);
+					sum = new array2D<double>(data);
 				}else{
 					sum->applyMask( data );				
 				}

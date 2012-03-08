@@ -168,6 +168,7 @@ void CrossCorrelator::initPrivateVariables(){
 	p_qy = 0;
 	p_mask = 0;
 	p_polar = 0;
+	p_grand_avg_polar = 0;
 
 	p_crossCorrelation = 0;
 	p_autoCorrelation = 0;
@@ -471,6 +472,20 @@ array2D<double> *CrossCorrelator::polar() const {
 	return p_polar;
 }
 
+void CrossCorrelator::setPolar( array2D<double> *img ){
+	delete p_polar;
+	p_polar = new array2D<double>(img);
+}
+	
+array2D<double> *CrossCorrelator::grandAvgPolar() const {
+	return p_grand_avg_polar;
+}
+
+void CrossCorrelator::setGrandAvgPolar( array2D<double> *img ){
+	delete p_grand_avg_polar;
+	p_grand_avg_polar = new array2D<double>(img);
+}
+
 
 array2D<bool> *CrossCorrelator::mask_polar() const {
 	return p_mask_polar;
@@ -765,7 +780,7 @@ void CrossCorrelator::calculatePolarCoordinates(double start_q, double stop_q) {
 		p_phiAvg->set( i, phimin()+i*deltaphi() );
 	}
 	
-	// normalize polar array of the intensities and calculate fluctuations
+	// normalize polar array of the intensities
 	for (int i=0; i<nQ(); i++) {
 		for (int j=0; j<nPhi(); j++) {
 			if ( pixelBool()->get(i,j) ) {
@@ -1034,18 +1049,36 @@ void CrossCorrelator::calculateXCCA_autoCorrelation(){
 	p_autoCorrelation = new array2D<double>( nQ(), nLag() );
 
 	double variance = 0;
+	double variance_cc = 0;
 	int phi2_index = 0;	
+
+	//if provided by user, subtract the correlation of a given row with its counterpart in the grand avg.
+	//from the autocorrelation of that row
+	bool useGrandAvgSubtraction = grandAvgPolar() != 0 ? true : false;
+	
+	array2D<double> *crossCorrWithGrandAvg = new array2D<double>(autoCorr()->dim1(), autoCorr()->dim2());
 	
 	for (int i=0; i<nQ(); i++) { 							// for i (q)
 		if (debug() && i%100 == 0) cout << "." << flush;
+		
 		variance = 0;
+		variance_cc = 0;
 		for (int k=0; k<nLag(); k++) { 						// for k (lag) => phi2 = (l+k)%nPhi
+		
 			for (int l=0; l<nPhi(); l++) { 					// for l (phi1)
 				phi2_index = (l+k)%nPhi();
 				autoCorr()->set(i,k, autoCorr()->get(i,k) + fluctuations()->get(i,l) * fluctuations()->get(i, phi2_index) );
 			}//for l (phi1)
 			
-			unsigned int norm = autoCorrNorm()->get(i,k);
+			if (useGrandAvgSubtraction){
+				for (int ll=0; ll<nPhi(); ll++) { 					// for l (phi1)
+					phi2_index = (ll+k)%nPhi();
+					crossCorrWithGrandAvg->set(i,k, crossCorrWithGrandAvg->get(i,k) + fluctuations()->get(i,ll) * grandAvgPolar()->get(i, phi2_index) );
+				}
+			}
+			
+			//normalize the autocorrelation
+			double norm = (double)autoCorrNorm()->get(i,k);
 			if (norm != 0) {
 				if (k == 0) {
 					//get variance (or the zeroth element of the auto-correlation)
@@ -1055,18 +1088,36 @@ void CrossCorrelator::calculateXCCA_autoCorrelation(){
 					// normalize by how many times data was written to (i,k) and variance at this specific i (q-value)
 					autoCorr()->set(i, k, autoCorr()->get(i,k) / (double)(norm*variance) );
 				} else { 
-					// fail with code -1.5
-					// i.e. variance == 0
+					// fail with code -1.5, i.e. variance == 0
 					autoCorr()->set(i, k, -1.5);
 				}
+				
+				//repeat normalization for cross-correlation with the grand average
+				if (useGrandAvgSubtraction){
+					if (k == 0) {
+						variance_cc = crossCorrWithGrandAvg->get(i, 0)/(double)norm;
+					}
+					if (variance_cc != 0) {
+						crossCorrWithGrandAvg->set(i, k, crossCorrWithGrandAvg->get(i,k) / (double)(norm*variance_cc) );
+					} else { 
+						// fail with code -1.5, i.e. variance (of cross-corr) == 0
+						autoCorr()->set(i, k, -1.5);
+					}
+				}				
+				//subtract cross-correlation with the grand average from the auto-correlation
+				autoCorr()->set(i,k, autoCorr()->get(i,k) - crossCorrWithGrandAvg->get(i,k) );
+				
 			} else { 
 				// fail with code -2, if no information exists about the specific element in the cross-correlation array
 				// i.e. norm == 0
 				autoCorr()->set(i, k, -2);
 			}
+			
 		}//for k (lag)
 	}// for i (q)
 	if (debug() >= 1) cout << " done." << endl;
+	
+	delete crossCorrWithGrandAvg;
 }
 
 
