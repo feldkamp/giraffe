@@ -788,11 +788,11 @@ int arraydataIO::writeToFile( std::string filename, array2D<double> *src) const{
 	}	
 
 	//-------------------------------------------------------------- writeToHDF5
-	// dataType = 0 --> write as doubles (H5T_NATIVE_DOUBLE, default)
-	// dataType = 1 --> write as float   (H5T_NATIVE_FLOAT)
-	// dataType = 2 --> write as int     (H5T_NATIVE_INT)
-	// dataType = 3 --> write as int16_t (H5T_STD_I16LE)
-	// dataType = 4 --> write as long    (H5T_NATIVE_LONG)
+	// internalType = 0 --> write as doubles (H5T_NATIVE_DOUBLE)
+	// internalType = 1 --> write as float   (H5T_NATIVE_FLOAT, default)
+	// internalType = 2 --> write as int     (H5T_NATIVE_INT)
+	// internalType = 3 --> write as int16_t (H5T_STD_I16LE)
+	// internalType = 4 --> write as long    (H5T_NATIVE_LONG)
 	//-------------------------------------------------------------- 
 	//-------------------------------------------------------------- writeToHDF5 (generic case)
 	int writeToHDF5_generic( string filename, arraydata<double> *src, int img_rank, hsize_t *dims, int internalType, int verbose ) {
