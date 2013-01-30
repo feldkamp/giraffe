@@ -17,7 +17,11 @@ giraffe
   found at https://github.com/antonbarty/cheetah
 
 *** building ***
-  This package can be built using the SCons software construction tool (http://www.scons.org/) to yield
+  This package can be built using the SCons software construction tool (http://www.scons.org/) using commands
+    scons -c
+    scons
+  
+  to yield
     libgiraffe_static.a --- static library
     libgiraffe_dynamic.so/dylib --- dynamic library (extension is platform dependent)
     filehandler --- stand-alone tool for common tasks around the array classes (I/O, basic math, ...)

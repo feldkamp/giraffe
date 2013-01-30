@@ -209,9 +209,12 @@ public:
     bool maskEnable() const;	
 	void setMaskEnable( bool enable );
 	
+    bool varianceEnable() const;
+	void setVarianceEnable( bool enable );
+	
     bool xccaEnable() const;
 	void setXccaEnable( bool enable );
-
+	
 	// general output directory for the class
     std::string outputdir();
     void setOutputdir( std::string dir );
@@ -225,6 +228,7 @@ public:
 private:
 	//-------------------------------------------------required for both algorithms
 	bool p_mask_enable;							// enables/disables masking of bad pixels
+	bool p_variance_enable;						// enables/disables variance normalization (if disabled the correlations are normalized by the average intensity)
 	bool p_xcca_enable;							// enables/disables cross-correlations (if disabled only autocorrelations are calculated)
     std::string p_outputdir;  					// the output directory if anything is dumped from withing this class (default is working dir)
 

@@ -160,6 +160,7 @@ void CrossCorrelator::initPrivateVariables(){
 	p_nPhi = 0;
 	p_nLag = 0;
 	p_mask_enable = false;
+	p_variance_enable = false;
 	p_xcca_enable = true;
     p_outputdir = "";
 
@@ -612,6 +613,15 @@ void CrossCorrelator::setMaskEnable( bool enable ){
 }
 
 //----------------------------------------------------------------------------maskEnable
+bool CrossCorrelator::varianceEnable() const {
+    return p_variance_enable;
+}
+
+void CrossCorrelator::setVarianceEnable( bool enable ){
+	p_variance_enable = enable;
+}
+
+//----------------------------------------------------------------------------maskEnable
 bool CrossCorrelator::xccaEnable() const {
     return p_xcca_enable;
 }
@@ -886,7 +896,7 @@ void CrossCorrelator::calculateSAXS(double start_q, double stop_q) {
 			p_q->set(i, round( sqrt( (qx()->get(i)*qx()->get(i))+(qy()->get(i)*qy()->get(i)) ) / deltaq()) * deltaq() );
 			//by JF: why divide, round, multiply?
 		}
-	}
+	} 
 	
 	if (!p_tracker_calculatePolarCoordinates || p_tracker_calculateSAXS) {
 		// calculate vector of output |q|
@@ -974,7 +984,7 @@ void CrossCorrelator::calculateXCCA(double start_q, double stop_q) {
 		if (p_tracker_calculatePolarCoordinates) {
 			calculateXCCA();
 		} else {
-			cerr << "ERROR in CrossCorrelator::calculateXCCA. polar coordinates were not calculated properly prior to use." << endl;
+			cerr << "ERROR in CrossCorrelator::calculateXCCA: polar coordinates were not calculated properly prior to use." << endl;
 		}
 	}	
 }
@@ -1014,6 +1024,14 @@ void CrossCorrelator::calculateXCCA_crossCorrelation(){
 				} // l: for phi
 				if (norm) {
 					crossCorr()->set(i, j, k, crossCorr()->get(i,j,k)/norm );
+					if (!varianceEnable()) {
+						if (iAvg()->get(i) && iAvg()->get(j)) {
+							// normalize the cross-correlation array with the average intensity
+							crossCorr()->set(i, j, k, crossCorr()->get(i,j,k) / (iAvg()->get(i)*iAvg()->get(j)) );
+						} else { // fail code if average intensity is 0
+							crossCorr()->set(i, j, k, -1.5);
+						}
+					}
 				} else { // fail code if no information exists about the specific element in the cross-correlation array
 					crossCorr()->set(i, j, k, -2);
 				}
@@ -1021,21 +1039,23 @@ void CrossCorrelator::calculateXCCA_crossCorrelation(){
 		} // j: for q2
 	} // i: for q1
 	
-	// normalization loop for variances (since the diagonal elements w.r.t. Q of the cross-correlation array aren't calculated first)
-	for (int i=0; i<nQ(); i++) { // q1 index
-		for (int j=0; j<nQ(); j++) { // q2 index
-			double variance1 = crossCorr()->get(i, i, 0);
-			double variance2 = crossCorr()->get(j, j, 0);
-			for (int k=0; k<nLag(); k++) { // phi lag => phi2 index = (l+k)%nPhi
-				if (variance1 && variance2) {
-					// normalize by standard deviations (or the square root of the diagonal elements of the cross-correlation)
-					crossCorr()->set(i, j, k, crossCorr()->get(i,j,k) / (sqrt(variance1)*sqrt(variance2)) );
-				} else { // fail code if variances are 0
-					crossCorr()->set(i, j, k, -1.5);
-				}
-			}
-		} // for q2
-	} // for q1
+	if (varianceEnable()) {
+		// normalization loop for variances (since the diagonal elements w.r.t. Q of the cross-correlation array aren't calculated first)
+		for (int i=0; i<nQ(); i++) { // q1 index
+			for (int j=0; j<nQ(); j++) { // q2 index
+				double variance1 = crossCorr()->get(i, i, 0);
+				double variance2 = crossCorr()->get(j, j, 0);
+				for (int k=0; k<nLag(); k++) { // phi lag => phi2 index = (l+k)%nPhi
+					if (variance1 && variance2) {
+						// normalize by standard deviations (or the square root of the diagonal elements of the cross-correlation)
+						crossCorr()->set(i, j, k, crossCorr()->get(i,j,k) / (sqrt(variance1)*sqrt(variance2)) );
+					} else { // fail code if variances are 0
+						crossCorr()->set(i, j, k, -1.5);
+					}
+				} // for lag
+			} // for q2
+		} // for q1
+	}
 	if (debug() >= 1) cout << " done." << endl;
 }
 
@@ -1064,12 +1084,14 @@ void CrossCorrelator::calculateXCCA_autoCorrelation(){
 		variance = 0;
 		variance_cc = 0;
 		for (int k=0; k<nLag(); k++) { 						// for k (lag) => phi2 = (l+k)%nPhi
-		
+			
+			//calculate autocorrelation
 			for (int l=0; l<nPhi(); l++) { 					// for l (phi1)
 				phi2_index = (l+k)%nPhi();
 				autoCorr()->set(i,k, autoCorr()->get(i,k) + fluctuations()->get(i,l) * fluctuations()->get(i, phi2_index) );
 			}//for l (phi1)
 			
+			//calculate cross-correlation with grand average
 			if (useGrandAvgSubtraction){
 				for (int ll=0; ll<nPhi(); ll++) { 					// for l (phi1)
 					phi2_index = (ll+k)%nPhi();
@@ -1080,32 +1102,41 @@ void CrossCorrelator::calculateXCCA_autoCorrelation(){
 			//normalize the autocorrelation
 			double norm = (double)autoCorrNorm()->get(i,k);
 			if (norm != 0) {
-				if (k == 0) {
-					//get variance (or the zeroth element of the auto-correlation)
-					variance = autoCorr()->get(i, 0)/(double)norm;
-				}
-				if (variance != 0) {
-					// normalize by how many times data was written to (i,k) and variance at this specific i (q-value)
-					autoCorr()->set(i, k, autoCorr()->get(i,k) / (double)(norm*variance) );
-				} else { 
-					// fail with code -1.5, i.e. variance == 0
-					autoCorr()->set(i, k, -1.5);
+				if (varianceEnable()) {
+					if (k == 0) {
+						//get variance (or the zeroth element of the auto-correlation)
+						variance = autoCorr()->get(i, 0)/norm;
+					}
+					if (variance != 0) {
+						// normalize by how many times data was written to (i,k) and variance at this specific i (q-value)
+						autoCorr()->set(i, k, autoCorr()->get(i,k) / (norm*variance) );
+					} else { 
+						// fail with code -1.5, i.e. variance == 0
+						autoCorr()->set(i, k, -1.5);
+					}
+				} else {
+					if (iAvg()->get(i) != 0) {
+						// normalize the cross-correlation array with the average intensity and the calculated normalization constant          
+						autoCorr()->set(i, k, autoCorr()->get(i,k) / (norm*iAvg()->get(i)*iAvg()->get(i)) );
+					} else { // fail code if average intensity is 0
+						autoCorr()->set(i, k, -1.5);            
+					}
 				}
 				
-				//repeat normalization for cross-correlation with the grand average
-				if (useGrandAvgSubtraction){
+				//repeat normalization for cross-correlation with grand average and subtract it from the autocorrelation
+				if (useGrandAvgSubtraction) {
 					if (k == 0) {
-						variance_cc = crossCorrWithGrandAvg->get(i, 0)/(double)norm;
+						variance_cc = crossCorrWithGrandAvg->get(i, 0)/norm;
 					}
 					if (variance_cc != 0) {
-						crossCorrWithGrandAvg->set(i, k, crossCorrWithGrandAvg->get(i,k) / (double)(norm*variance_cc) );
+						crossCorrWithGrandAvg->set(i, k, crossCorrWithGrandAvg->get(i,k) / (norm*variance_cc) );
 					} else { 
 						// fail with code -1.5, i.e. variance (of cross-corr) == 0
 						autoCorr()->set(i, k, -1.5);
 					}
-				}				
-				//subtract cross-correlation with the grand average from the auto-correlation
-				autoCorr()->set(i,k, autoCorr()->get(i,k) - crossCorrWithGrandAvg->get(i,k) );
+					//subtract cross-correlation with the grand average from the auto-correlation
+					autoCorr()->set(i,k, autoCorr()->get(i,k) - crossCorrWithGrandAvg->get(i,k) );
+				}
 				
 			} else { 
 				// fail with code -2, if no information exists about the specific element in the cross-correlation array
